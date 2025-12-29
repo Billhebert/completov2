@@ -1,0 +1,712 @@
+openapi: 3.0.0
+info:
+  title: OMNI Platform API
+  version: 3.0.0
+  description: Enterprise multi-tenant platform with modular architecture
+  contact:
+    name: OMNI Platform Team
+    email: support@omni.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3000
+    description: Development server
+  - url: https://api.omni.com
+    description: Production server
+
+tags:
+  - name: Auth
+    description: Authentication endpoints
+  - name: Chat
+    description: Chat and messaging
+  - name: CRM
+    description: Customer relationship management
+  - name: ERP
+    description: Enterprise resource planning
+  - name: AI
+    description: AI and RAG capabilities
+  - name: Omnichannel
+    description: Multi-channel communication
+  - name: Sync
+    description: Integration and synchronization
+  - name: Knowledge
+    description: Knowledge graph management
+  - name: Learning
+    description: Learning paths and skills
+  - name: Notifications
+    description: Notification management
+  - name: Analytics
+    description: Analytics and metrics
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            message:
+              type: string
+            code:
+              type: string
+            details:
+              type: object
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        role:
+          type: string
+          enum: [admin, manager, agent, viewer]
+        companyId:
+          type: string
+          format: uuid
+
+    Contact:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        companyName:
+          type: string
+        position:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+
+    Deal:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        value:
+          type: number
+        stage:
+          type: string
+          enum: [lead, qualified, proposal, negotiation, won, lost]
+        contactId:
+          type: string
+          format: uuid
+
+paths:
+  # AUTH ENDPOINTS
+  /api/v1/auth/register:
+    post:
+      tags: [Auth]
+      summary: Register new company and admin user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password, companyName, companyDomain]
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                companyName:
+                  type: string
+                companyDomain:
+                  type: string
+      responses:
+        '201':
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      accessToken:
+                        type: string
+                      refreshToken:
+                        type: string
+                      user:
+                        $ref: '#/components/schemas/User'
+
+  /api/v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: Login with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login successful
+        '401':
+          description: Invalid credentials
+
+  /api/v1/auth/me:
+    get:
+      tags: [Auth]
+      summary: Get current user
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/User'
+
+  # CRM ENDPOINTS
+  /api/v1/crm/contacts:
+    get:
+      tags: [CRM]
+      summary: List contacts
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: List of contacts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Contact'
+    post:
+      tags: [CRM]
+      summary: Create contact
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                phone:
+                  type: string
+                companyName:
+                  type: string
+      responses:
+        '201':
+          description: Contact created
+
+  /api/v1/crm/deals:
+    get:
+      tags: [CRM]
+      summary: List deals
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of deals
+    post:
+      tags: [CRM]
+      summary: Create deal
+      security:
+        - BearerAuth: []
+      responses:
+        '201':
+          description: Deal created
+
+  # CHAT ENDPOINTS
+  /api/v1/chat/channels:
+    get:
+      tags: [Chat]
+      summary: List channels
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of channels
+    post:
+      tags: [Chat]
+      summary: Create channel
+      security:
+        - BearerAuth: []
+      responses:
+        '201':
+          description: Channel created
+
+  /api/v1/chat/messages:
+    post:
+      tags: [Chat]
+      summary: Send message
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                channelId:
+                  type: string
+                content:
+                  type: string
+      responses:
+        '201':
+          description: Message sent
+
+  # AI ENDPOINTS
+  /api/v1/ai/rag/query:
+    post:
+      tags: [AI]
+      summary: Query knowledge base with RAG
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [question]
+              properties:
+                question:
+                  type: string
+      responses:
+        '200':
+          description: Answer with sources
+
+  /api/v1/ai/rag/search:
+    get:
+      tags: [AI]
+      summary: Semantic search in knowledge base
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 5
+      responses:
+        '200':
+          description: Search results
+
+  # OMNICHANNEL ENDPOINTS
+  /api/v1/omnichannel/whatsapp/accounts:
+    get:
+      tags: [Omnichannel]
+      summary: List WhatsApp accounts
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of accounts
+    post:
+      tags: [Omnichannel]
+      summary: Create WhatsApp account
+      security:
+        - BearerAuth: []
+      responses:
+        '201':
+          description: Account created
+
+  # SYNC ENDPOINTS
+  /api/v1/sync/connections:
+    get:
+      tags: [Sync]
+      summary: List integration connections
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of connections
+    post:
+      tags: [Sync]
+      summary: Create integration connection
+      security:
+        - BearerAuth: []
+      responses:
+        '201':
+          description: Connection created
+
+  # HEALTH CHECK
+  /healthz:
+    get:
+      tags: [System]
+      summary: Liveness probe
+      responses:
+        '200':
+          description: Server is alive
+
+  /readyz:
+    get:
+      tags: [System]
+      summary: Readiness probe
+      responses:
+        '200':
+          description: Server is ready
+
+  /metrics:
+    get:
+      tags: [System]
+      summary: Prometheus metrics
+      responses:
+        '200':
+          description: Metrics in Prometheus format
+
+  # FILES ENDPOINTS
+  /api/v1/files/upload:
+    post:
+      tags: [Files]
+      summary: Upload file
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                entityType:
+                  type: string
+                entityId:
+                  type: string
+      responses:
+        '201':
+          description: File uploaded
+
+  /api/v1/files:
+    get:
+      tags: [Files]
+      summary: List files
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of files
+
+  /api/v1/files/{id}/download:
+    get:
+      tags: [Files]
+      summary: Download file
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: File content
+
+  # WEBHOOKS ENDPOINTS
+  /api/v1/webhooks/subscriptions:
+    get:
+      tags: [Webhooks]
+      summary: List webhook subscriptions
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of subscriptions
+    post:
+      tags: [Webhooks]
+      summary: Create webhook subscription
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url, events]
+              properties:
+                url:
+                  type: string
+                events:
+                  type: array
+                  items:
+                    type: string
+                description:
+                  type: string
+      responses:
+        '201':
+          description: Subscription created
+
+  # API KEYS ENDPOINTS
+  /api/v1/apikeys:
+    get:
+      tags: [API Keys]
+      summary: List API keys
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of API keys
+    post:
+      tags: [API Keys]
+      summary: Create API key
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, scopes]
+              properties:
+                name:
+                  type: string
+                scopes:
+                  type: array
+                  items:
+                    type: string
+                expiresAt:
+                  type: string
+                  format: date-time
+      responses:
+        '201':
+          description: API key created (key shown only once)
+
+  # EMAIL TEMPLATES ENDPOINTS
+  /api/v1/email-templates:
+    get:
+      tags: [Email Templates]
+      summary: List available templates
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of templates
+
+  /api/v1/email-templates/preview:
+    post:
+      tags: [Email Templates]
+      summary: Preview template
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [templateName, variables]
+              properties:
+                templateName:
+                  type: string
+                variables:
+                  type: object
+      responses:
+        '200':
+          description: Template preview
+
+  # SEARCH ENDPOINTS
+  /api/v1/search:
+    get:
+      tags: [Search]
+      summary: Global search
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Search results
+
+  /api/v1/search/suggest:
+    get:
+      tags: [Search]
+      summary: Autocomplete suggestions
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Suggestions
+
+  # SSO ENDPOINTS
+  /api/v1/sso/{provider}/authorize:
+    get:
+      tags: [SSO]
+      summary: Initiate OAuth flow
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [google, microsoft, github]
+      responses:
+        '200':
+          description: OAuth authorization URL
+
+  /api/v1/sso/{provider}/callback:
+    get:
+      tags: [SSO]
+      summary: OAuth callback
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Authentication successful
+
+  # AUDIT ENDPOINTS
+  /api/v1/audit/logs:
+    get:
+      tags: [Audit]
+      summary: Get company audit logs
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: action
+          in: query
+          schema:
+            type: string
+        - name: entityType
+          in: query
+          schema:
+            type: string
+        - name: userId
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Audit logs
+
+  /api/v1/audit/history/{entityType}/{entityId}:
+    get:
+      tags: [Audit]
+      summary: Get entity history
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: entityType
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: entityId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Entity history

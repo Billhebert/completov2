@@ -1,0 +1,72 @@
+{
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "create": "Crear",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "export": "Exportar",
+    "import": "Importar",
+    "loading": "Cargando...",
+    "error": "Error",
+    "success": "Éxito",
+    "warning": "Advertencia",
+    "info": "Información",
+    "confirm": "Confirmar",
+    "yes": "Sí",
+    "no": "No"
+  },
+  "auth": {
+    "login": "Iniciar sesión",
+    "logout": "Cerrar sesión",
+    "register": "Registrarse",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "forgot_password": "¿Olvidaste tu contraseña?",
+    "reset_password": "Restablecer contraseña",
+    "login_success": "Inicio de sesión exitoso",
+    "login_failed": "Error al iniciar sesión",
+    "invalid_credentials": "Correo electrónico o contraseña inválidos",
+    "session_expired": "Sesión expirada, inicie sesión nuevamente"
+  },
+  "users": {
+    "title": "Usuarios",
+    "create_user": "Crear Usuario",
+    "edit_user": "Editar Usuario",
+    "name": "Nombre",
+    "role": "Rol",
+    "status": "Estado",
+    "last_login": "Último Inicio de Sesión",
+    "created_at": "Creado En"
+  },
+  "crm": {
+    "contacts": "Contactos",
+    "deals": "Negocios",
+    "create_contact": "Crear Contacto",
+    "create_deal": "Crear Negocio",
+    "contact_name": "Nombre del Contacto",
+    "company": "Empresa",
+    "phone": "Teléfono",
+    "deal_value": "Valor del Negocio",
+    "stage": "Etapa",
+    "won": "Ganado",
+    "lost": "Perdido"
+  },
+  "errors": {
+    "not_found": "No encontrado",
+    "unauthorized": "No autorizado",
+    "forbidden": "Prohibido",
+    "validation_error": "Error de validación",
+    "server_error": "Error del servidor",
+    "network_error": "Error de red"
+  },
+  "validation": {
+    "required": "{{field}} es requerido",
+    "email_invalid": "Dirección de correo electrónico inválida",
+    "min_length": "{{field}} debe tener al menos {{min}} caracteres",
+    "max_length": "{{field}} debe tener como máximo {{max}} caracteres",
+    "password_too_weak": "Contraseña demasiado débil"
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "common": {
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "create": "Criar",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "export": "Exportar",
+    "import": "Importar",
+    "loading": "Carregando...",
+    "error": "Erro",
+    "success": "Sucesso",
+    "warning": "Aviso",
+    "info": "Informação",
+    "confirm": "Confirmar",
+    "yes": "Sim",
+    "no": "Não"
+  },
+  "auth": {
+    "login": "Entrar",
+    "logout": "Sair",
+    "register": "Registrar",
+    "email": "E-mail",
+    "password": "Senha",
+    "forgot_password": "Esqueceu a senha?",
+    "reset_password": "Redefinir senha",
+    "login_success": "Login realizado com sucesso",
+    "login_failed": "Falha no login",
+    "invalid_credentials": "E-mail ou senha inválidos",
+    "session_expired": "Sessão expirada, faça login novamente"
+  },
+  "users": {
+    "title": "Usuários",
+    "create_user": "Criar Usuário",
+    "edit_user": "Editar Usuário",
+    "name": "Nome",
+    "role": "Função",
+    "status": "Status",
+    "last_login": "Último Login",
+    "created_at": "Criado Em"
+  },
+  "crm": {
+    "contacts": "Contatos",
+    "deals": "Negócios",
+    "create_contact": "Criar Contato",
+    "create_deal": "Criar Negócio",
+    "contact_name": "Nome do Contato",
+    "company": "Empresa",
+    "phone": "Telefone",
+    "deal_value": "Valor do Negócio",
+    "stage": "Etapa",
+    "won": "Ganho",
+    "lost": "Perdido"
+  },
+  "errors": {
+    "not_found": "Não encontrado",
+    "unauthorized": "Não autorizado",
+    "forbidden": "Proibido",
+    "validation_error": "Erro de validação",
+    "server_error": "Erro no servidor",
+    "network_error": "Erro de rede"
+  },
+  "validation": {
+    "required": "{{field}} é obrigatório",
+    "email_invalid": "Endereço de e-mail inválido",
+    "min_length": "{{field}} deve ter pelo menos {{min}} caracteres",
+    "max_length": "{{field}} deve ter no máximo {{max}} caracteres",
+    "password_too_weak": "Senha muito fraca"
+  }
+}

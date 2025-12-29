@@ -1,0 +1,205 @@
+{
+  "dashboard": {
+    "title": "OMNI Platform V3 - Production Dashboard",
+    "tags": ["omni", "production", "nodejs"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "HTTP Request Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(http_requests_total[5m])",
+            "legendFormat": "{{method}} {{route}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "HTTP Error Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(http_requests_total{status_code=~\"5..\"}[5m])",
+            "legendFormat": "5xx Errors"
+          },
+          {
+            "expr": "rate(http_requests_total{status_code=~\"4..\"}[5m])",
+            "legendFormat": "4xx Errors"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "HTTP Response Time (p95)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "{{route}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+      },
+      {
+        "id": 4,
+        "title": "Active WebSocket Connections",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "ws_connections_active"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 12, "y": 8}
+      },
+      {
+        "id": 5,
+        "title": "Active Users (Last 5 min)",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "users_active"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 18, "y": 8}
+      },
+      {
+        "id": 6,
+        "title": "Database Query Duration",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(db_query_duration_seconds_sum[5m]) / rate(db_query_duration_seconds_count[5m])",
+            "legendFormat": "{{operation}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12}
+      },
+      {
+        "id": 7,
+        "title": "Cache Hit Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(cache_hits_total[5m]) / (rate(cache_hits_total[5m]) + rate(cache_misses_total[5m]))",
+            "legendFormat": "Hit Rate %"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}
+      },
+      {
+        "id": 8,
+        "title": "Queue Job Processing Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(queue_jobs_total{status=\"completed\"}[5m])",
+            "legendFormat": "{{queue}} - Completed"
+          },
+          {
+            "expr": "rate(queue_jobs_total{status=\"failed\"}[5m])",
+            "legendFormat": "{{queue}} - Failed"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}
+      },
+      {
+        "id": 9,
+        "title": "Memory Usage",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "process_resident_memory_bytes",
+            "legendFormat": "RSS Memory"
+          }
+        ],
+        "gridPos": {"h": 6, "w": 8, "x": 0, "y": 24}
+      },
+      {
+        "id": 10,
+        "title": "CPU Usage",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(process_cpu_seconds_total[5m])",
+            "legendFormat": "CPU Usage"
+          }
+        ],
+        "gridPos": {"h": 6, "w": 8, "x": 8, "y": 24}
+      },
+      {
+        "id": 11,
+        "title": "Event Loop Lag",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "nodejs_eventloop_lag_seconds",
+            "legendFormat": "Event Loop Lag"
+          }
+        ],
+        "gridPos": {"h": 6, "w": 8, "x": 16, "y": 24}
+      },
+      {
+        "id": 12,
+        "title": "Deals Created (Last 24h)",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "increase(deals_total[24h])"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 30}
+      },
+      {
+        "id": 13,
+        "title": "Messages Sent (Last 24h)",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "increase(messages_total[24h])"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 6, "y": 30}
+      },
+      {
+        "id": 14,
+        "title": "Files Uploaded (Last 24h)",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "increase(events_published_total{event_type=\"file.uploaded.v1\"}[24h])"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 12, "y": 30}
+      },
+      {
+        "id": 15,
+        "title": "Errors (Last 24h)",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "increase(errors_total[24h])"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 18, "y": 30},
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 10, "color": "yellow"},
+                {"value": 100, "color": "red"}
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "refresh": "10s",
+    "schemaVersion": 27,
+    "version": 1
+  }
+}
