@@ -117,7 +117,10 @@ model User {
   // Knowledge
   createdNodes KnowledgeNode[]
   knowledgeSuggestions KnowledgeSuggestion[]
-  
+  createdKnowledgeVersions KnowledgeVersion[] @relation("KnowledgeVersionCreatedBy")
+  knowledgeComments KnowledgeComment[] @relation("KnowledgeCommentCreatedBy")
+  knowledgeLocks KnowledgeLock[] @relation("KnowledgeLockUser")
+
   // Skills
   employeeSkills EmployeeSkill[]
   skillDevelopmentPlans SkillDevelopmentPlan[]
@@ -2070,13 +2073,16 @@ model KnowledgeVersion {
   id          String   @id @default(uuid())
   nodeId      String
   version     Int
+  title       String?  // Version title/description
   content     String   @db.Text
   createdById String
   createdAt   DateTime @default(now())
 
   node        KnowledgeNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  createdBy   User     @relation("KnowledgeVersionCreatedBy", fields: [createdById], references: [id])
 
   @@index([nodeId])
+  @@index([createdById])
   @@map("knowledge_versions")
 }
 
@@ -2085,6 +2091,7 @@ model KnowledgeTemplate {
   companyId   String
   name        String
   description String?
+  content     String?  @db.Text // Template content
   structure   Json
   createdAt   DateTime @default(now())
 
@@ -2096,10 +2103,14 @@ model KnowledgeLock {
   id          String   @id @default(uuid())
   nodeId      String   @unique
   lockedById  String
+  userId      String?  // Alternative field name for lockedById
   lockedAt    DateTime @default(now())
+  expiresAt   DateTime? // Lock expiration time
 
   node        KnowledgeNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  user        User?    @relation("KnowledgeLockUser", fields: [userId], references: [id])
 
+  @@index([userId])
   @@map("knowledge_locks")
 }
 
@@ -2108,11 +2119,14 @@ model KnowledgeComment {
   nodeId      String
   userId      String
   content     String   @db.Text
+  mentions    String[] // User IDs mentioned in comment
   createdAt   DateTime @default(now())
 
   node        KnowledgeNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  createdBy   User     @relation("KnowledgeCommentCreatedBy", fields: [userId], references: [id])
 
   @@index([nodeId])
+  @@index([userId])
   @@map("knowledge_comments")
 }
 

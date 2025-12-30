@@ -59,7 +59,7 @@ router.get('/reminders', async (req: Request, res: Response) => {
       }
     });
   } catch (error: any) {
-    logger.error('Error fetching reminders', { error });
+    logger.error({ error }, 'Error fetching reminders');
     res.status(500).json({ error: 'Failed to fetch reminders' });
   }
 });
@@ -94,14 +94,14 @@ router.post('/reminders', async (req: Request, res: Response) => {
       }
     });
 
-    logger.info('Reminder created manually', { reminderId: reminder.id, userId });
+    logger.info({ reminderId: reminder.id, userId }, 'Reminder created manually');
     res.status(201).json(reminder);
 
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: 'Invalid input', details: error.errors });
     }
-    logger.error('Error creating reminder', { error });
+    logger.error({ error }, 'Error creating reminder');
     res.status(500).json({ error: 'Failed to create reminder' });
   }
 });
@@ -140,7 +140,7 @@ router.patch('/reminders/:id/snooze', async (req: Request, res: Response) => {
     res.json(updated);
 
   } catch (error: any) {
-    logger.error('Error snoozing reminder', { error });
+    logger.error({ error }, 'Error snoozing reminder');
     res.status(500).json({ error: 'Failed to snooze reminder' });
   }
 });
@@ -173,7 +173,7 @@ router.patch('/reminders/:id/dismiss', async (req: Request, res: Response) => {
     res.json(updated);
 
   } catch (error: any) {
-    logger.error('Error dismissing reminder', { error });
+    logger.error({ error }, 'Error dismissing reminder');
     res.status(500).json({ error: 'Failed to dismiss reminder' });
   }
 });
@@ -206,7 +206,7 @@ router.patch('/reminders/:id/complete', async (req: Request, res: Response) => {
     res.json(updated);
 
   } catch (error: any) {
-    logger.error('Error completing reminder', { error });
+    logger.error({ error }, 'Error completing reminder');
     res.status(500).json({ error: 'Failed to complete reminder' });
   }
 });
@@ -238,7 +238,7 @@ router.get('/truth/conflicts', async (req: Request, res: Response) => {
     res.json({ data: conflictingNodes });
 
   } catch (error: any) {
-    logger.error('Error fetching conflicts', { error });
+    logger.error({ error }, 'Error fetching conflicts');
     res.status(500).json({ error: 'Failed to fetch conflicts' });
   }
 });
@@ -266,7 +266,7 @@ router.post('/truth/resolve', async (req: Request, res: Response) => {
     res.json({ message: 'Conflict resolved successfully' });
 
   } catch (error: any) {
-    logger.error('Error resolving conflict', { error });
+    logger.error({ error }, 'Error resolving conflict');
     res.status(500).json({ error: 'Failed to resolve conflict' });
   }
 });
@@ -296,7 +296,7 @@ router.get('/truth/stale', async (req: Request, res: Response) => {
     res.json({ data: staleNodes });
 
   } catch (error: any) {
-    logger.error('Error fetching stale knowledge', { error });
+    logger.error({ error }, 'Error fetching stale knowledge');
     res.status(500).json({ error: 'Failed to fetch stale knowledge' });
   }
 });
@@ -332,11 +332,11 @@ router.post('/nodes/:id/set-truth', async (req: Request, res: Response) => {
       }
     });
 
-    logger.info('Node marked as source of truth', { nodeId: id });
+    logger.info({ nodeId: id }, 'Node marked as source of truth');
     res.json(updated);
 
   } catch (error: any) {
-    logger.error('Error setting truth status', { error });
+    logger.error({ error }, 'Error setting truth status');
     res.status(500).json({ error: 'Failed to set truth status' });
   }
 });
@@ -360,13 +360,13 @@ router.post('/nodes/:id/detect-conflicts', async (req: Request, res: Response) =
 
     // Executar detecção em background
     truthLayerService.detectConflicts(id).catch(err => {
-      logger.error('Background conflict detection failed', { error: err });
+      logger.error({ error: err }, 'Background conflict detection failed');
     });
 
     res.json({ message: 'Conflict detection started' });
 
   } catch (error: any) {
-    logger.error('Error starting conflict detection', { error });
+    logger.error({ error }, 'Error starting conflict detection');
     res.status(500).json({ error: 'Failed to start conflict detection' });
   }
 });
@@ -395,7 +395,7 @@ router.get('/auto-suggestions', async (req: Request, res: Response) => {
     res.json({ data: suggestions });
 
   } catch (error: any) {
-    logger.error('Error fetching suggestions', { error });
+    logger.error({ error }, 'Error fetching suggestions');
     res.status(500).json({ error: 'Failed to fetch suggestions' });
   }
 });
