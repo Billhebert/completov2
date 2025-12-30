@@ -79,6 +79,13 @@ export class EventBus {
   }
 
   /**
+   * Alias for publish (for backwards compatibility)
+   */
+  async emit<T extends BaseEvent>(eventType: string, event: T): Promise<void> {
+    return this.publish(eventType, event);
+  }
+
+  /**
    * Subscribe to an event
    */
   on<T = any>(eventType: string, handler: EventHandler<T>): void {
@@ -156,6 +163,9 @@ export function getEventBus(): EventBus {
   }
   return eventBusInstance;
 }
+
+// Export singleton instance (alias)
+export const eventBus = getEventBus();
 
 // Event type constants
 export const Events = {

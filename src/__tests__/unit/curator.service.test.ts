@@ -13,6 +13,7 @@ const prisma = new PrismaClient();
 
 // Mock OpenAI
 jest.mock('openai', () => {
+  const { mockOpenAI } = require('../helpers/test-helpers');
   return {
     OpenAI: jest.fn().mockImplementation(() => mockOpenAI()),
   };

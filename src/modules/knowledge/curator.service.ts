@@ -22,7 +22,7 @@ export class CuratorService {
   async onConversationCreated(data: any) {
     try {
       const { conversation, companyId } = data;
-      logger.info('Curator: conversation.created', { conversationId: conversation.id });
+      logger.info({ conversationId: conversation.id }, 'Curator: conversation.created');
 
       // 1. Criar/Atualizar Zettel.CLIENT
       const clientZettel = await this.createOrUpdateClientZettel({
@@ -46,13 +46,13 @@ export class CuratorService {
         linkedTo: [clientZettel.id]
       });
 
-      logger.info('Curator: Zettels created', {
+      logger.info({
         clientZettelId: clientZettel.id,
         negotiationZettelId: negotiationZettel.id
-      });
+      }, 'Curator: Zettels created');
 
     } catch (error) {
-      logger.error('Curator: onConversationCreated failed', { error, data });
+      logger.error({ error, data }, 'Curator: onConversationCreated failed');
     }
   }
 
@@ -62,7 +62,7 @@ export class CuratorService {
   async onMessageReceived(data: any) {
     try {
       const { message, conversation, companyId } = data;
-      logger.info('Curator: message.received', { messageId: message.id });
+      logger.info({ messageId: message.id }, 'Curator: message.received');
 
       // 1. Buscar Zettel.NEGOTIATION relacionado à conversa
       const negotiationZettel = await this.findZettelBySource('conversation', conversation.id, 'NEGOTIATION');
@@ -91,7 +91,7 @@ export class CuratorService {
       }
 
     } catch (error) {
-      logger.error('Curator: onMessageReceived failed', { error, data });
+      logger.error({ error, data }, 'Curator: onMessageReceived failed');
     }
   }
 
@@ -101,7 +101,7 @@ export class CuratorService {
   async onDealStageChanged(data: any) {
     try {
       const { deal, oldStage, newStage, companyId } = data;
-      logger.info('Curator: deal.stage_changed', { dealId: deal.id, oldStage, newStage });
+      logger.info({ dealId: deal.id, oldStage, newStage }, 'Curator: deal.stage_changed');
 
       // Buscar/criar Zettel.NEGOTIATION do deal
       let negotiationZettel = await this.findZettelBySource('deal', deal.id, 'NEGOTIATION');
@@ -119,7 +119,7 @@ export class CuratorService {
       });
 
     } catch (error) {
-      logger.error('Curator: onDealStageChanged failed', { error, data });
+      logger.error({ error, data }, 'Curator: onDealStageChanged failed');
     }
   }
 
@@ -129,7 +129,7 @@ export class CuratorService {
   async onDealClosed(data: any) {
     try {
       const { deal, result, companyId } = data; // result: 'WON' ou 'LOST'
-      logger.info('Curator: deal.closed', { dealId: deal.id, result });
+      logger.info({ dealId: deal.id, result }, 'Curator: deal.closed');
 
       // Gerar Zettel.LEARNING com IA
       const learningContent = await this.generateLearningFromDeal(deal, result);
@@ -156,10 +156,10 @@ export class CuratorService {
         await this.createLink(learningZettel.id, negotiationZettel.id, 'RELATES', companyId);
       }
 
-      logger.info('Curator: Learning zettel created', { zettelId: learningZettel.id });
+      logger.info({ zettelId: learningZettel.id }, 'Curator: Learning zettel created');
 
     } catch (error) {
-      logger.error('Curator: onDealClosed failed', { error, data });
+      logger.error({ error, data }, 'Curator: onDealClosed failed');
     }
   }
 
@@ -169,7 +169,7 @@ export class CuratorService {
   async onInteractionCreated(data: any) {
     try {
       const { interaction, companyId } = data;
-      logger.info('Curator: interaction.created', { interactionId: interaction.id });
+      logger.info({ interactionId: interaction.id }, 'Curator: interaction.created');
 
       // Se tem contactId, atualizar Zettel.CLIENT
       if (interaction.contactId) {
@@ -201,7 +201,7 @@ export class CuratorService {
       }
 
     } catch (error) {
-      logger.error('Curator: onInteractionCreated failed', { error, data });
+      logger.error({ error, data }, 'Curator: onInteractionCreated failed');
     }
   }
 
@@ -388,7 +388,7 @@ export class CuratorService {
       return Array.isArray(parsed) ? parsed : [];
 
     } catch (error) {
-      logger.error('Failed to detect commitments', { error });
+      logger.error({ error }, 'Failed to detect commitments');
       return [];
     }
   }
@@ -423,7 +423,7 @@ export class CuratorService {
       return response.choices[0]?.message?.content || 'Sem conteúdo gerado';
 
     } catch (error) {
-      logger.error('Failed to generate learning', { error });
+      logger.error({ error }, 'Failed to generate learning');
       return `# Lições Aprendidas\n\n_Erro ao gerar conteúdo automaticamente. Deal ${result}._`;
     }
   }
@@ -469,7 +469,7 @@ export class CuratorService {
     } catch (error) {
       // Ignora se link já existe
       if (!(error as any).code?.includes('unique')) {
-        logger.error('Failed to create link', { error });
+        logger.error({ error }, 'Failed to create link');
       }
     }
   }

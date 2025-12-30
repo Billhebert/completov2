@@ -92,15 +92,15 @@ export class PeopleGrowthService {
         }
       }
 
-      logger.info('Gaps detected from interaction', {
+      logger.info({
         interactionId,
         gapsCount: gaps.length
-      });
+      }, 'Gaps detected from interaction');
 
       return gaps;
 
     } catch (error) {
-      logger.error('Failed to detect gaps from interaction', { error, interactionId });
+      logger.error({ error, interactionId }, 'Failed to detect gaps from interaction');
       return [];
     }
   }
@@ -139,13 +139,13 @@ export class PeopleGrowthService {
         });
       }
 
-      logger.info('Gaps created from simulation', {
+      logger.info({
         sessionId,
         gapsCount: evaluation.gaps.length
-      });
+      }, 'Gaps created from simulation');
 
     } catch (error) {
-      logger.error('Failed to create gaps from simulation', { error, sessionId });
+      logger.error({ error, sessionId }, 'Failed to create gaps from simulation');
     }
   }
 
@@ -177,7 +177,7 @@ export class PeopleGrowthService {
       return paths;
 
     } catch (error) {
-      logger.error('Failed to suggest learning path', { error, gapId });
+      logger.error({ error, gapId }, 'Failed to suggest learning path');
       return [];
     }
   }
@@ -202,7 +202,7 @@ export class PeopleGrowthService {
       }
     });
 
-    logger.info('Gap closed', { gapId, userId });
+    logger.info({ gapId, userId }, 'Gap closed');
   }
 
   /**
@@ -248,7 +248,7 @@ Duração: ${interaction.duration || 'N/A'} minutos`
       return content ? JSON.parse(content) : { gaps: [] };
 
     } catch (error) {
-      logger.error('AI analysis failed', { error });
+      logger.error({ error }, 'AI analysis failed');
       return { gaps: [] };
     }
   }

@@ -39,11 +39,11 @@ export class WorkflowExecutor {
     const executionId = await this.createExecution(workflow.id, context);
 
     try {
-      logger.info('[Workflow] Starting execution', {
+      logger.info({
         workflowId: workflow.id,
         executionId,
         event: context.trigger.event
-      });
+      }, '[Workflow] Starting execution');
 
       const definition: WorkflowDefinition = workflow.definition;
       const logs: any[] = [];
@@ -60,10 +60,10 @@ export class WorkflowExecutor {
       // 3. Marcar como completo
       await this.finishExecution(executionId, 'COMPLETED', logs);
 
-      logger.info('[Workflow] Execution completed', { executionId });
+      logger.info({ executionId }, '[Workflow] Execution completed');
 
     } catch (error: any) {
-      logger.error('[Workflow] Execution failed', { executionId, error });
+      logger.error({ executionId, error }, '[Workflow] Execution failed');
       await this.finishExecution(executionId, 'FAILED', [], error.message);
       throw error;
     }
@@ -78,7 +78,7 @@ export class WorkflowExecutor {
     context: ExecutionContext,
     logs: any[]
   ): Promise<void> {
-    logger.info('[Workflow] Executing node', { nodeId: node.id, type: node.type });
+    logger.info({ nodeId: node.id, type: node.type }, '[Workflow] Executing node');
 
     const startTime = Date.now();
     let result: any = null;
@@ -109,7 +109,7 @@ export class WorkflowExecutor {
 
     } catch (err: any) {
       error = err;
-      logger.error('[Workflow] Node execution failed', { nodeId: node.id, error: err });
+      logger.error({ nodeId: node.id, error: err }, '[Workflow] Node execution failed');
     }
 
     // Log da execução do node
@@ -189,13 +189,13 @@ export class WorkflowExecutor {
       }
 
       if (decision.decision === 'LOG_ONLY') {
-        logger.info('[Workflow] Action skipped (Gatekeeper)', { action, reason: decision.reason });
+        logger.info({ action, reason: decision.reason }, '[Workflow] Action skipped (Gatekeeper)');
         return { skipped: true, reason: decision.reason };
       }
 
       if (decision.decision === 'SUGGEST') {
         // Criar pending action para aprovação
-        logger.info('[Workflow] Action requires approval', { action });
+        logger.info({ action }, '[Workflow] Action requires approval');
         return { requiresApproval: true };
       }
     }
@@ -210,7 +210,7 @@ export class WorkflowExecutor {
   private async executeDelay(node: WorkflowNode, context: ExecutionContext): Promise<any> {
     const { duration } = node.config; // em segundos
 
-    logger.info('[Workflow] Delaying execution', { duration });
+    logger.info({ duration }, '[Workflow] Delaying execution');
     await this.sleep(duration * 1000);
 
     return { delayed: true, duration };
@@ -258,7 +258,7 @@ export class WorkflowExecutor {
       }
     });
 
-    logger.info('[Workflow] Zettel created', { zettelId: zettel.id });
+    logger.info({ zettelId: zettel.id }, '[Workflow] Zettel created');
     return { zettelId: zettel.id };
   }
 
@@ -279,12 +279,17 @@ export class WorkflowExecutor {
     });
 
     await eventBus.emit('notification.sent', {
-      userId: params.userId,
+      type: 'notification.sent',
+      version: 'v1',
+      timestamp: new Date(),
       companyId: context.companyId,
-      title: params.title
+      userId: params.userId,
+      data: {
+        title: params.title
+      }
     });
 
-    logger.info('[Workflow] Notification sent', { userId: params.userId });
+    logger.info({ userId: params.userId }, '[Workflow] Notification sent');
     return { sent: true };
   }
 
@@ -299,7 +304,7 @@ export class WorkflowExecutor {
       data: params.data
     });
 
-    logger.info('[Workflow] Contact updated', { contactId });
+    logger.info({ contactId }, '[Workflow] Contact updated');
     return { contactId, updated: true };
   }
 
@@ -318,7 +323,7 @@ export class WorkflowExecutor {
       }
     });
 
-    logger.info('[Workflow] Task created', { taskId: task.id });
+    logger.info({ taskId: task.id }, '[Workflow] Task created');
     return { taskId: task.id };
   }
 
@@ -332,7 +337,7 @@ export class WorkflowExecutor {
       custom: params.payload || {}
     });
 
-    logger.info('[Workflow] Webhook sent', { url: params.url, status: response.status });
+    logger.info({ url: params.url, status: response.status }, '[Workflow] Webhook sent');
     return { sent: true, status: response.status };
   }
 

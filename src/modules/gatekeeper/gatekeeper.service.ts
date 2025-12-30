@@ -43,6 +43,11 @@ export class GatekeeperService {
         this.getUser(userId)
       ]);
 
+      // Check if user exists
+      if (!user) {
+        return { decision: 'BLOCK', reason: 'User not found' };
+      }
+
       // 2. Verificar ações proibidas (nível empresa)
       const forbiddenCheck = this.checkForbidden(action, companyPolicy);
       if (forbiddenCheck.blocked) {
@@ -99,7 +104,7 @@ export class GatekeeperService {
       return { decision: 'EXECUTE', reason: 'All checks passed', metadata: { attentionScore } };
 
     } catch (error) {
-      logger.error('Gatekeeper error', { error, params });
+      logger.error({ error, params }, 'Gatekeeper error');
       // Em caso de erro, bloqueia por segurança
       return { decision: 'BLOCK', reason: 'Gatekeeper error - blocking for safety' };
     }
@@ -283,7 +288,7 @@ export class GatekeeperService {
         }
       });
     } catch (error) {
-      logger.error('Failed to log gatekeeper decision', { error });
+      logger.error({ error }, 'Failed to log gatekeeper decision');
     }
   }
 

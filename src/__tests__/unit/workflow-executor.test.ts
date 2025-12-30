@@ -6,14 +6,16 @@ import {
   createTestContact,
   mockOpenAI,
 } from '../helpers/test-helpers';
-import { eventBusMock } from '../mocks/event-bus.mock';
 
 const prisma = new PrismaClient();
 
 // Mock dependencies
-jest.mock('../../core/event-bus', () => ({
-  eventBus: eventBusMock,
-}));
+jest.mock('../../core/event-bus', () => {
+  const { eventBusMock } = require('../mocks/event-bus.mock');
+  return {
+    eventBus: eventBusMock,
+  };
+});
 
 jest.mock('openai', () => {
   return {
@@ -28,6 +30,7 @@ describe('WorkflowExecutor', () => {
   let contact: any;
 
   beforeEach(async () => {
+    const { eventBusMock } = require('../mocks/event-bus.mock');
     executor = new WorkflowExecutor();
     company = await createTestCompany();
     user = await createTestUser(company.id, 'agent');

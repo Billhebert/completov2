@@ -12,6 +12,7 @@ const prisma = new PrismaClient();
 
 // Mock OpenAI
 jest.mock('openai', () => {
+  const { mockOpenAI } = require('../helpers/test-helpers');
   return {
     OpenAI: jest.fn().mockImplementation(() => mockOpenAI()),
   };
@@ -242,8 +243,10 @@ describe('PeopleGrowthService', () => {
       });
 
       expect(dbGaps.length).toBe(2);
-      expect(dbGaps[0].evidence[0].type).toBe('simulation');
-      expect(dbGaps[0].evidence[0].sessionId).toBe(session.id);
+      expect(Array.isArray(dbGaps[0].evidence)).toBe(true);
+      const evidence = dbGaps[0].evidence as any[];
+      expect(evidence[0].type).toBe('simulation');
+      expect(evidence[0].sessionId).toBe(session.id);
     });
 
     it('should skip if no gaps in evaluation', async () => {

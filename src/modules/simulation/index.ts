@@ -32,7 +32,7 @@ router.get('/scenarios', async (req: Request, res: Response) => {
 
     res.json({ data: scenarios });
   } catch (error: any) {
-    logger.error('Error listing scenarios', { error });
+    logger.error({ error }, 'Error listing scenarios');
     res.status(500).json({ error: 'Failed to list scenarios' });
   }
 });
@@ -67,7 +67,7 @@ router.post('/scenarios', async (req: Request, res: Response) => {
     res.status(201).json(scenario);
 
   } catch (error: any) {
-    logger.error('Error creating scenario', { error });
+    logger.error({ error }, 'Error creating scenario');
     res.status(500).json({ error: 'Failed to create scenario' });
   }
 });
@@ -126,7 +126,7 @@ router.post('/start', async (req: Request, res: Response) => {
     });
 
   } catch (error: any) {
-    logger.error('Error starting simulation', { error });
+    logger.error({ error }, 'Error starting simulation');
     res.status(500).json({ error: 'Failed to start simulation' });
   }
 });
@@ -184,7 +184,7 @@ router.post('/:id/message', async (req: Request, res: Response) => {
     res.json({ response: personaResponse });
 
   } catch (error: any) {
-    logger.error('Error sending message', { error });
+    logger.error({ error }, 'Error sending message');
     res.status(500).json({ error: 'Failed to send message' });
   }
 });
@@ -230,7 +230,7 @@ router.post('/:id/end', async (req: Request, res: Response) => {
     res.json(evaluation);
 
   } catch (error: any) {
-    logger.error('Error ending simulation', { error });
+    logger.error({ error }, 'Error ending simulation');
     res.status(500).json({ error: 'Failed to end simulation' });
   }
 });
@@ -255,7 +255,7 @@ router.get('/history', async (req: Request, res: Response) => {
     res.json({ data: sessions });
 
   } catch (error: any) {
-    logger.error('Error fetching history', { error });
+    logger.error({ error }, 'Error fetching history');
     res.status(500).json({ error: 'Failed to fetch history' });
   }
 });
@@ -294,7 +294,7 @@ Instruções:
     return response.choices[0]?.message?.content || 'Desculpe, não consegui gerar resposta.';
 
   } catch (error) {
-    logger.error('Failed to generate persona message', { error });
+    logger.error({ error }, 'Failed to generate persona message');
     return 'Erro ao gerar resposta da persona.';
   }
 }
@@ -324,7 +324,7 @@ async function evaluateSession(transcript: any[], rubric: any): Promise<any> {
     return content ? JSON.parse(content) : { score: 0, feedback: 'Erro na avaliação' };
 
   } catch (error) {
-    logger.error('Failed to evaluate session', { error });
+    logger.error({ error }, 'Failed to evaluate session');
     return { score: 0, feedback: 'Erro ao avaliar simulação', strengths: [], improvements: [] };
   }
 }
@@ -356,7 +356,7 @@ ${evaluation.feedback}`,
       }
     });
   } catch (error) {
-    logger.error('Failed to create learning zettel', { error });
+    logger.error({ error }, 'Failed to create learning zettel');
   }
 }
 
