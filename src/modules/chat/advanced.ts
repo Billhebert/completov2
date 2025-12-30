@@ -179,6 +179,7 @@ export function setupChatAdvancedRoutes(
           data: {
             companyId: req.companyId!,
             channelId: req.params.id,
+            authorId: req.user!.id,
             senderId: req.user!.id,
             content: caption || `Shared file: ${file.filename}`,
             messageType: 'file',
@@ -313,6 +314,7 @@ export function setupChatAdvancedRoutes(
           data: {
             companyId: req.companyId!,
             channelId: req.params.id,
+            authorId: req.user!.id,
             senderId: req.user!.id,
             content: '[Voice message]',
             messageType: 'voice',
@@ -503,6 +505,7 @@ export function setupChatAdvancedRoutes(
           data: {
             companyId: req.companyId!,
             channelId,
+            authorId: req.user!.id,
             senderId: req.user!.id,
             content: response,
             messageType: 'bot',
