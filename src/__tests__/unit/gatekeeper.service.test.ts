@@ -122,20 +122,21 @@ describe('GatekeeperService', () => {
     });
 
     it('should respect quiet hours', async () => {
-      const now = new Date();
-      const quietStart = new Date(now);
-      quietStart.setHours(now.getHours() - 1);
+      // Use luxon to create times in the target timezone
+      const { DateTime } = require('luxon');
+      const timezone = 'America/Sao_Paulo';
+      const now = DateTime.now().setZone(timezone);
 
-      const quietEnd = new Date(now);
-      quietEnd.setHours(now.getHours() + 1);
+      const quietStart = now.minus({ hours: 1 });
+      const quietEnd = now.plus({ hours: 1 });
 
       await createTestAttentionProfile(agent.id, {
         quietHours: [
           {
-            start: quietStart.toISOString().split('T')[1].substring(0, 5),
-            end: quietEnd.toISOString().split('T')[1].substring(0, 5),
-            days: [now.getDay()],
-            timezone: 'America/Sao_Paulo',
+            start: quietStart.toFormat('HH:mm'),
+            end: quietEnd.toFormat('HH:mm'),
+            days: [now.weekday], // Use luxon's weekday (1-7)
+            timezone: timezone,
           },
         ],
       });
