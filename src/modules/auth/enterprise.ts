@@ -4,7 +4,7 @@ import { PrismaClient } from '@prisma/client';
 import { authenticate, tenantIsolation, validateBody } from '../../core/middleware';
 import { z } from 'zod';
 import crypto from 'crypto';
-import { authenticator } from 'otplib';
+// import { authenticator } from 'otplib';
 
 const magicLinkSchema = z.object({ email: z.string().email() });
 const passwordPolicySchema = z.object({
@@ -42,7 +42,7 @@ export function setupEnterpriseAuthRoutes(router: Router, prisma: PrismaClient) 
 
       if (!link) return res.status(400).json({ success: false, error: { message: 'Invalid or expired link' } });
 
-      const user = await prisma.user.findUnique({ where: { email: link.email } });
+      const user = await prisma.user.findFirst({ where: { email: link.email } });
       if (!user) return res.status(404).json({ success: false, error: { message: 'User not found' } });
 
       await prisma.magicLink.update({ where: { id: link.id }, data: { used: true } });
@@ -85,7 +85,7 @@ export function setupEnterpriseAuthRoutes(router: Router, prisma: PrismaClient) 
     try {
       const history = await prisma.loginHistory.findMany({
         where: { userId: req.user!.id },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { timestamp: 'desc' },
         take: 50,
       });
       res.json({ success: true, data: history });

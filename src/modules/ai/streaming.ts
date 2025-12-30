@@ -55,9 +55,7 @@ export function setupAIStreamingRoutes(router: Router, prisma: PrismaClient) {
           const conversation = await prisma.conversation.create({
             data: {
               companyId: req.companyId!,
-              userId: req.user!.id,
-              model,
-              messages: JSON.stringify(messages),
+              channel: 'ai',
               status: 'streaming',
             },
           });

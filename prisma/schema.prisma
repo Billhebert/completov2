@@ -2002,11 +2002,12 @@ model ChatbotState {
   chatbotId     String
   conversationId String?
   currentNodeId String?  // Current node in the flow
-  name          String
-  type          String   // question, action, end
-  config        Json
+  currentState  String   @default("initial") // Current state name
+  name          String   @default("default")
+  type          String   @default("question") // question, action, end
+  config        Json     @default("{}")
   variables     String?  // State variables as string (JSON serialized)
-  nextStates    String[] // IDs of possible next states
+  nextStates    String[] @default([]) // IDs of possible next states
   createdAt     DateTime @default(now())
 
   chatbot       Chatbot  @relation(fields: [chatbotId], references: [id], onDelete: Cascade)

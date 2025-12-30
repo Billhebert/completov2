@@ -26,7 +26,7 @@ export function setupFinancialReportsRoutes(router: Router, prisma: PrismaClient
           where: {
             companyId: req.companyId!,
             status: 'paid',
-            paidAt: {
+            paidDate: {
               gte: start,
               lte: end,
             },
@@ -145,7 +145,7 @@ export function setupFinancialReportsRoutes(router: Router, prisma: PrismaClient
           where: {
             companyId: req.companyId!,
             status: 'paid',
-            paidAt: { lte: asOfDate },
+            paidDate: { lte: asOfDate },
           },
         });
 
@@ -218,7 +218,7 @@ export function setupFinancialReportsRoutes(router: Router, prisma: PrismaClient
           where: {
             companyId: req.companyId!,
             status: 'paid',
-            paidAt: {
+            paidDate: {
               gte: start,
               lte: end,
             },
