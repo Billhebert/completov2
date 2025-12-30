@@ -2334,3 +2334,149 @@ model PasswordPolicy {
 
   @@map("password_policies")
 }
+
+// ============================================
+// DEDUPLICATION & INTELLIGENT MERGE
+// ============================================
+
+model DuplicateDetection {
+  id          String   @id @default(uuid())
+  companyId   String
+  entityType  String   // contact, deal, company
+  candidates  Json     // Array of duplicate candidates
+  status      String   @default("pending") // pending, merged, rejected, ignored
+  reviewedAt  DateTime?
+  reviewedBy  String?
+  createdAt   DateTime @default(now())
+
+  @@index([companyId, status])
+  @@index([entityType])
+  @@map("duplicate_detections")
+}
+
+model MergeHistory {
+  id          String   @id @default(uuid())
+  companyId   String
+  entityType  String   // contact, deal, etc
+  primaryId   String   // ID of the primary (kept) entity
+  mergedId    String   // ID of the merged (deleted) entity
+  mergedData  Json     // Backup of the merged entity
+  mergedBy    String?  // User who performed the merge
+  createdAt   DateTime @default(now())
+
+  @@index([companyId, entityType])
+  @@index([primaryId])
+  @@index([mergedId])
+  @@map("merge_history")
+}
+
+model DeduplicationFeedback {
+  id          String   @id @default(uuid())
+  companyId   String
+  primaryId   String
+  mergedIds   String[] // Array of merged entity IDs
+  action      String   // accepted, rejected
+  timestamp   DateTime @default(now())
+
+  @@index([companyId])
+  @@map("deduplication_feedback")
+}
+
+// ============================================
+// INTELLIGENT FEEDBACK SYSTEM
+// ============================================
+
+model IntelligentFeedback {
+  id          String   @id @default(uuid())
+  companyId   String
+  userId      String
+  action      String   // Action taken (merge, create_contact, etc)
+  entityType  String   // Type of entity affected
+  entityId    String   // ID of entity
+  context     Json     // Context when action was taken
+  result      String   // success, error, skipped
+  metadata    Json     // Additional metadata
+  timestamp   DateTime @default(now())
+
+  @@index([companyId, userId])
+  @@index([action, entityType])
+  @@index([timestamp])
+  @@map("intelligent_feedback")
+}
+
+model FeedbackStats {
+  id           String   @id @default(uuid())
+  companyId    String
+  action       String
+  entityType   String
+  totalCount   Int      @default(0)
+  successCount Int      @default(0)
+  errorCount   Int      @default(0)
+  skippedCount Int      @default(0)
+  lastOccurrence DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([companyId, action, entityType], name: "companyId_action_entityType")
+  @@index([companyId])
+  @@map("feedback_stats")
+}
+
+model AutomationSuggestion {
+  id            String   @id @default(uuid())
+  companyId     String
+  action        String   // Action to automate
+  entityType    String
+  confidence    Float    // 0-1 confidence score
+  reason        String   @db.Text
+  suggestedRule Json     // Suggested automation rule
+  status        String   @default("pending") // pending, accepted, rejected
+  reviewedAt    DateTime?
+  createdAt     DateTime @default(now())
+
+  @@index([companyId, status])
+  @@index([confidence])
+  @@map("automation_suggestions")
+}
+
+model MLTrainingData {
+  id          String   @id @default(uuid())
+  companyId   String
+  dataType    String   // feedback, merge, classification, etc
+  features    Json     // Feature set for ML
+  label       String   // Expected output/label
+  timestamp   DateTime @default(now())
+
+  @@index([companyId, dataType])
+  @@index([timestamp])
+  @@map("ml_training_data")
+}
+
+// ============================================
+// RAG DOCUMENTS (Per-Company Upload)
+// ============================================
+
+model RAGDocument {
+  id              String   @id @default(uuid())
+  companyId       String
+  uploadedBy      String
+  title           String
+  filename        String
+  fileUrl         String   // URL or path to file
+  fileHash        String   // SHA-256 hash for deduplication
+  fileSize        Int
+  mimeType        String
+  tags            String[]
+  metadata        Json     // Additional metadata
+  status          String   @default("pending") // pending, processing, ready, failed
+  totalChunks     Int      @default(0)
+  processedChunks Int      @default(0)
+  error           String?  @db.Text
+  processedAt     DateTime?
+  createdAt       DateTime @default(now())
+
+  @@unique([companyId, fileHash])
+  @@index([companyId, status])
+  @@index([uploadedBy])
+  @@map("rag_documents")
+}
