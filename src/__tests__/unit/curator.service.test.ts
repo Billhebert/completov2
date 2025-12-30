@@ -6,18 +6,35 @@ import {
   createTestContact,
   createTestDeal,
   createTestInteraction,
-  mockOpenAI,
 } from '../helpers/test-helpers';
 
 const prisma = new PrismaClient();
 
-// Mock OpenAI
+// Create shared mock - must be outside jest.mock to be accessible from tests
+// but referenced inside the factory via closure
+let sharedMockCreate: jest.Mock;
+
 jest.mock('openai', () => {
-  const { mockOpenAI } = require('../helpers/test-helpers');
+  // Create the mock inside the factory
+  sharedMockCreate = jest.fn();
+
   return {
-    OpenAI: jest.fn().mockImplementation(() => mockOpenAI()),
+    OpenAI: jest.fn(() => ({
+      chat: {
+        completions: {
+          create: sharedMockCreate,
+        },
+      },
+    })),
   };
 });
+
+// Wrap for easier access in tests
+const openAIMock = {
+  get mockCreate() {
+    return sharedMockCreate;
+  },
+};
 
 describe('CuratorService', () => {
   let curatorService: CuratorService;
@@ -26,6 +43,7 @@ describe('CuratorService', () => {
   let contact: any;
 
   beforeEach(async () => {
+    openAIMock.mockCreate.mockReset();
     curatorService = new CuratorService();
     company = await createTestCompany();
     user = await createTestUser(company.id, 'agent');
@@ -37,11 +55,13 @@ describe('CuratorService', () => {
       const conversationData = {
         conversation: {
           id: 'conv-123',
-          companyId: company.id,
-          contactId: contact.id,
-          ownerId: user.id,
+          contactName: contact.name,
+          contactEmail: contact.email,
+          contactPhone: contact.phone,
+          userId: user.id,
           channel: 'whatsapp',
         },
+        companyId: company.id,
       };
 
       await curatorService.onConversationCreated(conversationData);
@@ -57,7 +77,7 @@ describe('CuratorService', () => {
       const negotiationZettel = zettels.find((z) => z.nodeType === 'NEGOTIATION');
 
       if (clientZettel) {
-        expect(clientZettel.title).toContain(contact.firstName);
+        expect(clientZettel.title).toContain(contact.name);
         expect(clientZettel.sourceType).toBe('conversation');
         expect(clientZettel.sourceId).toBe(conversationData.conversation.id);
       }
@@ -74,7 +94,7 @@ describe('CuratorService', () => {
         data: {
           companyId: company.id,
           createdById: user.id,
-          title: `${contact.firstName} ${contact.lastName}`,
+          title: contact.name,
           content: 'Existing contact zettel',
           nodeType: 'CLIENT',
           tags: ['contact'],
@@ -84,11 +104,13 @@ describe('CuratorService', () => {
       const conversationData = {
         conversation: {
           id: 'conv-123',
-          companyId: company.id,
-          contactId: contact.id,
-          ownerId: user.id,
+          contactName: contact.name,
+          contactEmail: contact.email,
+          contactPhone: contact.phone,
+          userId: user.id,
           channel: 'whatsapp',
         },
+        companyId: company.id,
       };
 
       await curatorService.onConversationCreated(conversationData);
@@ -110,29 +132,31 @@ describe('CuratorService', () => {
       const messageData = {
         message: {
           id: 'msg-123',
-          companyId: company.id,
           conversationId: 'conv-123',
           senderId: user.id,
           content: 'I will send you the proposal by tomorrow',
           direction: 'outbound',
         },
+        conversation: {
+          id: 'conv-123',
+          assignedToId: user.id,
+        },
+        companyId: company.id,
       };
 
       // Mock OpenAI to return commitments
-      const openAI = mockOpenAI();
-      (openAI.chat.completions.create as jest.Mock).mockResolvedValue({
+      (openAIMock.mockCreate as jest.Mock).mockResolvedValueOnce({
         choices: [
           {
             message: {
-              content: JSON.stringify({
-                commitments: [
-                  {
-                    action: 'Enviar proposta',
-                    deadline: 'tomorrow',
-                    priority: 'HIGH',
-                  },
-                ],
-              }),
+              content: JSON.stringify([
+                {
+                  title: 'Enviar proposta',
+                  description: 'Enviar a proposta comercial para o cliente',
+                  dueDate: new Date(Date.now() + 86400000).toISOString(),
+                  priority: 'HIGH',
+                },
+              ]),
             },
           },
         ],
@@ -156,23 +180,24 @@ describe('CuratorService', () => {
       const messageData = {
         message: {
           id: 'msg-123',
-          companyId: company.id,
           conversationId: 'conv-123',
           senderId: user.id,
           content: 'Hello, how are you?',
           direction: 'outbound',
         },
+        conversation: {
+          id: 'conv-123',
+          assignedToId: user.id,
+        },
+        companyId: company.id,
       };
 
       // Mock OpenAI to return no commitments
-      const openAI = mockOpenAI();
-      (openAI.chat.completions.create as jest.Mock).mockResolvedValue({
+      (openAIMock.mockCreate as jest.Mock).mockResolvedValueOnce({
         choices: [
           {
             message: {
-              content: JSON.stringify({
-                commitments: [],
-              }),
+              content: JSON.stringify([]),
             },
           },
         ],
@@ -192,66 +217,69 @@ describe('CuratorService', () => {
   });
 
   describe('onDealStageChanged', () => {
-    it('should create LEARNING zettel when deal advances', async () => {
+    it('should create/update NEGOTIATION zettel when deal stage changes', async () => {
       const deal = await createTestDeal(company.id, contact.id, user.id, {
         stage: 'PROPOSAL',
+        title: 'Test Deal',
       });
 
       const dealData = {
         deal: {
           id: deal.id,
-          companyId: company.id,
           contactId: contact.id,
           ownerId: user.id,
-          previousStage: 'PROSPECTING',
-          currentStage: 'PROPOSAL',
+          title: deal.title,
+          value: deal.value,
+          currency: deal.currency,
+          stage: 'PROPOSAL',
         },
+        oldStage: 'PROSPECTING',
+        newStage: 'PROPOSAL',
+        companyId: company.id,
       };
 
       await curatorService.onDealStageChanged(dealData);
 
-      const learningZettels = await prisma.knowledgeNode.findMany({
+      const negotiationZettels = await prisma.knowledgeNode.findMany({
         where: {
           companyId: company.id,
-          nodeType: 'LEARNING',
+          nodeType: 'NEGOTIATION',
         },
       });
 
-      expect(learningZettels.length).toBeGreaterThan(0);
-      expect(learningZettels[0].title).toContain('avançou');
+      expect(negotiationZettels.length).toBeGreaterThan(0);
+      expect(negotiationZettels[0].content).toContain('PROSPECTING');
+      expect(negotiationZettels[0].content).toContain('PROPOSAL');
     });
   });
 
   describe('onDealClosed', () => {
     it('should create detailed LEARNING zettel when deal is won', async () => {
       const deal = await createTestDeal(company.id, contact.id, user.id, {
-        status: 'WON',
+        stage: 'WON',
         value: 50000,
+        title: 'Big Deal Won',
       });
 
       const dealData = {
         deal: {
           id: deal.id,
-          companyId: company.id,
           contactId: contact.id,
           ownerId: user.id,
-          status: 'WON',
+          title: deal.title,
+          stage: 'WON',
           value: 50000,
         },
         result: 'WON',
+        companyId: company.id,
       };
 
       // Mock OpenAI to return analysis
-      const openAI = mockOpenAI();
-      (openAI.chat.completions.create as jest.Mock).mockResolvedValue({
+      (openAIMock.mockCreate as jest.Mock).mockResolvedValueOnce({
         choices: [
           {
             message: {
-              content: JSON.stringify({
-                lessons: ['Good rapport building', 'Clear value proposition'],
-                patterns: ['Responded quickly to objections'],
-                recommendations: ['Continue this approach'],
-              }),
+              content: `# Lições Aprendidas\n\n## O que funcionou\n- Good rapport building\n- Clear value proposition\n\n## Padrões\n- Responded quickly to objections\n\n## Recomendações\n- Continue this approach`,
             },
           },
         ],
@@ -267,25 +295,39 @@ describe('CuratorService', () => {
       });
 
       expect(learningZettels.length).toBeGreaterThan(0);
-      expect(learningZettels[0].title).toContain('Ganho');
+      expect(learningZettels[0].title).toContain('Lições');
+      expect(learningZettels[0].title).toContain('WON');
       expect(learningZettels[0].content).toContain('Good rapport building');
     });
 
     it('should create LEARNING zettel when deal is lost', async () => {
       const deal = await createTestDeal(company.id, contact.id, user.id, {
-        status: 'LOST',
+        stage: 'LOST',
+        title: 'Lost Deal',
       });
 
       const dealData = {
         deal: {
           id: deal.id,
-          companyId: company.id,
           contactId: contact.id,
           ownerId: user.id,
-          status: 'LOST',
+          title: deal.title,
+          stage: 'LOST',
         },
         result: 'LOST',
+        companyId: company.id,
       };
+
+      // Mock OpenAI to return analysis
+      (openAIMock.mockCreate as jest.Mock).mockResolvedValueOnce({
+        choices: [
+          {
+            message: {
+              content: `# Lições Aprendidas\n\n## O que não funcionou\n- Preço muito alto\n- Não demonstramos valor suficiente\n\n## Recomendações\n- Ajustar estratégia de precificação`,
+            },
+          },
+        ],
+      });
 
       await curatorService.onDealClosed(dealData);
 
@@ -297,12 +339,13 @@ describe('CuratorService', () => {
       });
 
       expect(learningZettels.length).toBeGreaterThan(0);
-      expect(learningZettels[0].title).toContain('Perdido');
+      expect(learningZettels[0].title).toContain('Lições');
+      expect(learningZettels[0].title).toContain('LOST');
     });
   });
 
   describe('onInteractionCreated', () => {
-    it('should create relevant zettels based on interaction type', async () => {
+    it('should create/update CLIENT zettel based on interaction', async () => {
       const interaction = await createTestInteraction(company.id, user.id, contact.id, {
         type: 'meeting',
         content: 'Discussed pricing and implementation timeline',
@@ -312,12 +355,13 @@ describe('CuratorService', () => {
       const interactionData = {
         interaction: {
           id: interaction.id,
-          companyId: company.id,
           userId: user.id,
           contactId: contact.id,
           type: 'meeting',
           content: 'Discussed pricing and implementation timeline',
+          timestamp: new Date(),
         },
+        companyId: company.id,
       };
 
       await curatorService.onInteractionCreated(interactionData);
@@ -332,20 +376,23 @@ describe('CuratorService', () => {
 
   describe('Error handling', () => {
     it('should handle OpenAI API errors gracefully', async () => {
-      const openAI = mockOpenAI();
-      (openAI.chat.completions.create as jest.Mock).mockRejectedValue(
+      (openAIMock.mockCreate as jest.Mock).mockRejectedValueOnce(
         new Error('OpenAI API error')
       );
 
       const messageData = {
         message: {
           id: 'msg-123',
-          companyId: company.id,
           conversationId: 'conv-123',
           senderId: user.id,
           content: 'Test message',
           direction: 'outbound',
         },
+        conversation: {
+          id: 'conv-123',
+          assignedToId: user.id,
+        },
+        companyId: company.id,
       };
 
       // Should not throw error

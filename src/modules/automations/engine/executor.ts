@@ -65,7 +65,7 @@ export class WorkflowExecutor {
     } catch (error: any) {
       logger.error({ executionId, error }, '[Workflow] Execution failed');
       await this.finishExecution(executionId, 'FAILED', [], error.message);
-      throw error;
+      // Don't re-throw - handle errors gracefully
     }
   }
 
