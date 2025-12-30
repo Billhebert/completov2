@@ -146,6 +146,7 @@ model User {
   
   // Omnichannel
   assignedConversations ConversationAssignment[]
+  assignedToConversations Conversation[] @relation("ConversationAssignedTo")
   conversationNotes ConversationNote[]
   
   // Notifications
@@ -949,9 +950,11 @@ model Conversation {
   channel String
   channelAccountId String?
   externalId String?
+  contactId String?     // Related contact ID
   contactName String?
   contactPhone String?
   contactEmail String?
+  assignedToId String?  // Assigned user ID
   status String @default("open")
   priority String @default("normal")
   subject String?
@@ -973,6 +976,7 @@ model Conversation {
   tokensUsed Int?     // Tokens consumed in the conversation
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  assignedTo User? @relation("ConversationAssignedTo", fields: [assignedToId], references: [id])
   assignments ConversationAssignment[]
   notes ConversationNote[]
   tags_relation ConversationTag[]
@@ -984,6 +988,8 @@ model Conversation {
   @@index([companyId, status])
   @@index([companyId, channel])
   @@index([userId])
+  @@index([contactId])
+  @@index([assignedToId])
 }
 
 model ConversationAssignment {
@@ -1043,14 +1049,19 @@ model SLAEvent {
 
 model CSATSurvey {
   id String @id @default(uuid())
+  companyId String?
   conversationId String
   score Int?
+  rating Int? // Alias for score
   comment String? @db.Text
+  tags String[]  // Tags for categorization
   sentAt DateTime @default(now())
   respondedAt DateTime?
-  
+  createdAt DateTime @default(now())
+
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  
+
+  @@index([companyId])
   @@map("csat_surveys")
 }
 
@@ -2031,6 +2042,7 @@ model SlaRule {
   companyId       String
   name            String
   priority        String   // low, medium, high, urgent
+  channels        String[] // Applicable channels
   responseTime    Int      // minutes
   firstResponseTime Int?   // First response time in minutes
   resolutionTime  Int      // minutes

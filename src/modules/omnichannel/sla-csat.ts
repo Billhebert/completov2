@@ -123,7 +123,7 @@ export function setupSLACSATRoutes(router: Router, prisma: PrismaClient, eventBu
         const rule = await prisma.slaRule.findFirst({
           where: {
             companyId: req.companyId!,
-            active: true,
+            isActive: true,
             priority: conversation.priority,
             channels: conversation.channel ? { has: conversation.channel } : undefined,
           },
@@ -137,7 +137,7 @@ export function setupSLACSATRoutes(router: Router, prisma: PrismaClient, eventBu
         }
 
         const firstMessage = conversation.messages[0];
-        const firstResponseDeadline = new Date(firstMessage.timestamp.getTime() + rule.firstResponseTime * 60000);
+        const firstResponseDeadline = new Date(firstMessage.timestamp.getTime() + (rule.firstResponseTime || rule.responseTime) * 60000);
         const resolutionDeadline = new Date(firstMessage.timestamp.getTime() + rule.resolutionTime * 60000);
 
         // Check first response
@@ -227,7 +227,7 @@ export function setupSLACSATRoutes(router: Router, prisma: PrismaClient, eventBu
           const rule = await prisma.slaRule.findFirst({
             where: {
               companyId: req.companyId!,
-              active: true,
+              isActive: true,
               priority: conversation.priority,
             },
           });
@@ -237,11 +237,11 @@ export function setupSLACSATRoutes(router: Router, prisma: PrismaClient, eventBu
           totalWithSLA++;
 
           const firstMessage = conversation.messages[0];
-          const firstResponse = conversation.messages.find(m => m.direction === 'outbound');
+          const firstResponse = conversation.messages.find((m: any) => m.direction === 'outbound');
 
           if (firstResponse) {
             const responseTime = (firstResponse.timestamp.getTime() - firstMessage.timestamp.getTime()) / 60000;
-            if (responseTime <= rule.firstResponseTime) firstResponseMet++;
+            if (responseTime <= (rule.firstResponseTime || rule.responseTime)) firstResponseMet++;
           }
 
           if (conversation.closedAt) {
@@ -286,7 +286,7 @@ export function setupSLACSATRoutes(router: Router, prisma: PrismaClient, eventBu
           });
         }
 
-        const survey = await prisma.csatSurvey.create({
+        const survey = await prisma.cSATSurvey.create({
           data: {
             conversationId,
             rating,
@@ -340,7 +340,7 @@ export function setupSLACSATRoutes(router: Router, prisma: PrismaClient, eventBu
         const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
 
         const [surveys, total] = await Promise.all([
-          prisma.csatSurvey.findMany({
+          prisma.cSATSurvey.findMany({
             where,
             skip,
             take: parseInt(limit as string),
@@ -356,7 +356,7 @@ export function setupSLACSATRoutes(router: Router, prisma: PrismaClient, eventBu
             },
             orderBy: { createdAt: 'desc' },
           }),
-          prisma.csatSurvey.count({ where }),
+          prisma.cSATSurvey.count({ where }),
         ]);
 
         res.json({
@@ -398,26 +398,26 @@ export function setupSLACSATRoutes(router: Router, prisma: PrismaClient, eventBu
           ratingDistribution,
           npsScores,
         ] = await Promise.all([
-          prisma.csatSurvey.count({ where }),
-          prisma.csatSurvey.aggregate({
+          prisma.cSATSurvey.count({ where }),
+          prisma.cSATSurvey.aggregate({
             where,
             _avg: { rating: true },
           }),
-          prisma.csatSurvey.groupBy({
+          prisma.cSATSurvey.groupBy({
             by: ['rating'],
             where,
             _count: true,
           }),
           // NPS calculation (promoters - detractors)
-          prisma.csatSurvey.findMany({
+          prisma.cSATSurvey.findMany({
             where,
             select: { rating: true },
           }),
         ]);
 
         // Calculate NPS
-        const promoters = npsScores.filter(s => s.rating >= 4).length;
-        const detractors = npsScores.filter(s => s.rating <= 2).length;
+        const promoters = npsScores.filter((s: any) => s.rating >= 4).length;
+        const detractors = npsScores.filter((s: any) => s.rating <= 2).length;
         const nps = totalSurveys > 0 
           ? ((promoters - detractors) / totalSurveys) * 100 
           : 0;
@@ -428,7 +428,7 @@ export function setupSLACSATRoutes(router: Router, prisma: PrismaClient, eventBu
             totalSurveys,
             averageRating: avgRating._avg.rating || 0,
             nps,
-            distribution: ratingDistribution.map(r => ({
+            distribution: ratingDistribution.map((r: any) => ({
               rating: r.rating,
               count: r._count,
               percentage: (r._count / totalSurveys) * 100,
@@ -458,7 +458,7 @@ export function setupSLACSATRoutes(router: Router, prisma: PrismaClient, eventBu
           if (endDate) where.createdAt.lte = new Date(endDate as string);
         }
 
-        const surveys = await prisma.csatSurvey.findMany({
+        const surveys = await prisma.cSATSurvey.findMany({
           where,
           include: {
             conversation: {
