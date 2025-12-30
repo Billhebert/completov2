@@ -277,7 +277,8 @@ export function setupLeadScoringRoutes(router: Router, prisma: PrismaClient) {
           data: {
             name: req.body.name,
             description: req.body.description,
-            filters: JSON.stringify(req.body.filters),
+            criteria: req.body.filters || {},
+            filters: req.body.filters || {},
             companyId: req.companyId!,
           },
         });

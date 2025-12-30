@@ -99,9 +99,8 @@ export function setupAIStreamingRoutes(router: Router, prisma: PrismaClient) {
           await prisma.conversation.update({
             where: { id: conversation.id },
             data: {
-              response: fullResponse,
               status: 'completed',
-              completedAt: new Date(),
+              closedAt: new Date(),
             },
           });
 
@@ -123,13 +122,9 @@ export function setupAIStreamingRoutes(router: Router, prisma: PrismaClient) {
           await prisma.conversation.create({
             data: {
               companyId: req.companyId!,
-              userId: req.user!.id,
-              model,
-              messages: JSON.stringify(messages),
-              response: completion.choices[0].message.content || '',
+              channel: 'ai',
               status: 'completed',
-              completedAt: new Date(),
-              tokensUsed: completion.usage?.total_tokens,
+              closedAt: new Date(),
             },
           });
 

@@ -453,6 +453,7 @@ export function setupAdvancedKnowledgeRoutes(
             content: content,
             nodeType: 'document',
             companyId: req.companyId!,
+            createdById: req.user!.id,
           },
         });
 
