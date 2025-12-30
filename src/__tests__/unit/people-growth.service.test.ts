@@ -1,17 +1,17 @@
-// Create mock function storage FIRST, outside jest.mock
-let globalMockCreate: jest.Mock;
+// Create mock BEFORE everything
+const mockCreate = jest.fn();
 
-// Mock OpenAI BEFORE any imports
+// Mock OpenAI module BEFORE any imports
 jest.mock('openai', () => {
-  globalMockCreate = jest.fn();
   return {
-    OpenAI: jest.fn().mockImplementation(function(this: any) {
-      this.chat = {
-        completions: {
-          create: globalMockCreate,
+    OpenAI: jest.fn().mockImplementation(function() {
+      return {
+        chat: {
+          completions: {
+            create: mockCreate,
+          },
         },
       };
-      return this;
     }),
   };
 });
@@ -34,7 +34,7 @@ describe('PeopleGrowthService', () => {
   let contact: any;
 
   beforeEach(async () => {
-    globalMockCreate.mockReset();
+    mockCreate.mockReset();
     service = new PeopleGrowthService();
     company = await createTestCompany();
     agent = await createTestUser(company.id, 'agent');
@@ -51,7 +51,7 @@ describe('PeopleGrowthService', () => {
       });
 
       // Mock OpenAI to return gaps
-      globalMockCreate.mockResolvedValue({
+      mockCreate.mockResolvedValue({
         choices: [
           {
             message: {
@@ -107,7 +107,7 @@ describe('PeopleGrowthService', () => {
       });
 
       // Mock OpenAI to return same gap
-      globalMockCreate.mockResolvedValue({
+      mockCreate.mockResolvedValue({
         choices: [
           {
             message: {
@@ -147,7 +147,7 @@ describe('PeopleGrowthService', () => {
       const interaction = await createTestInteraction(company.id, agent.id, contact.id);
 
       // Mock OpenAI to throw error
-      globalMockCreate.mockRejectedValue(new Error('OpenAI API error'));
+      mockCreate.mockRejectedValue(new Error('OpenAI API error'));
 
       const gaps = await service.detectGapsFromInteraction(interaction.id);
 
@@ -168,7 +168,7 @@ describe('PeopleGrowthService', () => {
       });
 
       // Mock OpenAI to return no gaps
-      globalMockCreate.mockResolvedValue({
+      mockCreate.mockResolvedValue({
         choices: [
           {
             message: {

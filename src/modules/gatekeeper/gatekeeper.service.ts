@@ -55,32 +55,49 @@ export class GatekeeperService {
         return { decision: 'BLOCK', reason: forbiddenCheck.reason };
       }
 
-      // 3. Verificar autonomia máxima por role
+      // 3. Verificar VIP (tem prioridade máxima sobre todas as restrições, exceto BLOCK da empresa)
+      const isVIP = this.checkIfVIP(context, userProfile);
+      if (isVIP) {
+        await this.log(companyId, userId, action, 'EXECUTE', 'VIP context - bypassing restrictions', context);
+        return { decision: 'EXECUTE', reason: 'VIP context allows execution' };
+      }
+
+      // 4. Verificar autonomia máxima por role
       const roleCheck = this.checkRoleAutonomy(action, user.role, companyPolicy);
       if (roleCheck.decision === 'BLOCK') {
         await this.log(companyId, userId, action, 'BLOCK', roleCheck.reason, context);
         return { decision: 'BLOCK', reason: roleCheck.reason };
       }
-      if (roleCheck.decision === 'SUGGEST') {
-        await this.log(companyId, userId, action, 'SUGGEST', roleCheck.reason, context);
-        return { decision: 'SUGGEST', reason: roleCheck.reason };
+
+      // 5. Verificar quiet hours (tem precedência sobre role SUGGEST e preferências do usuário)
+      if (this.isInQuietHours(userProfile)) {
+        await this.log(companyId, userId, action, 'SUGGEST', 'User is in quiet hours', context);
+        return { decision: 'SUGGEST', reason: 'User is in quiet hours' };
       }
 
-      // 4. Verificar preferências do usuário
+      // 6. Verificar preferências do usuário (pode ser mais restritivo que role)
       const userCheck = this.checkUserAutonomy(action, userProfile);
+
+      // Usuário pode ser mais restritivo que role (BLOCK > SUGGEST > LOG_ONLY > EXECUTE)
+      if (userCheck.decision === 'BLOCK') {
+        await this.log(companyId, userId, action, 'BLOCK', userCheck.reason, context);
+        return { decision: 'BLOCK', reason: userCheck.reason };
+      }
+
+      if (userCheck.decision === 'SUGGEST' && roleCheck.decision === 'EXECUTE') {
+        await this.log(companyId, userId, action, 'SUGGEST', userCheck.reason, context);
+        return { decision: 'SUGGEST', reason: userCheck.reason };
+      }
+
       if (userCheck.decision === 'LOG_ONLY') {
         await this.log(companyId, userId, action, 'LOG_ONLY', userCheck.reason, context);
         return { decision: 'LOG_ONLY', reason: userCheck.reason };
       }
 
-      // 5. Verificar quiet hours
-      if (this.isInQuietHours(userProfile)) {
-        // Exceção: Se é VIP, passa
-        const isVIP = this.checkIfVIP(context, userProfile);
-        if (!isVIP) {
-          await this.log(companyId, userId, action, 'LOG_ONLY', 'Quiet hours', context);
-          return { decision: 'LOG_ONLY', reason: 'User is in quiet hours' };
-        }
+      // Se role exige SUGGEST, usar isso (role tem precedência sobre preferências mais permissivas)
+      if (roleCheck.decision === 'SUGGEST') {
+        await this.log(companyId, userId, action, 'SUGGEST', roleCheck.reason, context);
+        return { decision: 'SUGGEST', reason: roleCheck.reason };
       }
 
       // 6. Score de atenção (anti-spam)
@@ -154,6 +171,14 @@ export class GatekeeperService {
     const userAutonomy = profile?.autonomy?.[action];
     if (!userAutonomy) {
       return { decision: 'EXECUTE', reason: 'No user preference for action' };
+    }
+
+    if (userAutonomy === 'BLOCK') {
+      return { decision: 'BLOCK', reason: `User autonomy level is BLOCK` };
+    }
+
+    if (userAutonomy === 'SUGGEST') {
+      return { decision: 'SUGGEST', reason: `User autonomy level is SUGGEST` };
     }
 
     if (userAutonomy === 'LOG_ONLY') {
