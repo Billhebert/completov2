@@ -191,6 +191,9 @@ model User {
   createdFileVersions FileVersion[] @relation("FileVersionCreatedBy")
   createdFileComments FileComment[] @relation("FileCommentCreatedBy")
 
+  // Chatbot - Advanced
+  createdChatbots Chatbot[] @relation("ChatbotCreatedBy")
+
   @@unique([companyId, email])
   @@map("users")
 }
@@ -472,6 +475,7 @@ model Contact {
   deals Deal[]
   interactions Interaction[]
   activities Activity[]
+  invoices Invoice[]
 
   @@unique([companyId, email])
   @@index([stripeCustomerId])
@@ -644,6 +648,7 @@ model Invoice {
   dealId String?
   type String
   status String @default("draft")
+  currency String @default("USD")
   issueDate DateTime @default(now())
   dueDate DateTime
   subtotal Float
@@ -654,10 +659,12 @@ model Invoice {
   paidDate DateTime?
   paymentMethod String?
   notes String? @db.Text
+  metadata Json?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  contact Contact? @relation(fields: [contactId], references: [id])
   items InvoiceItem[]
   payments Payment[]
 
@@ -1943,32 +1950,42 @@ model FilePreview {
 model Chatbot {
   id          String   @id @default(uuid())
   companyId   String
+  createdById String?
   name        String
   description String?
   config      Json
+  flow        Json?    // Chatbot flow definition
+  trigger     Json?    // Trigger conditions
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  createdBy    User?   @relation("ChatbotCreatedBy", fields: [createdById], references: [id])
   interactions ChatbotInteraction[]
   states      ChatbotState[]
 
   @@index([companyId])
+  @@index([createdById])
   @@map("chatbots")
 }
 
 model ChatbotState {
-  id          String   @id @default(uuid())
-  chatbotId   String
-  name        String
-  type        String   // question, action, end
-  config      Json
-  nextStates  String[] // IDs of possible next states
-  createdAt   DateTime @default(now())
+  id            String   @id @default(uuid())
+  chatbotId     String
+  conversationId String?
+  name          String
+  type          String   // question, action, end
+  config        Json
+  currentNodeId String?  // Current node in the flow
+  variables     Json?    // State variables
+  nextStates    String[] // IDs of possible next states
+  createdAt     DateTime @default(now())
 
-  chatbot     Chatbot  @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+  chatbot       Chatbot  @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
 
   @@index([chatbotId])
+  @@index([conversationId])
+  @@index([currentNodeId])
   @@map("chatbot_states")
 }
 
@@ -1977,6 +1994,7 @@ model ChatbotInteraction {
   chatbotId     String
   conversationId String
   userId        String?
+  nodeId        String?  // Current node ID in the flow
   currentState  String
   context       Json
   createdAt     DateTime @default(now())
@@ -1986,6 +2004,7 @@ model ChatbotInteraction {
 
   @@index([chatbotId])
   @@index([conversationId])
+  @@index([nodeId])
   @@map("chatbot_interactions")
 }
 
@@ -2164,12 +2183,18 @@ model PurchaseOrder {
   id          String   @id @default(uuid())
   companyId   String
   supplierId  String
+  number      String?  // Alternative field name for orderNumber
   orderNumber String
   status      String   @default("draft")
+  total       Float?   // Calculated total (can be derived from items)
   totalAmount Float
   currency    String   @default("USD")
-  items       Json
+  items       Json     // Array of items as JSON
+  approvedById String?
+  approvedAt  DateTime?
+  receivedAt  DateTime?
   deliveryDate DateTime?
+  metadata    Json?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -2184,13 +2209,16 @@ model TaxRule {
   id          String   @id @default(uuid())
   companyId   String
   name        String
+  taxType     String?  // vat, sales_tax, gst, etc
   rate        Float
   country     String?
   state       String?
+  jurisdiction String? // federal, state, municipal, etc
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
 
   @@index([companyId])
+  @@index([jurisdiction])
   @@map("tax_rules")
 }
 

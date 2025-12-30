@@ -234,6 +234,13 @@ export const Events = {
   // CSAT / Customer Satisfaction
   CSAT_SUBMITTED: 'csat.submitted.v1',
 
+  // Omnichannel - Additional
+  CONVERSATION_ASSIGNED: 'omni.conversation.assigned.v1',  // Alias for compatibility
+  OMNICHANNEL_MESSAGE_RECEIVED: 'omni.message.received.v1', // Alias for compatibility
+
+  // Knowledge - Additional
+  KNOWLEDGE_COMMENT_MENTION: 'knowledge.comment.mention.v1',
+
   // Payments
   PAYMENT_COMPLETED: 'payment.completed.v1',
   PAYMENT_FAILED: 'payment.failed.v1',
