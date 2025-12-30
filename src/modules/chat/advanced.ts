@@ -495,7 +495,7 @@ export function setupChatAdvancedRoutes(
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ command: command.command, args, userId: req.user!.id }),
               });
-              const data = await webhookRes.json();
+              const data: any = await webhookRes.json();
               response = data.response || 'Command executed';
             }
         }
