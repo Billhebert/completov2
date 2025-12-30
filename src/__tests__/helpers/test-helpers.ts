@@ -123,16 +123,18 @@ export async function createTestContact(companyId: string, data?: any) {
  * Create a test deal
  */
 export async function createTestDeal(companyId: string, contactId: string, ownerId: string, data?: any) {
+  // Extract status if passed (field doesn't exist in Deal model)
+  const { status, ...restData } = data || {};
+
   return prisma.deal.create({
     data: {
       companyId,
       contactId,
       ownerId,
-      title: data?.title || 'Test Deal',
-      value: data?.value || 10000,
-      stage: data?.stage || 'PROSPECTING',
-      status: data?.status || 'OPEN',
-      ...data,
+      title: restData?.title || 'Test Deal',
+      value: restData?.value || 10000,
+      stage: restData?.stage || 'PROSPECTING',
+      ...restData,
     },
   });
 }
