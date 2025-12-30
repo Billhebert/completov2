@@ -51,14 +51,14 @@ export class TruthLayerService {
             }
           });
 
-          logger.info('[TruthLayer] Conflict detected', {
+          logger.info({
             nodeId: node.id,
             conflictingWith: otherNode.id
-          });
+          }, '[TruthLayer] Conflict detected');
         }
       }
     } catch (error) {
-      logger.error('[TruthLayer] detectConflicts failed', { error, nodeId });
+      logger.error({ error, nodeId }, '[TruthLayer] detectConflicts failed');
     }
   }
 
@@ -99,7 +99,7 @@ export class TruthLayerService {
       })
     ]);
 
-    logger.info('[TruthLayer] Conflict resolved', { winnerNodeId, loserNodeId, rationale });
+    logger.info({ winnerNodeId, loserNodeId, rationale }, '[TruthLayer] Conflict resolved');
   }
 
   // ============================================
@@ -143,7 +143,7 @@ export class TruthLayerService {
       return result === 'true';
 
     } catch (error) {
-      logger.error('[TruthLayer] AI conflict detection failed', { error });
+      logger.error({ error }, '[TruthLayer] AI conflict detection failed');
       return false;
     }
   }
@@ -189,7 +189,7 @@ export function startTruthLayerCron() {
       logger.info(`[CRON] TruthLayer: Updated ${nodes.length} nodes`);
 
     } catch (error) {
-      logger.error('[CRON] TruthLayer: Failed', { error });
+      logger.error({ error }, '[CRON] TruthLayer: Failed');
     }
   });
 
