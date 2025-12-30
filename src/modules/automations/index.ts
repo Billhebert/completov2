@@ -54,7 +54,7 @@ router.get('/workflows', async (req: Request, res: Response) => {
 
     res.json({ data: workflows });
   } catch (error: any) {
-    logger.error('Error listing workflows', { error });
+    logger.error({ error }, 'Error listing workflows');
     res.status(500).json({ error: 'Failed to list workflows' });
   }
 });
@@ -84,7 +84,7 @@ router.get('/workflows/:id', async (req: Request, res: Response) => {
 
     res.json(workflow);
   } catch (error: any) {
-    logger.error('Error fetching workflow', { error });
+    logger.error({ error }, 'Error fetching workflow');
     res.status(500).json({ error: 'Failed to fetch workflow' });
   }
 });
@@ -95,7 +95,7 @@ router.get('/workflows/:id', async (req: Request, res: Response) => {
  */
 router.post('/workflows', async (req: Request, res: Response) => {
   try {
-    const { companyId, userId, role } = req.user!;
+    const { companyId, id: userId, role } = req.user!;
 
     // Apenas admin/supervisor podem criar workflows
     if (role !== 'company_admin' && role !== 'supervisor') {
@@ -116,14 +116,14 @@ router.post('/workflows', async (req: Request, res: Response) => {
       }
     });
 
-    logger.info('Workflow created', { workflowId: workflow.id, userId });
+    logger.info({ workflowId: workflow.id, userId }, 'Workflow created');
     res.status(201).json(workflow);
 
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: 'Invalid input', details: error.errors });
     }
-    logger.error('Error creating workflow', { error });
+    logger.error({ error }, 'Error creating workflow');
     res.status(500).json({ error: 'Failed to create workflow' });
   }
 });
@@ -164,7 +164,7 @@ router.patch('/workflows/:id', async (req: Request, res: Response) => {
     res.json(updated);
 
   } catch (error: any) {
-    logger.error('Error updating workflow', { error });
+    logger.error({ error }, 'Error updating workflow');
     res.status(500).json({ error: 'Failed to update workflow' });
   }
 });
@@ -192,11 +192,11 @@ router.delete('/workflows/:id', async (req: Request, res: Response) => {
 
     await prisma.workflow.delete({ where: { id } });
 
-    logger.info('Workflow deleted', { workflowId: id });
+    logger.info({ workflowId: id }, 'Workflow deleted');
     res.json({ message: 'Workflow deleted' });
 
   } catch (error: any) {
-    logger.error('Error deleting workflow', { error });
+    logger.error({ error }, 'Error deleting workflow');
     res.status(500).json({ error: 'Failed to delete workflow' });
   }
 });
@@ -219,11 +219,11 @@ router.post('/workflows/:id/activate', async (req: Request, res: Response) => {
       data: { status: 'ACTIVE' }
     });
 
-    logger.info('Workflow activated', { workflowId: id });
+    logger.info({ workflowId: id }, 'Workflow activated');
     res.json(workflow);
 
   } catch (error: any) {
-    logger.error('Error activating workflow', { error });
+    logger.error({ error }, 'Error activating workflow');
     res.status(500).json({ error: 'Failed to activate workflow' });
   }
 });
@@ -246,11 +246,11 @@ router.post('/workflows/:id/pause', async (req: Request, res: Response) => {
       data: { status: 'PAUSED' }
     });
 
-    logger.info('Workflow paused', { workflowId: id });
+    logger.info({ workflowId: id }, 'Workflow paused');
     res.json(workflow);
 
   } catch (error: any) {
-    logger.error('Error pausing workflow', { error });
+    logger.error({ error }, 'Error pausing workflow');
     res.status(500).json({ error: 'Failed to pause workflow' });
   }
 });
@@ -261,7 +261,7 @@ router.post('/workflows/:id/pause', async (req: Request, res: Response) => {
  */
 router.post('/workflows/:id/test', async (req: Request, res: Response) => {
   try {
-    const { companyId, userId } = req.user!;
+    const { companyId, id: userId } = req.user!;
     const { id } = req.params;
     const { testData } = req.body;
 
@@ -284,13 +284,13 @@ router.post('/workflows/:id/test', async (req: Request, res: Response) => {
       },
       variables: {}
     }).catch(err => {
-      logger.error('Test execution failed', { error: err });
+      logger.error({ error: err }, 'Test execution failed');
     });
 
     res.json({ message: 'Test execution started' });
 
   } catch (error: any) {
-    logger.error('Error testing workflow', { error });
+    logger.error({ error }, 'Error testing workflow');
     res.status(500).json({ error: 'Failed to test workflow' });
   }
 });
@@ -330,7 +330,7 @@ router.get('/executions', async (req: Request, res: Response) => {
     });
 
   } catch (error: any) {
-    logger.error('Error listing executions', { error });
+    logger.error({ error }, 'Error listing executions');
     res.status(500).json({ error: 'Failed to list executions' });
   }
 });
@@ -361,7 +361,7 @@ router.get('/executions/:id/logs', async (req: Request, res: Response) => {
     res.json(execution);
 
   } catch (error: any) {
-    logger.error('Error fetching execution logs', { error });
+    logger.error({ error }, 'Error fetching execution logs');
     res.status(500).json({ error: 'Failed to fetch logs' });
   }
 });
@@ -377,7 +377,7 @@ export async function registerWorkflowEventListeners() {
   logger.info('[Automations] Registering event listeners...');
 
   // Listener universal para todos os eventos
-  eventBus.on('*', async (event: string, data: any) => {
+  (eventBus.on as any)('*', async (eventName: string, data: any) => {
     try {
       // Buscar workflows ativos com trigger para este evento
       const workflows = await prisma.workflow.findMany({
@@ -385,7 +385,7 @@ export async function registerWorkflowEventListeners() {
           status: 'ACTIVE',
           definition: {
             path: ['nodes'],
-            array_contains: [{ type: 'trigger', config: { event } }]
+            array_contains: [{ type: 'trigger', config: { event: eventName } }]
           } as any
         }
       });
@@ -395,18 +395,18 @@ export async function registerWorkflowEventListeners() {
         workflowExecutor.execute(workflow, {
           workflowId: workflow.id,
           companyId: workflow.companyId,
-          trigger: { event, data },
+          trigger: { event: eventName, data },
           variables: {}
         }).catch(err => {
-          logger.error('Workflow execution failed', {
+          logger.error({
             workflowId: workflow.id,
             error: err
-          });
+          }, 'Workflow execution failed');
         });
       }
 
     } catch (error) {
-      logger.error('[Automations] Event listener error', { event, error });
+      logger.error({ event: eventName, error }, '[Automations] Event listener error');
     }
   });
 

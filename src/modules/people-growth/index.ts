@@ -17,7 +17,7 @@ const prisma = new PrismaClient();
  */
 router.get('/gaps', async (req: Request, res: Response) => {
   try {
-    const { userId, role, companyId } = req.user!;
+    const { id: userId, role, companyId } = req.user!;
     const { employeeId, domain, severity, status } = req.query;
 
     const where: any = { companyId };
@@ -49,7 +49,7 @@ router.get('/gaps', async (req: Request, res: Response) => {
     res.json({ data: gaps });
 
   } catch (error: any) {
-    logger.error('Error fetching gaps', { error });
+    logger.error({ error }, 'Error fetching gaps');
     res.status(500).json({ error: 'Failed to fetch gaps' });
   }
 });
@@ -60,7 +60,7 @@ router.get('/gaps', async (req: Request, res: Response) => {
  */
 router.get('/gaps/:id', async (req: Request, res: Response) => {
   try {
-    const { userId, role } = req.user!;
+    const { id: userId, role } = req.user!;
     const { id } = req.params;
 
     const gap = await prisma.employeeGap.findUnique({
@@ -84,7 +84,7 @@ router.get('/gaps/:id', async (req: Request, res: Response) => {
     res.json(gap);
 
   } catch (error: any) {
-    logger.error('Error fetching gap', { error });
+    logger.error({ error }, 'Error fetching gap');
     res.status(500).json({ error: 'Failed to fetch gap' });
   }
 });
@@ -95,7 +95,7 @@ router.get('/gaps/:id', async (req: Request, res: Response) => {
  */
 router.post('/gaps/:id/close', async (req: Request, res: Response) => {
   try {
-    const { userId } = req.user!;
+    const { id: userId } = req.user!;
     const { id } = req.params;
 
     await peopleGrowthService.closeGap(id, userId);
@@ -103,7 +103,7 @@ router.post('/gaps/:id/close', async (req: Request, res: Response) => {
     res.json({ message: 'Gap closed successfully' });
 
   } catch (error: any) {
-    logger.error('Error closing gap', { error });
+    logger.error({ error }, 'Error closing gap');
     res.status(500).json({ error: error.message || 'Failed to close gap' });
   }
 });
@@ -121,7 +121,7 @@ router.get('/gaps/:id/learning-paths', async (req: Request, res: Response) => {
     res.json({ data: paths });
 
   } catch (error: any) {
-    logger.error('Error suggesting learning paths', { error });
+    logger.error({ error }, 'Error suggesting learning paths');
     res.status(500).json({ error: 'Failed to suggest learning paths' });
   }
 });
@@ -147,7 +147,7 @@ router.get('/team/report', async (req: Request, res: Response) => {
     res.json(report);
 
   } catch (error: any) {
-    logger.error('Error generating team report', { error });
+    logger.error({ error }, 'Error generating team report');
     res.status(500).json({ error: 'Failed to generate report' });
   }
 });
@@ -198,7 +198,7 @@ router.get('/team/heatmap', async (req: Request, res: Response) => {
     res.json({ data: Object.values(heatmap) });
 
   } catch (error: any) {
-    logger.error('Error generating heatmap', { error });
+    logger.error({ error }, 'Error generating heatmap');
     res.status(500).json({ error: 'Failed to generate heatmap' });
   }
 });
@@ -213,7 +213,7 @@ router.get('/team/heatmap', async (req: Request, res: Response) => {
  */
 router.get('/my-profile', async (req: Request, res: Response) => {
   try {
-    const { userId, companyId } = req.user!;
+    const { id: userId, companyId } = req.user!;
 
     // Buscar gaps
     const gaps = await prisma.employeeGap.findMany({
@@ -266,7 +266,7 @@ router.get('/my-profile', async (req: Request, res: Response) => {
     });
 
   } catch (error: any) {
-    logger.error('Error fetching my profile', { error });
+    logger.error({ error }, 'Error fetching my profile');
     res.status(500).json({ error: 'Failed to fetch profile' });
   }
 });

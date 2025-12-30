@@ -59,7 +59,7 @@ const CompanyPolicySchema = z.object({
  */
 router.get('/profile', async (req: Request, res: Response) => {
   try {
-    const userId = req.user!.userId;
+    const userId = req.user!.id;
 
     let profile = await prisma.attentionProfile.findUnique({
       where: { userId }
@@ -86,7 +86,7 @@ router.get('/profile', async (req: Request, res: Response) => {
 
     res.json(profile);
   } catch (error: any) {
-    logger.error('Error fetching attention profile', { error });
+    logger.error({ error }, 'Error fetching attention profile');
     res.status(500).json({ error: 'Failed to fetch attention profile' });
   }
 });
@@ -97,7 +97,7 @@ router.get('/profile', async (req: Request, res: Response) => {
  */
 router.patch('/profile', async (req: Request, res: Response) => {
   try {
-    const userId = req.user!.userId;
+    const userId = req.user!.id;
     const data = AttentionProfileSchema.parse(req.body);
 
     const profile = await prisma.attentionProfile.upsert({
@@ -119,13 +119,13 @@ router.patch('/profile', async (req: Request, res: Response) => {
       }
     });
 
-    logger.info('Attention profile updated', { userId });
+    logger.info({ userId }, 'Attention profile updated');
     res.json(profile);
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: 'Invalid input', details: error.errors });
     }
-    logger.error('Error updating attention profile', { error });
+    logger.error({ error }, 'Error updating attention profile');
     res.status(500).json({ error: 'Failed to update attention profile' });
   }
 });
@@ -136,7 +136,7 @@ router.patch('/profile', async (req: Request, res: Response) => {
  */
 router.get('/logs', async (req: Request, res: Response) => {
   try {
-    const userId = req.user!.userId;
+    const userId = req.user!.id;
     const { limit = '50', offset = '0', action, decision } = req.query;
 
     const where: any = { userId };
@@ -161,7 +161,7 @@ router.get('/logs', async (req: Request, res: Response) => {
       }
     });
   } catch (error: any) {
-    logger.error('Error fetching gatekeeper logs', { error });
+    logger.error({ error }, 'Error fetching gatekeeper logs');
     res.status(500).json({ error: 'Failed to fetch logs' });
   }
 });
@@ -185,7 +185,7 @@ router.get('/policy', async (req: Request, res: Response) => {
 
     res.json(policy || {});
   } catch (error: any) {
-    logger.error('Error fetching company policy', { error });
+    logger.error({ error }, 'Error fetching company policy');
     res.status(500).json({ error: 'Failed to fetch policy' });
   }
 });
@@ -222,13 +222,13 @@ router.patch('/policy', async (req: Request, res: Response) => {
       }
     });
 
-    logger.info('Company policy updated', { companyId });
+    logger.info({ companyId }, 'Company policy updated');
     res.json(policy);
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: 'Invalid input', details: error.errors });
     }
-    logger.error('Error updating company policy', { error });
+    logger.error({ error }, 'Error updating company policy');
     res.status(500).json({ error: 'Failed to update policy' });
   }
 });
@@ -239,7 +239,7 @@ router.patch('/policy', async (req: Request, res: Response) => {
  */
 router.get('/pending-actions', async (req: Request, res: Response) => {
   try {
-    const userId = req.user!.userId;
+    const userId = req.user!.id;
 
     // Buscar logs com decisão SUGGEST dos últimos 7 dias
     const sevenDaysAgo = new Date();
@@ -257,7 +257,7 @@ router.get('/pending-actions', async (req: Request, res: Response) => {
 
     res.json({ data: pendingActions });
   } catch (error: any) {
-    logger.error('Error fetching pending actions', { error });
+    logger.error({ error }, 'Error fetching pending actions');
     res.status(500).json({ error: 'Failed to fetch pending actions' });
   }
 });
@@ -268,7 +268,7 @@ router.get('/pending-actions', async (req: Request, res: Response) => {
  */
 router.post('/test', async (req: Request, res: Response) => {
   try {
-    const { userId, companyId } = req.user!;
+    const { id: userId, companyId } = req.user!;
     const { action, context } = req.body;
 
     if (!action) {
@@ -284,7 +284,7 @@ router.post('/test', async (req: Request, res: Response) => {
 
     res.json(result);
   } catch (error: any) {
-    logger.error('Error testing gatekeeper', { error });
+    logger.error({ error }, 'Error testing gatekeeper');
     res.status(500).json({ error: 'Failed to test gatekeeper' });
   }
 });
