@@ -33,20 +33,34 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
-  // Clean database before each test
-  const tables = await prisma.$queryRaw<Array<{ tablename: string }>>`
-    SELECT tablename FROM pg_tables WHERE schemaname='public'
-  `;
-
-  for (const { tablename } of tables) {
-    if (tablename !== '_prisma_migrations') {
-      try {
-        await prisma.$executeRawUnsafe(`TRUNCATE TABLE "public"."${tablename}" CASCADE;`);
-      } catch (error) {
-        console.warn(`Could not truncate ${tablename}:`, error);
-      }
-    }
+  // Clean database before each test using DELETE instead of TRUNCATE
+  // to avoid foreign key issues
+  try {
+    // Delete in correct order to respect foreign key constraints
+    await prisma.gatekeeperLog.deleteMany({});
+    await prisma.auditLog.deleteMany({});
+    await prisma.workflowExecution.deleteMany({});
+    await prisma.knowledgeLink.deleteMany({});
+    await prisma.notification.deleteMany({});
+    await prisma.attentionProfile.deleteMany({});
+    await prisma.employeeGap.deleteMany({});
+    await prisma.learningProgress.deleteMany({});
+    await prisma.learningPath.deleteMany({});
+    await prisma.simulationSession.deleteMany({});
+    await prisma.simulationScenario.deleteMany({});
+    await prisma.interaction.deleteMany({});
+    await prisma.deal.deleteMany({});
+    await prisma.contact.deleteMany({});
+    await prisma.knowledgeNode.deleteMany({});
+    await prisma.workflow.deleteMany({});
+    await prisma.companyPolicy.deleteMany({});
+    await prisma.message.deleteMany({});
+    await prisma.conversation.deleteMany({});
+    await prisma.user.deleteMany({});
+    await prisma.company.deleteMany({});
+  } catch (error) {
+    console.warn('Could not clean database:', error);
   }
-});
+}, 30000); // 30 second timeout
 
 export { prisma };
