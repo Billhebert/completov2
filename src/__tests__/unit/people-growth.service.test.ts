@@ -208,10 +208,9 @@ describe('PeopleGrowthService', () => {
         data: {
           scenarioId: scenario.id,
           userId: agent.id,
-          status: 'COMPLETED',
           startedAt: new Date(),
           finishedAt: new Date(),
-          messages: [],
+          transcript: [],
           evaluation: {},
         },
       });
@@ -265,10 +264,9 @@ describe('PeopleGrowthService', () => {
         data: {
           scenarioId: scenario.id,
           userId: agent.id,
-          status: 'COMPLETED',
           startedAt: new Date(),
           finishedAt: new Date(),
-          messages: [],
+          transcript: [],
           evaluation: {},
         },
       });
