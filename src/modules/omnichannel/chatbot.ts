@@ -195,7 +195,7 @@ export function setupChatbotRoutes(router: Router, prisma: PrismaClient, eventBu
           where: {
             id: req.params.id,
             companyId: req.companyId!,
-            active: true,
+            isActive: true,
           },
         });
 

@@ -1180,6 +1180,7 @@ model Notification {
   title String
   body String
   data Json?
+  read Boolean @default(false)
   readAt DateTime?
   snoozedUntil DateTime? // Snooze notifications until this time
   createdAt DateTime @default(now())
@@ -1986,11 +1987,11 @@ model ChatbotState {
   id            String   @id @default(uuid())
   chatbotId     String
   conversationId String?
+  currentNodeId String?  // Current node in the flow
   name          String
   type          String   // question, action, end
   config        Json
-  currentNodeId String?  // Current node in the flow
-  variables     Json?    // State variables
+  variables     String?  // State variables as string (JSON serialized)
   nextStates    String[] // IDs of possible next states
   createdAt     DateTime @default(now())
 
@@ -2010,6 +2011,8 @@ model ChatbotInteraction {
   nodeId        String?  // Current node ID in the flow
   currentState  String
   userMessage   String?  @db.Text // User's message that triggered this interaction
+  botResponse   String?  @db.Text // Bot's response
+  variables     Json?    // Conversation variables
   context       Json
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -2114,7 +2117,8 @@ model KnowledgeComment {
 
 model NotificationPreferences {
   id          String   @id @default(uuid())
-  userId      String   @unique
+  companyId   String
+  userId      String
   email       Boolean  @default(true)
   push        Boolean  @default(true)
   sms         Boolean  @default(false)
@@ -2122,11 +2126,14 @@ model NotificationPreferences {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  @@unique([userId, companyId], name: "userId_companyId")
+  @@index([companyId])
   @@map("notification_preferences")
 }
 
 model PushSubscription {
   id          String   @id @default(uuid())
+  companyId   String
   userId      String
   endpoint    String   @unique
   keys        Json
@@ -2134,6 +2141,7 @@ model PushSubscription {
   createdAt   DateTime @default(now())
 
   @@index([userId])
+  @@index([companyId])
   @@map("push_subscriptions")
 }
 
@@ -2142,7 +2150,7 @@ model SmsNotification {
   companyId   String
   userId      String
   phone       String
-  to          String?  // Alias for phone
+  to          String   // Phone number (alias/alternative field)
   message     String   @db.Text
   status      String   @default("pending")
   providerMessageId String? // Provider's message ID (Twilio, etc)
