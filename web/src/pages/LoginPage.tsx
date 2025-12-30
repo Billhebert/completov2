@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { useAuth } from '../hooks/useAuth';
 
 export default function LoginPage() {
@@ -14,8 +15,11 @@ export default function LoginPage() {
 
     try {
       await login({ email, password });
+      toast.success('Login successful!');
       navigate('/');
-    } catch (err) {
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.error || error || 'Login failed. Please try again.';
+      toast.error(errorMsg);
       console.error('Login failed:', err);
     }
   };

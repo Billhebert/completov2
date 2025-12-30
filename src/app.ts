@@ -44,6 +44,7 @@ import { i18nMiddleware } from './core/i18n';
 import { timezoneMiddleware } from './core/timezone';
 import { metricsMiddleware } from './core/metrics';
 import { initializeSystem } from './core/init';
+import { setupAdditionalRoutes } from './api/rest-routes';
 
 export interface AppContext {
   app: Express;
@@ -198,6 +199,9 @@ export async function createApp(): Promise<AppContext> {
 
   // Initialize system (event handlers, cron jobs)
   await initializeSystem();
+
+  // Setup additional REST routes
+  setupAdditionalRoutes(app, prisma);
 
   logger.info(
     { modules: moduleLoader.getEnabledModules() },
