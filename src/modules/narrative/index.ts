@@ -62,7 +62,7 @@ router.post('/generate', async (req: Request, res: Response) => {
     });
 
   } catch (error: any) {
-    logger.error('Error generating narrative', { error });
+    logger.error({ error }, 'Error generating narrative');
     res.status(500).json({ error: 'Failed to generate narrative' });
   }
 });
