@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { OpenAI } from 'openai';
 import { logger } from '@core/logger';
 import { z } from 'zod';
+import { peopleGrowthService } from '../people-growth/service';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -222,6 +223,9 @@ router.post('/:id/end', async (req: Request, res: Response) => {
 
     // Criar zettel de learning
     await createLearningZettel(session, evaluation);
+
+    // Detectar gaps de desenvolvimento
+    await peopleGrowthService.detectGapsFromSimulation(id, evaluation);
 
     res.json(evaluation);
 

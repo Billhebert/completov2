@@ -38,6 +38,7 @@ import { gatekeeperModule } from './modules/gatekeeper/module';
 import { automationsModule } from './modules/automations/module';
 import { narrativeModule } from './modules/narrative/module';
 import { simulationModule } from './modules/simulation/module';
+import { peopleGrowthModule } from './modules/people-growth';
 import { startWorkers } from './workers';
 import { i18nMiddleware } from './core/i18n';
 import { timezoneMiddleware } from './core/timezone';
@@ -164,6 +165,7 @@ export async function createApp(): Promise<AppContext> {
   moduleLoader.register(automationsModule);
   moduleLoader.register(narrativeModule);
   moduleLoader.register(simulationModule);
+  moduleLoader.register(peopleGrowthModule);
 
   // Enable modules (could be loaded from database per tenant)
   const enabledModules = [
@@ -189,6 +191,7 @@ export async function createApp(): Promise<AppContext> {
     'automations',
     'narrative',
     'simulation',
+    'people-growth',
   ];
 
   await moduleLoader.enableModules(enabledModules);

@@ -4,6 +4,7 @@ import { Express } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticate, tenantIsolation, validateBody, requirePermission, Permission } from '../../core/middleware';
 import { z } from 'zod';
+import advancedRoutes from './advanced-routes';
 
 const nodeSchema = z.object({
   title: z.string(),
@@ -352,6 +353,11 @@ function setupRoutes(app: Express, prisma: PrismaClient) {
       next(error);
     }
   });
+
+  // ============================================
+  // ADVANCED ROUTES (Reminders, Truth Layer)
+  // ============================================
+  app.use(`${base}`, authenticate, tenantIsolation, advancedRoutes);
 }
 
 export const knowledgeModule: ModuleDefinition = {

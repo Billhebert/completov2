@@ -4,6 +4,7 @@ import { curatorService } from '../modules/knowledge/curator.service';
 import { registerWorkflowEventListeners } from '../modules/automations';
 import { startRemindersCron, startRemindersCleanupCron } from '../cron/reminders.cron';
 import { startTruthLayerCron } from '../modules/knowledge/truth-layer.service';
+import { peopleGrowthService } from '../modules/people-growth/service';
 
 /**
  * Inicializa todos os módulos do sistema
@@ -63,7 +64,15 @@ function registerCuratorEventHandlers() {
   // Interaction events
   eventBus.on('interaction.created', async (data: any) => {
     await curatorService.onInteractionCreated(data);
+
+    // Detectar gaps de desenvolvimento
+    if (data.interaction?.id) {
+      peopleGrowthService.detectGapsFromInteraction(data.interaction.id).catch(err => {
+        logger.error('Failed to detect gaps from interaction', { error: err });
+      });
+    }
   });
 
   logger.info('[INIT] Curator event handlers registered');
+  logger.info('[INIT] People Growth event handlers registered');
 }
