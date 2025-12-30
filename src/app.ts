@@ -34,10 +34,15 @@ import { emailTemplatesModule } from './modules/email-templates';
 import { searchModule } from './modules/search';
 import { ssoModule } from './modules/sso';
 import { auditModule } from './modules/audit';
+import { gatekeeperModule } from './modules/gatekeeper/module';
+import { automationsModule } from './modules/automations/module';
+import { narrativeModule } from './modules/narrative/module';
+import { simulationModule } from './modules/simulation/module';
 import { startWorkers } from './workers';
 import { i18nMiddleware } from './core/i18n';
 import { timezoneMiddleware } from './core/timezone';
 import { metricsMiddleware } from './core/metrics';
+import { initializeSystem } from './core/init';
 
 export interface AppContext {
   app: Express;
@@ -155,6 +160,10 @@ export async function createApp(): Promise<AppContext> {
   moduleLoader.register(searchModule);
   moduleLoader.register(ssoModule);
   moduleLoader.register(auditModule);
+  moduleLoader.register(gatekeeperModule);
+  moduleLoader.register(automationsModule);
+  moduleLoader.register(narrativeModule);
+  moduleLoader.register(simulationModule);
 
   // Enable modules (could be loaded from database per tenant)
   const enabledModules = [
@@ -176,9 +185,16 @@ export async function createApp(): Promise<AppContext> {
     'search',
     'sso',
     'audit',
+    'gatekeeper',
+    'automations',
+    'narrative',
+    'simulation',
   ];
 
   await moduleLoader.enableModules(enabledModules);
+
+  // Initialize system (event handlers, cron jobs)
+  await initializeSystem();
 
   logger.info(
     { modules: moduleLoader.getEnabledModules() },
