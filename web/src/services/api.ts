@@ -76,27 +76,27 @@ class ApiClient {
     search?: string;
     tags?: string[];
   }): Promise<PaginatedResponse<Contact>> {
-    const response = await this.client.get<PaginatedResponse<Contact>>('/contacts', { params });
+    const response = await this.client.get<PaginatedResponse<Contact>>('/crm/contacts', { params });
     return response.data;
   }
 
   async getContact(id: string): Promise<Contact> {
-    const response = await this.client.get<Contact>(`/contacts/${id}`);
+    const response = await this.client.get<Contact>(`/crm/contacts/${id}`);
     return response.data;
   }
 
   async createContact(data: Partial<Contact>): Promise<Contact> {
-    const response = await this.client.post<Contact>('/contacts', data);
+    const response = await this.client.post<Contact>('/crm/contacts', data);
     return response.data;
   }
 
   async updateContact(id: string, data: Partial<Contact>): Promise<Contact> {
-    const response = await this.client.patch<Contact>(`/contacts/${id}`, data);
+    const response = await this.client.patch<Contact>(`/crm/contacts/${id}`, data);
     return response.data;
   }
 
   async deleteContact(id: string): Promise<void> {
-    await this.client.delete(`/contacts/${id}`);
+    await this.client.delete(`/crm/contacts/${id}`);
   }
 
   // Conversations
@@ -106,21 +106,21 @@ class ApiClient {
     status?: string;
     channel?: string;
   }): Promise<PaginatedResponse<Conversation>> {
-    const response = await this.client.get<PaginatedResponse<Conversation>>('/conversations', { params });
+    const response = await this.client.get<PaginatedResponse<Conversation>>('/omnichannel/conversations', { params });
     return response.data;
   }
 
   async getConversation(id: string): Promise<Conversation> {
-    const response = await this.client.get<Conversation>(`/conversations/${id}`);
+    const response = await this.client.get<Conversation>(`/omnichannel/conversations/${id}`);
     return response.data;
   }
 
   async sendMessage(conversationId: string, content: string): Promise<void> {
-    await this.client.post(`/conversations/${conversationId}/messages`, { content });
+    await this.client.post(`/omnichannel/conversations/${conversationId}/messages`, { content });
   }
 
   async closeConversation(id: string): Promise<void> {
-    await this.client.patch(`/conversations/${id}`, { status: 'closed' });
+    await this.client.patch(`/omnichannel/conversations/${id}`, { status: 'closed' });
   }
 
   // Deals
@@ -129,27 +129,27 @@ class ApiClient {
     pageSize?: number;
     stage?: string;
   }): Promise<PaginatedResponse<Deal>> {
-    const response = await this.client.get<PaginatedResponse<Deal>>('/deals', { params });
+    const response = await this.client.get<PaginatedResponse<Deal>>('/crm/deals', { params });
     return response.data;
   }
 
   async getDeal(id: string): Promise<Deal> {
-    const response = await this.client.get<Deal>(`/deals/${id}`);
+    const response = await this.client.get<Deal>(`/crm/deals/${id}`);
     return response.data;
   }
 
   async createDeal(data: Partial<Deal>): Promise<Deal> {
-    const response = await this.client.post<Deal>('/deals', data);
+    const response = await this.client.post<Deal>('/crm/deals', data);
     return response.data;
   }
 
   async updateDeal(id: string, data: Partial<Deal>): Promise<Deal> {
-    const response = await this.client.patch<Deal>(`/deals/${id}`, data);
+    const response = await this.client.patch<Deal>(`/crm/deals/${id}`, data);
     return response.data;
   }
 
   async deleteDeal(id: string): Promise<void> {
-    await this.client.delete(`/deals/${id}`);
+    await this.client.delete(`/crm/deals/${id}`);
   }
 
   // Zettels (Knowledge Base)
