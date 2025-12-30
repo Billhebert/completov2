@@ -2075,6 +2075,7 @@ model KnowledgeVersion {
   version     Int
   title       String?  // Version title/description
   content     String   @db.Text
+  changeNote  String?  @db.Text // Change description
   createdById String
   createdAt   DateTime @default(now())
 

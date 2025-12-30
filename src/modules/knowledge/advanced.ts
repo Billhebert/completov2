@@ -172,7 +172,7 @@ export function setupAdvancedKnowledgeRoutes(
         await prisma.knowledgeNode.update({
           where: { id: req.params.id },
           data: {
-            title: version.title,
+            title: version.title || 'Untitled',
             content: version.content,
           },
         });
@@ -231,6 +231,7 @@ export function setupAdvancedKnowledgeRoutes(
         const lock = await prisma.knowledgeLock.create({
           data: {
             nodeId: req.params.id,
+            lockedById: req.user!.id,
             userId: req.user!.id,
             expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
           },
@@ -311,9 +312,9 @@ export function setupAdvancedKnowledgeRoutes(
         const comment = await prisma.knowledgeComment.create({
           data: {
             nodeId: req.params.id,
+            userId: req.user!.id,
             content: req.body.content,
             mentions: req.body.mentions || [],
-            createdById: req.user!.id,
           },
           include: {
             createdBy: { select: { id: true, name: true, avatar: true } },
@@ -403,9 +404,6 @@ export function setupAdvancedKnowledgeRoutes(
 
         const templates = await prisma.knowledgeTemplate.findMany({
           where,
-          include: {
-            createdBy: { select: { id: true, name: true } },
-          },
           orderBy: { name: 'asc' },
         });
 
@@ -441,10 +439,10 @@ export function setupAdvancedKnowledgeRoutes(
         }
 
         // Replace variables
-        let content = template.content;
+        let content = template.content || '';
         if (req.body.variables) {
           for (const [key, value] of Object.entries(req.body.variables)) {
-            content = content.replace(new RegExp(`{{${key}}}`, 'g'), value);
+            content = content.replace(new RegExp(`{{${key}}}`, 'g'), value as string);
           }
         }
 
@@ -452,7 +450,7 @@ export function setupAdvancedKnowledgeRoutes(
         const node = await prisma.knowledgeNode.create({
           data: {
             title: template.name,
-            content,
+            content: content,
             nodeType: 'document',
             companyId: req.companyId!,
           },
