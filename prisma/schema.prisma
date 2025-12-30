@@ -180,6 +180,17 @@ model User {
   // Knowledge (NEW - assignee)
   assignedNodes KnowledgeNode[] @relation("NodeAssignee")
 
+  // Chat/Messages - Advanced
+  sentMessages Message[] @relation("MessageSender")
+  editedMessages MessageEdit[] @relation("MessageEditedBy")
+
+  // Files - Advanced
+  createdFolders Folder[] @relation("FolderCreatedBy")
+  deletedFolders Folder[] @relation("FolderDeletedBy")
+  deletedFiles File[] @relation("FileDeletedBy")
+  createdFileVersions FileVersion[] @relation("FileVersionCreatedBy")
+  createdFileComments FileComment[] @relation("FileCommentCreatedBy")
+
   @@unique([companyId, email])
   @@map("users")
 }
@@ -449,11 +460,13 @@ model Contact {
   ownerId String?
   leadSource String?
   leadStatus String?
+  leadScore Int? // Lead scoring value
   rating Int?
+  stripeCustomerId String? // Stripe customer ID for payments
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   lastContactedAt DateTime?
-  
+
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   owner User? @relation("ContactOwner", fields: [ownerId], references: [id])
   deals Deal[]
@@ -461,6 +474,7 @@ model Contact {
   activities Activity[]
 
   @@unique([companyId, email])
+  @@index([stripeCustomerId])
   @@map("contacts")
   @@index([companyId, leadStatus])
 }
@@ -548,6 +562,7 @@ model Product {
   description String? @db.Text
   category String?
   subcategory String?
+  price Float? // Alias for unitPrice
   unitPrice Float
   costPrice Float?
   stock Int @default(0)
@@ -560,10 +575,10 @@ model Product {
   supplierId String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   movements StockMovement[]
-  
+
   @@unique([companyId, sku])
   @@map("products")
 }
@@ -761,26 +776,36 @@ model Message {
   companyId String
   channelId String?
   directConversationId String?
+  conversationId String? // For omnichannel conversations
   authorId String
+  senderId String? // Alias/alternative field for authorId
   content String @db.Text
+  messageType String? // text, image, file, system, etc
   status String @default("sent")
+  edited Boolean @default(false)
   editedAt DateTime?
   deletedAt DateTime?
+  timestamp DateTime @default(now()) // Explicit timestamp field
   createdAt DateTime @default(now())
   parentMessageId String?
   metadata Json?
-  
+
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   channel Channel? @relation(fields: [channelId], references: [id], onDelete: Cascade)
   directConversation DirectConversation? @relation(fields: [directConversationId], references: [id], onDelete: Cascade)
+  conversation Conversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   author User @relation(fields: [authorId], references: [id])
+  sender User? @relation("MessageSender", fields: [senderId], references: [id])
   reactions MessageReaction[]
   threads MessageThread[] @relation("ParentMessage")
   threadMessages MessageThread[] @relation("ThreadMessage")
-  
+  edits MessageEdit[]
+
   @@map("messages")
   @@index([companyId, channelId])
   @@index([companyId, directConversationId])
+  @@index([conversationId])
+  @@index([senderId])
 }
 
 model MessageReaction {
@@ -924,9 +949,11 @@ model Conversation {
   subject String?
   tags String[]
   firstResponseAt DateTime?
+  firstResponseTime Int? // Response time in seconds
   lastMessageAt DateTime?
   closedAt DateTime?
   slaBreachAt DateTime?
+  csatRating Int? // Customer satisfaction rating
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   metadata Json?
@@ -943,6 +970,7 @@ model Conversation {
   tags_relation ConversationTag[]
   slaEvents SLAEvent[]
   csatSurveys CSATSurvey[]
+  messages Message[] // Relation to messages via conversationId
 
   @@map("conversations")
   @@index([companyId, status])
@@ -1181,11 +1209,16 @@ model File {
   entityType    String?  // Type of entity (contact, deal, etc)
   entityId      String?  // ID of entity
   fileUrl       String?  // URL for advanced features
+  currentVersion Int?    // Current version number
+  deleted       Boolean  @default(false)
+  deletedAt     DateTime?
+  deletedById   String?
   createdAt     DateTime @default(now())
 
   company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   uploadedBy    User     @relation(fields: [uploadedById], references: [id])
   folder        Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  deletedBy     User?    @relation("FileDeletedBy", fields: [deletedById], references: [id])
   versions      FileVersion[]
   shares        FileShare[]
   comments      FileComment[]
@@ -1731,9 +1764,14 @@ model Funnel {
 model MessageEdit {
   id          String   @id @default(uuid())
   messageId   String
+  editedById  String
   oldContent  String   @db.Text
   newContent  String   @db.Text
+  createdAt   DateTime @default(now())
   editedAt    DateTime @default(now())
+
+  message     Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  editedBy    User     @relation("MessageEditedBy", fields: [editedById], references: [id])
 
   @@index([messageId])
   @@map("message_edits")
@@ -1745,6 +1783,7 @@ model LinkPreview {
   url         String
   title       String?
   description String?  @db.Text
+  image       String?  // Alternative field name for imageUrl
   imageUrl    String?
   siteName    String?
   createdAt   DateTime @default(now())
@@ -1815,12 +1854,17 @@ model Folder {
   parentId    String?
   path        String   // Full path for quick lookups
   createdById String
+  deleted     Boolean  @default(false)
+  deletedAt   DateTime?
+  deletedById String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   parent      Folder?  @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
   children    Folder[] @relation("FolderHierarchy")
   files       File[]
+  createdBy   User     @relation("FolderCreatedBy", fields: [createdById], references: [id])
+  deletedBy   User?    @relation("FolderDeletedBy", fields: [deletedById], references: [id])
 
   @@index([companyId])
   @@index([parentId])
@@ -1833,10 +1877,14 @@ model FileVersion {
   version     Int
   size        Int
   url         String
+  fileUrl     String?  // Alternative URL format
+  filename    String?  // Original filename for this version
+  mimeType    String?  // MIME type for this version
   uploadedById String
   createdAt   DateTime @default(now())
 
   file        File     @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  createdBy   User     @relation("FileVersionCreatedBy", fields: [uploadedById], references: [id])
 
   @@index([fileId])
   @@map("file_versions")
@@ -1863,10 +1911,12 @@ model FileComment {
   fileId      String
   userId      String
   content     String   @db.Text
+  mentions    String[] // User IDs mentioned in the comment
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   file        File     @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  createdBy   User     @relation("FileCommentCreatedBy", fields: [userId], references: [id])
 
   @@index([fileId])
   @@map("file_comments")
@@ -1877,6 +1927,7 @@ model FilePreview {
   fileId      String   @unique
   thumbnailUrl String?
   previewUrl  String?
+  previewType String   @default("image") // image, pdf, video, etc
   status      String   @default("pending")
   createdAt   DateTime @default(now())
 
@@ -2075,15 +2126,20 @@ model Payment {
   amount      Float
   currency    String   @default("USD")
   method      String   // credit_card, bank_transfer, etc
+  provider    String?  // stripe, paypal, etc
+  providerPaymentId String? // ID from payment provider
+  providerData Json?   // Additional provider-specific data
   status      String   @default("pending")
   reference   String?
   paidAt      DateTime?
+  refundedAt  DateTime?
   createdAt   DateTime @default(now())
 
   invoice     Invoice? @relation(fields: [invoiceId], references: [id])
 
   @@index([companyId])
   @@index([invoiceId])
+  @@index([providerPaymentId])
   @@map("payments")
 }
 
@@ -2141,14 +2197,20 @@ model TaxRule {
 model Subscription {
   id          String   @id @default(uuid())
   companyId   String   @unique
+  contactId   String?  // Optional contact for subscription
   plan        String   // free, pro, enterprise
   status      String   @default("active")
   startDate   DateTime @default(now())
   endDate     DateTime?
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  cancelledAt DateTime?
+  providerSubscriptionId String? // Stripe/PayPal subscription ID
   features    Json
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  @@index([providerSubscriptionId])
   @@map("subscriptions")
 }
 

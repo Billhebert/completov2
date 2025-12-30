@@ -229,6 +229,20 @@ export const Events = {
   // Files
   FILE_UPLOADED: 'file.uploaded.v1',
   FILE_DELETED: 'file.deleted.v1',
+  FILE_COMMENT_MENTION: 'file.comment.mention.v1',
+
+  // CSAT / Customer Satisfaction
+  CSAT_SUBMITTED: 'csat.submitted.v1',
+
+  // Payments
+  PAYMENT_COMPLETED: 'payment.completed.v1',
+  PAYMENT_FAILED: 'payment.failed.v1',
+  PAYMENT_REFUNDED: 'payment.refunded.v1',
+
+  // Subscriptions
+  SUBSCRIPTION_CREATED: 'subscription.created.v1',
+  SUBSCRIPTION_UPDATED: 'subscription.updated.v1',
+  SUBSCRIPTION_CANCELLED: 'subscription.cancelled.v1',
 
   // Webhooks
   WEBHOOK_CREATED: 'webhook.created.v1',
