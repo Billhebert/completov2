@@ -161,12 +161,13 @@ export function setupAdvancedFilesRoutes(router: Router, prisma: PrismaClient, e
           data: {
             fileId: file.id,
             version: newVersionNumber,
+            url: fileUrl,
             fileUrl,
             filename,
             size,
             mimeType,
             changeNote,
-            createdById: req.user!.id,
+            uploadedById: req.user!.id,
           },
         });
 
@@ -236,10 +237,10 @@ export function setupAdvancedFilesRoutes(router: Router, prisma: PrismaClient, e
         await prisma.file.update({
           where: { id: req.params.id },
           data: {
-            fileUrl: version.fileUrl,
-            filename: version.filename,
+            fileUrl: version.fileUrl || version.url,
+            filename: version.filename || 'restored-file',
             size: version.size,
-            mimeType: version.mimeType,
+            mimeType: version.mimeType || 'application/octet-stream',
             currentVersion: version.version,
           },
         });
@@ -327,9 +328,9 @@ export function setupAdvancedFilesRoutes(router: Router, prisma: PrismaClient, e
         const comment = await prisma.fileComment.create({
           data: {
             fileId: req.params.id,
+            userId: req.user!.id,
             content,
             mentions: mentions || [],
-            createdById: req.user!.id,
           },
           include: {
             createdBy: { select: { id: true, name: true, avatar: true } },
@@ -558,7 +559,7 @@ export function setupAdvancedFilesRoutes(router: Router, prisma: PrismaClient, e
         const { userIds, permission, expiresAt } = req.body;
 
         const shares = await Promise.all(
-          userIds.map(userId =>
+          userIds.map((userId: string) =>
             prisma.fileShare.create({
               data: {
                 fileId: req.params.id,
@@ -589,7 +590,6 @@ export function setupAdvancedFilesRoutes(router: Router, prisma: PrismaClient, e
           where: { fileId: req.params.id },
           include: {
             user: { select: { id: true, name: true, email: true, avatar: true } },
-            sharedBy: { select: { id: true, name: true } },
           },
           orderBy: { createdAt: 'desc' },
         });
