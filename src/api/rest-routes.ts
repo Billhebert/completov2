@@ -30,8 +30,8 @@ export function setupAdditionalRoutes(app: Express, prisma: PrismaClient) {
           where: { companyId, stage: { notIn: ['CLOSED_WON', 'CLOSED_LOST'] } },
           _sum: { value: true },
         }),
-        prisma.zettel.count({ where: { companyId } }),
-        prisma.gap.count({ where: { user: { companyId }, status: { not: 'CLOSED' } } }),
+        prisma.knowledgeNode.count({ where: { companyId } }),
+        prisma.employeeGap.count({ where: { companyId, status: { not: 'CLOSED' } } }),
       ]);
 
       res.json({
@@ -77,21 +77,21 @@ export function setupAdditionalRoutes(app: Express, prisma: PrismaClient) {
       const take = parseInt(pageSize as string);
 
       const [data, total] = await Promise.all([
-        prisma.zettel.findMany({
+        prisma.knowledgeNode.findMany({
           where,
           skip,
           take,
           include: {
-            linksFrom: {
-              include: { toZettel: { select: { id: true, title: true, type: true } } },
+            outgoingLinks: {
+              include: { target: { select: { id: true, title: true, nodeType: true } } },
             },
-            linksTo: {
-              include: { fromZettel: { select: { id: true, title: true, type: true } } },
+            incomingLinks: {
+              include: { source: { select: { id: true, title: true, nodeType: true } } },
             },
           },
           orderBy: { createdAt: 'desc' },
         }),
-        prisma.zettel.count({ where }),
+        prisma.knowledgeNode.count({ where }),
       ]);
 
       res.json({
@@ -112,16 +112,16 @@ export function setupAdditionalRoutes(app: Express, prisma: PrismaClient) {
       const { id } = req.params;
       const companyId = req.companyId!;
 
-      const zettel = await prisma.zettel.findFirst({
+      const zettel = await prisma.knowledgeNode.findFirst({
         where: { id, companyId },
         include: {
-          linksFrom: {
-            include: { toZettel: true },
+          outgoingLinks: {
+            include: { target: true },
           },
-          linksTo: {
-            include: { fromZettel: true },
+          incomingLinks: {
+            include: { source: true },
           },
-          user: { select: { id: true, name: true, email: true } },
+          createdBy: { select: { id: true, name: true, email: true } },
         },
       });
 
@@ -139,17 +139,17 @@ export function setupAdditionalRoutes(app: Express, prisma: PrismaClient) {
     try {
       const { type, title, content, tags, metadata } = req.body;
       const companyId = req.companyId!;
-      const userId = req.userId;
+      const userId = req.user!.id;
 
-      const zettel = await prisma.zettel.create({
+      const zettel = await prisma.knowledgeNode.create({
         data: {
-          type,
+          nodeType: type,
           title,
           content,
           tags: tags || [],
           metadata: metadata || {},
           companyId,
-          userId,
+          createdById: userId,
         },
       });
 
@@ -165,7 +165,7 @@ export function setupAdditionalRoutes(app: Express, prisma: PrismaClient) {
       const { type, title, content, tags, metadata } = req.body;
       const companyId = req.companyId!;
 
-      const zettel = await prisma.zettel.updateMany({
+      const zettel = await prisma.knowledgeNode.updateMany({
         where: { id, companyId },
         data: {
           ...(type && { type }),
@@ -180,7 +180,7 @@ export function setupAdditionalRoutes(app: Express, prisma: PrismaClient) {
         return res.status(404).json({ success: false, error: 'Zettel not found' });
       }
 
-      const updated = await prisma.zettel.findUnique({ where: { id } });
+      const updated = await prisma.knowledgeNode.findUnique({ where: { id } });
       res.json({ success: true, data: updated });
     } catch (error) {
       next(error);
@@ -192,7 +192,7 @@ export function setupAdditionalRoutes(app: Express, prisma: PrismaClient) {
       const { id } = req.params;
       const companyId = req.companyId!;
 
-      const result = await prisma.zettel.deleteMany({
+      const result = await prisma.knowledgeNode.deleteMany({
         where: { id, companyId },
       });
 
@@ -209,24 +209,25 @@ export function setupAdditionalRoutes(app: Express, prisma: PrismaClient) {
   app.post(`${baseUrl}/zettels/:fromId/links`, authenticate, tenantIsolation, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { fromId } = req.params;
-      const { toZettelId, relationshipType } = req.body;
+      const { targetId, relationshipType } = req.body;
       const companyId = req.companyId!;
 
       // Verify both zettels exist and belong to the company
-      const [fromZettel, toZettel] = await Promise.all([
-        prisma.zettel.findFirst({ where: { id: fromId, companyId } }),
-        prisma.zettel.findFirst({ where: { id: toZettelId, companyId } }),
+      const [source, target] = await Promise.all([
+        prisma.knowledgeNode.findFirst({ where: { id: fromId, companyId } }),
+        prisma.knowledgeNode.findFirst({ where: { id: targetId, companyId } }),
       ]);
 
-      if (!fromZettel || !toZettel) {
+      if (!source || !target) {
         return res.status(404).json({ success: false, error: 'Zettel not found' });
       }
 
-      const link = await prisma.zettelLink.create({
+      const link = await prisma.knowledgeLink.create({
         data: {
-          fromZettelId: fromId,
-          toZettelId,
-          relationshipType,
+          companyId: req.companyId!,
+          sourceId: fromId,
+          targetId,
+          linkType: relationshipType,
         },
       });
 
@@ -247,9 +248,6 @@ export function setupAdditionalRoutes(app: Express, prisma: PrismaClient) {
       const workflows = await prisma.workflow.findMany({
         where: { companyId },
         include: {
-          actions: {
-            orderBy: { order: 'asc' },
-          },
           _count: { select: { executions: true } },
         },
         orderBy: { createdAt: 'desc' },
@@ -263,27 +261,18 @@ export function setupAdditionalRoutes(app: Express, prisma: PrismaClient) {
 
   app.post(`${baseUrl}/workflows`, authenticate, tenantIsolation, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { name, description, triggerType, triggerConfig, actions } = req.body;
+      const { name, description, definition } = req.body;
       const companyId = req.companyId!;
+      const userId = req.user!.id;
 
       const workflow = await prisma.workflow.create({
         data: {
           name,
           description,
-          triggerType,
-          triggerConfig: triggerConfig || {},
-          enabled: false,
+          definition: definition || {},
+          status: 'DRAFT',
           companyId,
-          actions: {
-            create: actions?.map((action: any, index: number) => ({
-              type: action.type,
-              config: action.config || {},
-              order: index,
-            })) || [],
-          },
-        },
-        include: {
-          actions: { orderBy: { order: 'asc' } },
+          createdBy: userId,
         },
       });
 
@@ -296,7 +285,7 @@ export function setupAdditionalRoutes(app: Express, prisma: PrismaClient) {
   app.patch(`${baseUrl}/workflows/:id`, authenticate, tenantIsolation, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
-      const { name, description, triggerType, triggerConfig, enabled } = req.body;
+      const { name, description, definition, status } = req.body;
       const companyId = req.companyId!;
 
       const workflow = await prisma.workflow.updateMany({
@@ -304,9 +293,8 @@ export function setupAdditionalRoutes(app: Express, prisma: PrismaClient) {
         data: {
           ...(name !== undefined && { name }),
           ...(description !== undefined && { description }),
-          ...(triggerType !== undefined && { triggerType }),
-          ...(triggerConfig !== undefined && { triggerConfig }),
-          ...(enabled !== undefined && { enabled }),
+          ...(definition !== undefined && { definition }),
+          ...(status !== undefined && { status }),
         },
       });
 
@@ -316,7 +304,6 @@ export function setupAdditionalRoutes(app: Express, prisma: PrismaClient) {
 
       const updated = await prisma.workflow.findUnique({
         where: { id },
-        include: { actions: { orderBy: { order: 'asc' } } },
       });
 
       res.json({ success: true, data: updated });
@@ -351,7 +338,7 @@ export function setupAdditionalRoutes(app: Express, prisma: PrismaClient) {
   app.get(`${baseUrl}/gaps`, authenticate, tenantIsolation, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { status, page = '1', pageSize = '20' } = req.query;
-      const userId = req.userId;
+      const userId = req.user!.id;
 
       const where: any = { userId };
       if (status) where.status = status;
@@ -360,13 +347,13 @@ export function setupAdditionalRoutes(app: Express, prisma: PrismaClient) {
       const take = parseInt(pageSize as string);
 
       const [data, total] = await Promise.all([
-        prisma.gap.findMany({
+        prisma.employeeGap.findMany({
           where,
           skip,
           take,
-          orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
+          orderBy: [{ severity: 'desc' }, { createdAt: 'desc' }],
         }),
-        prisma.gap.count({ where }),
+        prisma.employeeGap.count({ where }),
       ]);
 
       res.json({
@@ -386,10 +373,10 @@ export function setupAdditionalRoutes(app: Express, prisma: PrismaClient) {
     try {
       const { id } = req.params;
       const { status } = req.body;
-      const userId = req.userId;
+      const userId = req.user!.id;
 
-      const gap = await prisma.gap.updateMany({
-        where: { id, userId },
+      const gap = await prisma.employeeGap.updateMany({
+        where: { id, employeeId: userId },
         data: { status },
       });
 
@@ -397,7 +384,7 @@ export function setupAdditionalRoutes(app: Express, prisma: PrismaClient) {
         return res.status(404).json({ success: false, error: 'Gap not found' });
       }
 
-      const updated = await prisma.gap.findUnique({ where: { id } });
+      const updated = await prisma.employeeGap.findUnique({ where: { id } });
       res.json({ success: true, data: updated });
     } catch (error) {
       next(error);
@@ -421,7 +408,7 @@ export function setupAdditionalRoutes(app: Express, prisma: PrismaClient) {
           skip,
           take,
           include: {
-            resources: { orderBy: { order: 'asc' } },
+            items: { orderBy: { order: 'asc' } },
           },
           orderBy: { createdAt: 'desc' },
         }),
