@@ -5,6 +5,7 @@ module.exports = {
   testMatch: ['**/__tests__/**/*.test.ts'],
   setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
   testTimeout: 30000, // 30 seconds timeout for all tests
+  maxWorkers: 1, // Run tests serially to avoid deadlocks
   transform: {
     '^.+\\.ts$': 'ts-jest',
   },

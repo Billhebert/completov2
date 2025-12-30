@@ -108,14 +108,10 @@ export async function createTestContext() {
  * Create a test contact
  */
 export async function createTestContact(companyId: string, data?: any) {
-  const firstName = data?.firstName || 'John';
-  const lastName = data?.lastName || 'Doe';
   return prisma.contact.create({
     data: {
       companyId,
-      name: data?.name || `${firstName} ${lastName}`,
-      firstName,
-      lastName,
+      name: data?.name || `Contact ${Date.now()}`,
       email: data?.email || `contact-${Date.now()}@test.com`,
       phone: data?.phone || '+5511999999999',
       ...data,
