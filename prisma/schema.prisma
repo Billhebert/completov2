@@ -195,6 +195,7 @@ model User {
   createdFolders Folder[] @relation("FolderCreatedBy")
   deletedFolders Folder[] @relation("FolderDeletedBy")
   deletedFiles File[] @relation("FileDeletedBy")
+  fileShares FileShare[] @relation("FileShareUser")
   createdFileVersions FileVersion[] @relation("FileVersionCreatedBy")
   createdFileComments FileComment[] @relation("FileCommentCreatedBy")
 
@@ -1909,6 +1910,7 @@ model FileVersion {
   fileUrl     String?  // Alternative URL format
   filename    String?  // Original filename for this version
   mimeType    String?  // MIME type for this version
+  changeNote  String?  @db.Text // Change description/notes
   uploadedById String
   createdAt   DateTime @default(now())
 
@@ -1923,15 +1925,18 @@ model FileShare {
   id          String   @id @default(uuid())
   fileId      String
   sharedById  String
+  userId      String?  // Alternative field for sharedById or sharedWithId
   sharedWithId String?  // User ID or null for public
   permission  String   // read, write, admin
   expiresAt   DateTime?
   createdAt   DateTime @default(now())
 
   file        File     @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  user        User?    @relation("FileShareUser", fields: [userId], references: [id])
 
   @@index([fileId])
   @@index([sharedWithId])
+  @@index([userId])
   @@map("file_shares")
 }
 

@@ -134,7 +134,6 @@ export function setupChatAdvancedRoutes(
         const deleted = await prisma.message.update({
           where: { id: message.id },
           data: {
-            deleted: true,
             deletedAt: new Date(),
             content: '[Message deleted]',
           },
@@ -178,6 +177,7 @@ export function setupChatAdvancedRoutes(
         // Create message with file
         const message = await prisma.message.create({
           data: {
+            companyId: req.companyId!,
             channelId: req.params.id,
             senderId: req.user!.id,
             content: caption || `Shared file: ${file.filename}`,
@@ -280,6 +280,7 @@ export function setupChatAdvancedRoutes(
 
         const preview = await prisma.linkPreview.create({
           data: {
+            messageId: req.params.id,
             url,
             title: titleMatch ? titleMatch[1] : url,
             description: descMatch ? descMatch[1] : null,
@@ -310,6 +311,7 @@ export function setupChatAdvancedRoutes(
 
         const message = await prisma.message.create({
           data: {
+            companyId: req.companyId!,
             channelId: req.params.id,
             senderId: req.user!.id,
             content: '[Voice message]',
@@ -375,10 +377,6 @@ export function setupChatAdvancedRoutes(
 
         const messages = await prisma.scheduledMessage.findMany({
           where,
-          include: {
-            channel: { select: { id: true, name: true } },
-            createdBy: { select: { id: true, name: true } },
-          },
           orderBy: { scheduledFor: 'asc' },
         });
 
@@ -503,6 +501,7 @@ export function setupChatAdvancedRoutes(
         // Send response message
         const message = await prisma.message.create({
           data: {
+            companyId: req.companyId!,
             channelId,
             senderId: req.user!.id,
             content: response,
