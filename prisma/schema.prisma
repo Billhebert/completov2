@@ -1741,6 +1741,7 @@ model ContactSegment {
   name        String
   description String?
   criteria    Json     // Critérios de segmentação
+  filters     Json?    // Alternative field for criteria/filters
   contactCount Int     @default(0)
   lastUpdated DateTime @default(now())
   createdAt   DateTime @default(now())

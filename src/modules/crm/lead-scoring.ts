@@ -77,7 +77,7 @@ export function setupLeadScoringRoutes(router: Router, prisma: PrismaClient) {
         const profiles = await prisma.leadScoringProfile.findMany({
           where: {
             companyId: req.companyId!,
-            active: true,
+            isActive: true,
           },
         });
 
@@ -167,7 +167,7 @@ export function setupLeadScoringRoutes(router: Router, prisma: PrismaClient) {
         const profiles = await prisma.leadScoringProfile.findMany({
           where: {
             companyId: req.companyId!,
-            active: true,
+            isActive: true,
           },
         });
 

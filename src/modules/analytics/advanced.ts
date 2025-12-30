@@ -347,7 +347,7 @@ export function setupAdvancedAnalyticsRoutes(router: Router, prisma: PrismaClien
         }
 
         const stages = JSON.parse(funnel.stages as string);
-        const results = [];
+        const results: any[] = [];
 
         // Analyze each stage
         for (const stage of stages) {
