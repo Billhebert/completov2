@@ -1,6 +1,4 @@
 import { PrismaClient } from '@prisma/client';
-import { execSync } from 'child_process';
-import { join } from 'path';
 
 const prisma = new PrismaClient({
   datasources: {
@@ -11,21 +9,6 @@ const prisma = new PrismaClient({
 });
 
 beforeAll(async () => {
-  // Run migrations for test database
-  const prismaBinary = join(__dirname, '..', '..', 'node_modules', '.bin', 'prisma');
-
-  try {
-    execSync(`${prismaBinary} db push --skip-generate`, {
-      env: {
-        ...process.env,
-        DATABASE_URL: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/omni_test',
-      },
-      stdio: 'ignore',
-    });
-  } catch (error) {
-    console.warn('Schema push failed or database not available:', error);
-  }
-
   await prisma.$connect();
 });
 
