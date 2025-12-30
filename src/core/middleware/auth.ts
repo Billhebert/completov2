@@ -96,18 +96,20 @@ export function optionalAuth(req: Request, res: Response, next: NextFunction) {
  * Generate JWT token
  */
 export function generateToken(payload: JWTPayload): string {
-  return jwt.sign(payload, env.JWT_SECRET, {
+  const options: jwt.SignOptions = {
     expiresIn: env.JWT_EXPIRES_IN,
-  });
+  };
+  return jwt.sign(payload, env.JWT_SECRET, options);
 }
 
 /**
  * Generate refresh token
  */
 export function generateRefreshToken(payload: JWTPayload): string {
-  return jwt.sign(payload, env.JWT_SECRET, {
+  const options: jwt.SignOptions = {
     expiresIn: env.JWT_REFRESH_EXPIRES_IN,
-  });
+  };
+  return jwt.sign(payload, env.JWT_SECRET, options);
 }
 
 /**

@@ -116,7 +116,11 @@ export class StorageService {
     const objects: string[] = [];
 
     return new Promise((resolve, reject) => {
-      stream.on('data', (obj) => objects.push(obj.name));
+      stream.on('data', (obj) => {
+        if (obj.name) {
+          objects.push(obj.name);
+        }
+      });
       stream.on('end', () => resolve(objects));
       stream.on('error', reject);
     });

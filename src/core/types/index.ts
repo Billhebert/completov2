@@ -44,6 +44,7 @@ export interface AuthenticatedUser {
   name: string;
   role: string;
   companyId: string;
+  timezone?: string;
 }
 
 export interface JWTPayload {

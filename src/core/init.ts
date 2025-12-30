@@ -27,7 +27,7 @@ export async function initializeSystem() {
     logger.info('[INIT] System initialization completed successfully');
 
   } catch (error) {
-    logger.error('[INIT] System initialization failed', { error });
+    logger.error({ error }, '[INIT] System initialization failed');
     throw error;
   }
 }
@@ -68,7 +68,7 @@ function registerCuratorEventHandlers() {
     // Detectar gaps de desenvolvimento
     if (data.interaction?.id) {
       peopleGrowthService.detectGapsFromInteraction(data.interaction.id).catch(err => {
-        logger.error('Failed to detect gaps from interaction', { error: err });
+        logger.error({ error: err }, 'Failed to detect gaps from interaction');
       });
     }
   });

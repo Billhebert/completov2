@@ -140,16 +140,21 @@ export class CacheService {
     return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
       const originalMethod = descriptor.value;
 
-      descriptor.value = async function (...args: any[]) {
+      descriptor.value = async function (this: any, ...args: any[]) {
         const cacheKey = `cache:${target.constructor.name}:${propertyKey}:${JSON.stringify(args)}`;
-        
-        const cached = await this.cache.get(cacheKey);
-        if (cached !== null) {
-          return cached;
+
+        if (this.cache) {
+          const cached = await this.cache.get(cacheKey);
+          if (cached !== null) {
+            return cached;
+          }
         }
 
         const result = await originalMethod.apply(this, args);
-        await this.cache.set(cacheKey, result, ttlSeconds);
+
+        if (this.cache) {
+          await this.cache.set(cacheKey, result, ttlSeconds);
+        }
 
         return result;
       };

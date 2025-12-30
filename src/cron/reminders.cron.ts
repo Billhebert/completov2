@@ -58,22 +58,24 @@ export function startRemindersCron() {
             // Marcar como enviado
             await prisma.reminder.update({
               where: { id: reminder.id },
-              status: 'SENT',
-              sentAt: new Date()
+              data: {
+                status: 'SENT',
+                sentAt: new Date()
+              }
             });
 
-            logger.info('[CRON] Reminders: Sent notification', {
+            logger.info({
               reminderId: reminder.id,
               userId: reminder.userId,
               type: reminder.type
-            });
+            }, '[CRON] Reminders: Sent notification');
 
           } else if (decision.decision === 'LOG_ONLY') {
             // Apenas logar, não enviar notificação
-            logger.info('[CRON] Reminders: Skipped (Gatekeeper LOG_ONLY)', {
+            logger.info({
               reminderId: reminder.id,
               reason: decision.reason
-            });
+            }, '[CRON] Reminders: Skipped (Gatekeeper LOG_ONLY)');
 
             // Marcar como enviado mesmo assim para não reprocessar
             await prisma.reminder.update({
@@ -81,7 +83,7 @@ export function startRemindersCron() {
               data: {
                 status: 'SENT',
                 sentAt: new Date(),
-                metadata: { gatekeeperDecision: decision }
+                metadata: decision as any
               }
             });
 
@@ -99,10 +101,10 @@ export function startRemindersCron() {
 
           } else {
             // BLOCK - não enviar nada
-            logger.warn('[CRON] Reminders: Blocked by Gatekeeper', {
+            logger.warn({
               reminderId: reminder.id,
               reason: decision.reason
-            });
+            }, '[CRON] Reminders: Blocked by Gatekeeper');
 
             // Marcar como dismissed automaticamente
             await prisma.reminder.update({
@@ -110,23 +112,23 @@ export function startRemindersCron() {
               data: {
                 status: 'DISMISSED',
                 dismissedAt: new Date(),
-                metadata: { gatekeeperDecision: decision }
+                metadata: decision as any
               }
             });
           }
 
         } catch (error) {
-          logger.error('[CRON] Reminders: Failed to process reminder', {
+          logger.error({
             reminderId: reminder.id,
             error
-          });
+          }, '[CRON] Reminders: Failed to process reminder');
         }
       }
 
       logger.info('[CRON] Reminders: Check completed');
 
     } catch (error) {
-      logger.error('[CRON] Reminders: Cron failed', { error });
+      logger.error({ error }, '[CRON] Reminders: Cron failed');
     }
   });
 
@@ -156,16 +158,21 @@ async function sendReminderNotification(reminder: any, options?: { priority?: st
 
     // Emitir evento (para WebSocket, email, etc)
     await eventBus.emit('reminder.sent', {
-      reminderId: reminder.id,
-      userId: reminder.userId,
+      type: 'reminder.sent',
+      version: '1.0',
+      timestamp: new Date(),
       companyId: reminder.companyId,
-      type: reminder.type,
-      message: reminder.message,
-      node: reminder.node
+      userId: reminder.userId,
+      data: {
+        reminderId: reminder.id,
+        type: reminder.type,
+        message: reminder.message,
+        node: reminder.node
+      }
     });
 
   } catch (error) {
-    logger.error('Failed to send reminder notification', { error, reminderId: reminder.id });
+    logger.error({ error, reminderId: reminder.id }, 'Failed to send reminder notification');
     throw error;
   }
 }
@@ -199,14 +206,14 @@ export function startRemindersCleanupCron() {
       const result = await prisma.reminder.deleteMany({
         where: {
           status: { in: ['SENT', 'DISMISSED', 'COMPLETED'] },
-          updatedAt: { lte: thirtyDaysAgo }
+          sentAt: { lte: thirtyDaysAgo }
         }
       });
 
       logger.info(`[CRON] Reminders Cleanup: Deleted ${result.count} old reminders`);
 
     } catch (error) {
-      logger.error('[CRON] Reminders Cleanup: Failed', { error });
+      logger.error({ error }, '[CRON] Reminders Cleanup: Failed');
     }
   });
 
