@@ -140,6 +140,7 @@ export function setupMultiCurrencyTaxPORoutes(router: Router, prisma: PrismaClie
         const invoice = await prisma.invoice.create({
           data: {
             number,
+            type: 'sale',
             contactId,
             currency,
             subtotal,
@@ -150,9 +151,10 @@ export function setupMultiCurrencyTaxPORoutes(router: Router, prisma: PrismaClie
             companyId: req.companyId!,
             items: {
               create: items.map((item: any) => ({
+                invoiceId: '', // Will be set by Prisma
                 description: item.description,
                 quantity: item.quantity,
-                price: item.price,
+                unitPrice: item.price,
                 total: item.quantity * item.price,
               })),
             },
@@ -272,7 +274,7 @@ export function setupMultiCurrencyTaxPORoutes(router: Router, prisma: PrismaClie
         const { supplierId, items, deliveryDate, notes } = req.body;
 
         // Calculate total
-        const total = items.reduce((sum, item) => 
+        const total = items.reduce((sum: number, item: any) =>
           sum + (item.quantity * item.price), 0
         );
 
@@ -285,28 +287,22 @@ export function setupMultiCurrencyTaxPORoutes(router: Router, prisma: PrismaClie
         const po = await prisma.purchaseOrder.create({
           data: {
             number,
+            orderNumber: number,
             supplierId,
             total,
+            totalAmount: total,
             deliveryDate: deliveryDate ? new Date(deliveryDate) : null,
             notes,
             status: 'draft',
             companyId: req.companyId!,
-            createdById: req.user!.id,
-            items: {
-              create: items.map(item => ({
-                productId: item.productId,
-                quantity: item.quantity,
-                price: item.price,
-                total: item.quantity * item.price,
-              })),
-            },
+            items: items.map((item: any) => ({
+              productId: item.productId,
+              quantity: item.quantity,
+              price: item.price,
+              total: item.quantity * item.price,
+            })),
           },
           include: {
-            items: {
-              include: {
-                product: true,
-              },
-            },
             supplier: true,
           },
         });
@@ -340,8 +336,6 @@ export function setupMultiCurrencyTaxPORoutes(router: Router, prisma: PrismaClie
             take: parseInt(limit as string),
             include: {
               supplier: { select: { id: true, name: true } },
-              items: { include: { product: true } },
-              createdBy: { select: { id: true, name: true } },
             },
             orderBy: { createdAt: 'desc' },
           }),
@@ -399,9 +393,6 @@ export function setupMultiCurrencyTaxPORoutes(router: Router, prisma: PrismaClie
             id: req.params.id,
             companyId: req.companyId!,
           },
-          include: {
-            items: true,
-          },
         });
 
         if (!po) {
@@ -411,8 +402,9 @@ export function setupMultiCurrencyTaxPORoutes(router: Router, prisma: PrismaClie
           });
         }
 
-        // Update inventory
-        for (const item of po.items) {
+        // Update inventory - items is Json array
+        const items = Array.isArray(po.items) ? po.items : [];
+        for (const item of items as any[]) {
           await prisma.product.update({
             where: { id: item.productId },
             data: {
@@ -451,9 +443,6 @@ export function setupMultiCurrencyTaxPORoutes(router: Router, prisma: PrismaClie
             id: req.params.id,
             companyId: req.companyId!,
           },
-          include: {
-            items: true,
-          },
         });
 
         if (!po) {
@@ -469,22 +458,26 @@ export function setupMultiCurrencyTaxPORoutes(router: Router, prisma: PrismaClie
         });
         const number = `INV-${String(count + 1).padStart(6, '0')}`;
 
+        const poTotal = po.total ?? po.totalAmount;
+        const poItems = Array.isArray(po.items) ? po.items : [];
+
         const invoice = await prisma.invoice.create({
           data: {
             number,
+            type: 'purchase',
             contactId: po.supplierId, // Supplier is the contact
-            subtotal: po.total,
-            total: po.total,
+            subtotal: poTotal,
+            total: poTotal,
             dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
             status: 'draft',
             companyId: req.companyId!,
-            metadata: JSON.stringify({ purchaseOrderId: po.id }),
+            metadata: { purchaseOrderId: po.id },
             items: {
-              create: po.items.map(item => ({
+              create: (poItems as any[]).map((item: any) => ({
                 description: `Product ${item.productId}`,
                 quantity: item.quantity,
-                price: item.price,
-                total: item.total,
+                unitPrice: item.price,
+                total: item.total || (item.quantity * item.price),
               })),
             },
           },

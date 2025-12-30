@@ -788,6 +788,7 @@ model Message {
   senderId String? // Alias/alternative field for authorId
   content String @db.Text
   messageType String? // text, image, file, system, etc
+  direction String? // inbound, outbound
   status String @default("sent")
   edited Boolean @default(false)
   editedAt DateTime?
@@ -1169,11 +1170,12 @@ model Notification {
   body String
   data Json?
   readAt DateTime?
+  snoozedUntil DateTime? // Snooze notifications until this time
   createdAt DateTime @default(now())
-  
+
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id])
-  
+
   @@map("notifications")
   @@index([companyId, userId, readAt])
 }
@@ -1996,6 +1998,7 @@ model ChatbotInteraction {
   userId        String?
   nodeId        String?  // Current node ID in the flow
   currentState  String
+  userMessage   String?  @db.Text // User's message that triggered this interaction
   context       Json
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -2029,6 +2032,7 @@ model SlaRule {
   name            String
   priority        String   // low, medium, high, urgent
   responseTime    Int      // minutes
+  firstResponseTime Int?   // First response time in minutes
   resolutionTime  Int      // minutes
   conditions      Json
   isActive        Boolean  @default(true)
@@ -2123,14 +2127,19 @@ model PushSubscription {
 
 model SmsNotification {
   id          String   @id @default(uuid())
+  companyId   String
   userId      String
   phone       String
+  to          String?  // Alias for phone
   message     String   @db.Text
   status      String   @default("pending")
+  providerMessageId String? // Provider's message ID (Twilio, etc)
   sentAt      DateTime?
   createdAt   DateTime @default(now())
 
   @@index([userId])
+  @@index([companyId])
+  @@index([providerMessageId])
   @@map("sms_notifications")
 }
 
@@ -2194,6 +2203,7 @@ model PurchaseOrder {
   approvedAt  DateTime?
   receivedAt  DateTime?
   deliveryDate DateTime?
+  notes       String?  @db.Text
   metadata    Json?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -2214,6 +2224,7 @@ model TaxRule {
   country     String?
   state       String?
   jurisdiction String? // federal, state, municipal, etc
+  applicableProductTypes String[] // Product types this tax applies to
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
 
