@@ -26,7 +26,11 @@
     "workers": "tsx src/workers/index.ts",
     "mcp:dev": "tsx src/mcp/server.ts",
     "mcp:build": "tsc src/mcp/server.ts --outDir dist/mcp",
-    "mcp:start": "node dist/mcp/server.js"
+    "mcp:start": "node dist/mcp/server.js",
+    "web:dev": "cd web && npm run dev",
+    "web:build": "cd web && npm run build",
+    "web:preview": "cd web && npm run preview",
+    "web:install": "cd web && npm install"
   },
   "keywords": [
     "enterprise",
