@@ -38,6 +38,7 @@ model Company {
   contacts Contact[]
   deals Deal[]
   interactions Interaction[]
+  activities Activity[]
   
   // ERP
   products Product[]
@@ -129,6 +130,9 @@ model User {
   ownedContacts Contact[] @relation("ContactOwner")
   ownedDeals Deal[] @relation("DealOwner")
   interactions Interaction[]
+  assignedActivities Activity[] @relation("ActivityAssignedTo")
+  createdActivities Activity[] @relation("ActivityCreatedBy")
+  activityNotes ActivityNote[] @relation("ActivityNoteCreatedBy")
   
   // ERP
   expenses Expense[]
@@ -238,6 +242,9 @@ model KnowledgeNode {
   embeddings KnowledgeEmbedding[]
   suggestions KnowledgeSuggestion[]
   reminders Reminder[]
+  versions KnowledgeVersion[]
+  lock KnowledgeLock?
+  comments KnowledgeComment[]
 
   @@map("knowledge_nodes")
   @@index([companyId])
@@ -451,7 +458,8 @@ model Contact {
   owner User? @relation("ContactOwner", fields: [ownerId], references: [id])
   deals Deal[]
   interactions Interaction[]
-  
+  activities Activity[]
+
   @@unique([companyId, email])
   @@map("contacts")
   @@index([companyId, leadStatus])
@@ -479,7 +487,8 @@ model Deal {
   owner User @relation("DealOwner", fields: [ownerId], references: [id])
   products DealProduct[]
   interactions Interaction[]
-  
+  activities Activity[]
+
   @@map("deals")
   @@index([companyId, stage])
 }
@@ -607,7 +616,8 @@ model Supplier {
   updatedAt DateTime @updatedAt
   
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  
+  purchaseOrders PurchaseOrder[]
+
   @@map("suppliers")
 }
 
@@ -634,7 +644,8 @@ model Invoice {
   
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   items InvoiceItem[]
-  
+  payments Payment[]
+
   @@unique([companyId, number])
   @@map("invoices")
 }
@@ -919,17 +930,24 @@ model Conversation {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   metadata Json?
-  
+
+  // AI Streaming fields
+  userId String?      // User who created/owns the AI conversation
+  model String?       // AI model used (gpt-4, claude-3, etc)
+  response String?    @db.Text // AI response content
+  tokensUsed Int?     // Tokens consumed in the conversation
+
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   assignments ConversationAssignment[]
   notes ConversationNote[]
   tags_relation ConversationTag[]
   slaEvents SLAEvent[]
   csatSurveys CSATSurvey[]
-  
+
   @@map("conversations")
   @@index([companyId, status])
   @@index([companyId, channel])
+  @@index([userId])
 }
 
 model ConversationAssignment {
@@ -1154,18 +1172,27 @@ model EventLog {
 model File {
   id            String   @id @default(uuid())
   companyId     String
-  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  folderId      String?
   uploadedById  String
-  uploadedBy    User     @relation(fields: [uploadedById], references: [id])
   filename      String
   objectName    String   // MinIO object name
   mimeType      String
   size          Int
   entityType    String?  // Type of entity (contact, deal, etc)
   entityId      String?  // ID of entity
+  fileUrl       String?  // URL for advanced features
   createdAt     DateTime @default(now())
 
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  uploadedBy    User     @relation(fields: [uploadedById], references: [id])
+  folder        Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  versions      FileVersion[]
+  shares        FileShare[]
+  comments      FileComment[]
+  preview       FilePreview?
+
   @@index([companyId])
+  @@index([folderId])
   @@index([entityType, entityId])
   @@map("files")
 }
@@ -1501,4 +1528,646 @@ model SimulationSession {
   @@index([userId])
   @@index([scenarioId])
   @@map("simulation_sessions")
+}
+
+// ============================================
+// CRM - ACTIVITIES (Enterprise)
+// ============================================
+
+model Activity {
+  id          String   @id @default(uuid())
+  companyId   String
+  userId      String
+  assignedToId String
+  createdById String
+  contactId   String?
+  dealId      String?
+  type        String   // CALL, MEETING, EMAIL, TASK, NOTE
+  title       String
+  description String?  @db.Text
+  status      String   @default("planned") // planned, in_progress, completed, cancelled
+  priority    String   @default("normal") // low, normal, high, urgent
+  dueDate     DateTime?
+  completedAt DateTime?
+  location    String?
+  attendees   Json?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  assignedTo  User     @relation("ActivityAssignedTo", fields: [assignedToId], references: [id], onDelete: Cascade)
+  createdBy   User     @relation("ActivityCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  contact     Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  deal        Deal?    @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  reminders   ActivityReminder[]
+  notes       ActivityNote[]
+
+  @@index([companyId, userId])
+  @@index([contactId])
+  @@index([dealId])
+  @@index([assignedToId])
+  @@index([dueDate, status])
+  @@map("activities")
+}
+
+model ActivityReminder {
+  id            String   @id @default(uuid())
+  activityId    String
+  reminderDate  DateTime
+  sent          Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  activity      Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@index([activityId])
+  @@index([reminderDate, sent])
+  @@map("activity_reminders")
+}
+
+model ActivityNote {
+  id          String   @id @default(uuid())
+  activityId  String
+  createdById String
+  content     String   @db.Text
+  createdAt   DateTime @default(now())
+
+  activity    Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  createdBy   User     @relation("ActivityNoteCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([activityId])
+  @@index([createdById])
+  @@map("activity_notes")
+}
+
+// ============================================
+// AUTH - ENTERPRISE FEATURES
+// ============================================
+
+model MagicLink {
+  id          String   @id @default(uuid())
+  email       String
+  token       String   @unique
+  expiresAt   DateTime
+  used        Boolean  @default(false)
+  usedAt      DateTime?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  @@index([email])
+  @@index([expiresAt])
+  @@map("magic_links")
+}
+
+model UserSession {
+  id          String   @id @default(uuid())
+  userId      String
+  token       String   @unique
+  ipAddress   String
+  userAgent   String
+  lastActivityAt DateTime @default(now())
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+  @@map("user_sessions")
+}
+
+model LoginHistory {
+  id          String   @id @default(uuid())
+  userId      String?
+  email       String
+  success     Boolean
+  ipAddress   String
+  userAgent   String
+  failureReason String?
+  timestamp   DateTime @default(now())
+
+  @@index([userId])
+  @@index([email])
+  @@index([timestamp])
+  @@map("login_history")
+}
+
+// ============================================
+// CRM - LEAD SCORING
+// ============================================
+
+model LeadScoringProfile {
+  id          String   @id @default(uuid())
+  companyId   String
+  name        String
+  description String?
+  rules       Json     // Regras de scoring
+  weights     Json     // Pesos por critério
+  thresholds  Json     // {hot: 80, warm: 50, cold: 0}
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([companyId])
+  @@map("lead_scoring_profiles")
+}
+
+model ContactSegment {
+  id          String   @id @default(uuid())
+  companyId   String
+  name        String
+  description String?
+  criteria    Json     // Critérios de segmentação
+  contactCount Int     @default(0)
+  lastUpdated DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@index([companyId])
+  @@map("contact_segments")
+}
+
+// ============================================
+// ANALYTICS - ADVANCED REPORTING
+// ============================================
+
+model CustomReport {
+  id          String   @id @default(uuid())
+  companyId   String
+  name        String
+  description String?
+  dataSource  String   // deals, contacts, interactions, invoices, users
+  metrics     Json     // [{field, aggregation, alias}]
+  dimensions  String[] // Group by fields
+  filters     Json?    // Where conditions
+  dateRange   Json?    // {start, end}
+  visualization String @default("table") // table, bar, line, pie, area
+  schedule    Json?    // {frequency, time, recipients}
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([companyId])
+  @@map("custom_reports")
+}
+
+model Funnel {
+  id          String   @id @default(uuid())
+  companyId   String
+  name        String
+  stages      Json     // [{name, filter}]
+  timeWindow  Int?     // days
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([companyId])
+  @@map("funnels")
+}
+
+// ============================================
+// CHAT - ADVANCED FEATURES
+// ============================================
+
+model MessageEdit {
+  id          String   @id @default(uuid())
+  messageId   String
+  oldContent  String   @db.Text
+  newContent  String   @db.Text
+  editedAt    DateTime @default(now())
+
+  @@index([messageId])
+  @@map("message_edits")
+}
+
+model LinkPreview {
+  id          String   @id @default(uuid())
+  messageId   String
+  url         String
+  title       String?
+  description String?  @db.Text
+  imageUrl    String?
+  siteName    String?
+  createdAt   DateTime @default(now())
+
+  @@index([messageId])
+  @@map("link_previews")
+}
+
+model ScheduledMessage {
+  id              String   @id @default(uuid())
+  companyId       String
+  channelId       String?
+  directConversationId String?
+  authorId        String
+  content         String   @db.Text
+  scheduledFor    DateTime
+  status          String   @default("scheduled") // scheduled, sent, cancelled
+  sentAt          DateTime?
+  messageId       String?  // ID da mensagem após envio
+  createdAt       DateTime @default(now())
+
+  @@index([companyId, scheduledFor])
+  @@index([authorId])
+  @@map("scheduled_messages")
+}
+
+model SlashCommand {
+  id          String   @id @default(uuid())
+  companyId   String
+  command     String   // /giphy, /poll, etc
+  name        String
+  description String?
+  handler     String   // URL ou função
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@unique([companyId, command])
+  @@map("slash_commands")
+}
+
+// ============================================
+// SYNC - ADDITIONAL CONFIG
+// ============================================
+
+model SyncConfig {
+  id          String   @id @default(uuid())
+  companyId   String
+  provider    String
+  entityType  String
+  config      Json     // Configurações gerais
+  pipeId      String?  // Para Pipefy e similares
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([companyId, provider, entityType])
+  @@map("sync_configs")
+}
+
+// ============================================
+// FILES - ADVANCED FEATURES
+// ============================================
+
+model Folder {
+  id          String   @id @default(uuid())
+  companyId   String
+  name        String
+  parentId    String?
+  path        String   // Full path for quick lookups
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  parent      Folder?  @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Folder[] @relation("FolderHierarchy")
+  files       File[]
+
+  @@index([companyId])
+  @@index([parentId])
+  @@map("folders")
+}
+
+model FileVersion {
+  id          String   @id @default(uuid())
+  fileId      String
+  version     Int
+  size        Int
+  url         String
+  uploadedById String
+  createdAt   DateTime @default(now())
+
+  file        File     @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@index([fileId])
+  @@map("file_versions")
+}
+
+model FileShare {
+  id          String   @id @default(uuid())
+  fileId      String
+  sharedById  String
+  sharedWithId String?  // User ID or null for public
+  permission  String   // read, write, admin
+  expiresAt   DateTime?
+  createdAt   DateTime @default(now())
+
+  file        File     @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@index([fileId])
+  @@index([sharedWithId])
+  @@map("file_shares")
+}
+
+model FileComment {
+  id          String   @id @default(uuid())
+  fileId      String
+  userId      String
+  content     String   @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  file        File     @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@index([fileId])
+  @@map("file_comments")
+}
+
+model FilePreview {
+  id          String   @id @default(uuid())
+  fileId      String   @unique
+  thumbnailUrl String?
+  previewUrl  String?
+  status      String   @default("pending")
+  createdAt   DateTime @default(now())
+
+  file        File     @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@map("file_previews")
+}
+
+// ============================================
+// CHAT/OMNICHANNEL - ADVANCED
+// ============================================
+
+model Chatbot {
+  id          String   @id @default(uuid())
+  companyId   String
+  name        String
+  description String?
+  config      Json
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  interactions ChatbotInteraction[]
+  states      ChatbotState[]
+
+  @@index([companyId])
+  @@map("chatbots")
+}
+
+model ChatbotState {
+  id          String   @id @default(uuid())
+  chatbotId   String
+  name        String
+  type        String   // question, action, end
+  config      Json
+  nextStates  String[] // IDs of possible next states
+  createdAt   DateTime @default(now())
+
+  chatbot     Chatbot  @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+
+  @@index([chatbotId])
+  @@map("chatbot_states")
+}
+
+model ChatbotInteraction {
+  id            String   @id @default(uuid())
+  chatbotId     String
+  conversationId String
+  userId        String?
+  currentState  String
+  context       Json
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  chatbot       Chatbot  @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+
+  @@index([chatbotId])
+  @@index([conversationId])
+  @@map("chatbot_interactions")
+}
+
+model CannedResponse {
+  id          String   @id @default(uuid())
+  companyId   String
+  title       String
+  content     String   @db.Text
+  shortcut    String?
+  category    String?
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([companyId])
+  @@map("canned_responses")
+}
+
+model SlaRule {
+  id              String   @id @default(uuid())
+  companyId       String
+  name            String
+  priority        String   // low, medium, high, urgent
+  responseTime    Int      // minutes
+  resolutionTime  Int      // minutes
+  conditions      Json
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  @@index([companyId])
+  @@map("sla_rules")
+}
+
+// ============================================
+// KNOWLEDGE - ADVANCED
+// ============================================
+
+model KnowledgeVersion {
+  id          String   @id @default(uuid())
+  nodeId      String
+  version     Int
+  content     String   @db.Text
+  createdById String
+  createdAt   DateTime @default(now())
+
+  node        KnowledgeNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+
+  @@index([nodeId])
+  @@map("knowledge_versions")
+}
+
+model KnowledgeTemplate {
+  id          String   @id @default(uuid())
+  companyId   String
+  name        String
+  description String?
+  structure   Json
+  createdAt   DateTime @default(now())
+
+  @@index([companyId])
+  @@map("knowledge_templates")
+}
+
+model KnowledgeLock {
+  id          String   @id @default(uuid())
+  nodeId      String   @unique
+  lockedById  String
+  lockedAt    DateTime @default(now())
+
+  node        KnowledgeNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+
+  @@map("knowledge_locks")
+}
+
+model KnowledgeComment {
+  id          String   @id @default(uuid())
+  nodeId      String
+  userId      String
+  content     String   @db.Text
+  createdAt   DateTime @default(now())
+
+  node        KnowledgeNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+
+  @@index([nodeId])
+  @@map("knowledge_comments")
+}
+
+// ============================================
+// NOTIFICATIONS - ADVANCED
+// ============================================
+
+model NotificationPreferences {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  email       Boolean  @default(true)
+  push        Boolean  @default(true)
+  sms         Boolean  @default(false)
+  channels    Json     // Specific channel preferences
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("notification_preferences")
+}
+
+model PushSubscription {
+  id          String   @id @default(uuid())
+  userId      String
+  endpoint    String   @unique
+  keys        Json
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@map("push_subscriptions")
+}
+
+model SmsNotification {
+  id          String   @id @default(uuid())
+  userId      String
+  phone       String
+  message     String   @db.Text
+  status      String   @default("pending")
+  sentAt      DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@map("sms_notifications")
+}
+
+// ============================================
+// ERP/FINANCE - ADVANCED
+// ============================================
+
+model Payment {
+  id          String   @id @default(uuid())
+  companyId   String
+  invoiceId   String?
+  amount      Float
+  currency    String   @default("USD")
+  method      String   // credit_card, bank_transfer, etc
+  status      String   @default("pending")
+  reference   String?
+  paidAt      DateTime?
+  createdAt   DateTime @default(now())
+
+  invoice     Invoice? @relation(fields: [invoiceId], references: [id])
+
+  @@index([companyId])
+  @@index([invoiceId])
+  @@map("payments")
+}
+
+model RecurringInvoice {
+  id          String   @id @default(uuid())
+  companyId   String
+  contactId   String
+  amount      Float
+  currency    String   @default("USD")
+  frequency   String   // daily, weekly, monthly, yearly
+  nextDate    DateTime
+  endDate     DateTime?
+  isActive    Boolean  @default(true)
+  templateData Json
+  createdAt   DateTime @default(now())
+
+  @@index([companyId])
+  @@map("recurring_invoices")
+}
+
+model PurchaseOrder {
+  id          String   @id @default(uuid())
+  companyId   String
+  supplierId  String
+  orderNumber String
+  status      String   @default("draft")
+  totalAmount Float
+  currency    String   @default("USD")
+  items       Json
+  deliveryDate DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  supplier    Supplier @relation(fields: [supplierId], references: [id])
+
+  @@index([companyId])
+  @@index([supplierId])
+  @@map("purchase_orders")
+}
+
+model TaxRule {
+  id          String   @id @default(uuid())
+  companyId   String
+  name        String
+  rate        Float
+  country     String?
+  state       String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@index([companyId])
+  @@map("tax_rules")
+}
+
+model Subscription {
+  id          String   @id @default(uuid())
+  companyId   String   @unique
+  plan        String   // free, pro, enterprise
+  status      String   @default("active")
+  startDate   DateTime @default(now())
+  endDate     DateTime?
+  features    Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("subscriptions")
+}
+
+// ============================================
+// AUTH - ADVANCED
+// ============================================
+
+model PasswordPolicy {
+  id              String   @id @default(uuid())
+  companyId       String   @unique
+  minLength       Int      @default(8)
+  requireUppercase Boolean @default(true)
+  requireLowercase Boolean @default(true)
+  requireNumbers  Boolean  @default(true)
+  requireSymbols  Boolean  @default(false)
+  expiryDays      Int?
+  preventReuse    Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("password_policies")
 }

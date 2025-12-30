@@ -197,6 +197,8 @@ export const Events = {
   DEAL_UPDATED: 'crm.deal.updated.v1',
   DEAL_WON: 'crm.deal.won.v1',
   DEAL_LOST: 'crm.deal.lost.v1',
+  ACTIVITY_CREATED: 'crm.activity.created.v1',
+  ACTIVITY_COMPLETED: 'crm.activity.completed.v1',
 
   // Sync
   SYNC_STARTED: 'sync.started.v1',
