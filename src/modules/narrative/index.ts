@@ -101,7 +101,7 @@ async function generateNarrative(evidences: any[], format: string, type: string)
     return response.choices[0]?.message?.content || 'Sem conteúdo gerado';
 
   } catch (error) {
-    logger.error('Failed to generate narrative with LLM', { error });
+    logger.error({ error }, 'Failed to generate narrative with LLM');
     return '# Narrativa\n\n_Erro ao gerar conteúdo_';
   }
 }

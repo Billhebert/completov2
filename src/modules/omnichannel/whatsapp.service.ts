@@ -322,7 +322,7 @@ export class WhatsAppService {
       version: 'v1',
       timestamp: new Date(),
       companyId: account.companyId,
-      userId: null,
+      userId: undefined,
       data: {
         channel: 'whatsapp',
         messageId: savedMessage.id,

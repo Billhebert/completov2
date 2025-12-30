@@ -1,9 +1,10 @@
 // src/modules/sso/index.ts
-import { ModuleDefinition } from '../../core/types';
+import { ModuleDefinition, JWTPayload } from '../../core/types';
 import { Express } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { providers } from './providers';
 import { AuthService } from '../auth/service';
+import { generateToken, generateRefreshToken } from '../../core/middleware/auth';
 import crypto from 'crypto';
 import { logger } from '../../core/logger';
 
@@ -81,10 +82,10 @@ function setupRoutes(app: Express, prisma: PrismaClient) {
       await prisma.oAuthState.delete({ where: { state: state as string } });
 
       // Exchange code for token
-      const { accessToken } = await oauthProvider.exchangeCode(code as string);
+      const { accessToken: oauthAccessToken } = await oauthProvider.exchangeCode(code as string);
 
       // Get user info
-      const userInfo = await oauthProvider.getUserInfo(accessToken);
+      const userInfo = await oauthProvider.getUserInfo(oauthAccessToken);
 
       logger.info({ provider, email: userInfo.email }, 'OAuth user info retrieved');
 
@@ -133,16 +134,23 @@ function setupRoutes(app: Express, prisma: PrismaClient) {
           userId: user.id,
           provider,
           providerUserId: userInfo.id,
-          accessToken,
+          accessToken: oauthAccessToken,
         },
         update: {
-          accessToken,
+          accessToken: oauthAccessToken,
           lastUsedAt: new Date(),
         },
       });
 
       // Generate JWT tokens
-      const tokens = authService.generateTokens(user);
+      const payload: JWTPayload = {
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+        companyId: user.companyId,
+      };
+      const accessToken = generateToken(payload);
+      const refreshToken = generateRefreshToken(payload);
 
       // Update last login
       await prisma.user.update({
@@ -160,7 +168,8 @@ function setupRoutes(app: Express, prisma: PrismaClient) {
             role: user.role,
             companyId: user.companyId,
           },
-          ...tokens,
+          accessToken,
+          refreshToken,
         },
       });
     } catch (error) {

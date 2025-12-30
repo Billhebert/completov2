@@ -35,6 +35,7 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
 
       req.user = {
         id: payload.userId,
+        userId: payload.userId,
         email: payload.email,
         name: payload.email.split('@')[0], // Fallback
         role: payload.role,
@@ -75,6 +76,7 @@ export function optionalAuth(req: Request, res: Response, next: NextFunction) {
 
       req.user = {
         id: payload.userId,
+        userId: payload.userId,
         email: payload.email,
         name: payload.email.split('@')[0],
         role: payload.role,
@@ -96,20 +98,18 @@ export function optionalAuth(req: Request, res: Response, next: NextFunction) {
  * Generate JWT token
  */
 export function generateToken(payload: JWTPayload): string {
-  const options: jwt.SignOptions = {
-    expiresIn: env.JWT_EXPIRES_IN,
-  };
-  return jwt.sign(payload, env.JWT_SECRET, options);
+  return jwt.sign(payload, env.JWT_SECRET, {
+    expiresIn: env.JWT_EXPIRES_IN as any,
+  });
 }
 
 /**
  * Generate refresh token
  */
 export function generateRefreshToken(payload: JWTPayload): string {
-  const options: jwt.SignOptions = {
-    expiresIn: env.JWT_REFRESH_EXPIRES_IN,
-  };
-  return jwt.sign(payload, env.JWT_SECRET, options);
+  return jwt.sign(payload, env.JWT_SECRET, {
+    expiresIn: env.JWT_REFRESH_EXPIRES_IN as any,
+  });
 }
 
 /**
