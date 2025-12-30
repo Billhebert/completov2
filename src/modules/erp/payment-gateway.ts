@@ -7,7 +7,7 @@ import { z } from 'zod';
 import Stripe from 'stripe';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2024-12-18.acacia',
+  apiVersion: '2025-12-15.clover',
 });
 
 const paymentIntentSchema = z.object({
@@ -119,9 +119,9 @@ export function setupPaymentRoutes(router: Router, prisma: PrismaClient, eventBu
         if (payment.invoiceId) {
           await prisma.invoice.update({
             where: { id: payment.invoiceId },
-            data: { 
+            data: {
               status: paymentIntent.status === 'succeeded' ? 'paid' : 'pending',
-              paidAt: paymentIntent.status === 'succeeded' ? new Date() : null,
+              paidDate: paymentIntent.status === 'succeeded' ? new Date() : null,
             },
           });
         }
@@ -216,16 +216,25 @@ export function setupPaymentRoutes(router: Router, prisma: PrismaClient, eventBu
         });
 
         // Save to database
+        const currentPeriodStart = (subscription as any).current_period_start;
+        const currentPeriodEnd = (subscription as any).current_period_end;
+
         const sub = await prisma.subscription.create({
           data: {
             companyId: req.companyId!,
             contactId,
+            plan: 'standard', // Default plan
             provider: 'stripe',
             providerSubscriptionId: subscription.id,
             status: subscription.status,
-            currentPeriodStart: new Date(subscription.current_period_start * 1000),
-            currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+            currentPeriodStart: currentPeriodStart
+              ? new Date(currentPeriodStart * 1000)
+              : undefined,
+            currentPeriodEnd: currentPeriodEnd
+              ? new Date(currentPeriodEnd * 1000)
+              : undefined,
             providerData: JSON.stringify(subscription),
+            features: {},
           },
         });
 
@@ -279,7 +288,7 @@ export function setupPaymentRoutes(router: Router, prisma: PrismaClient, eventBu
                 where: { id: payment.invoiceId },
                 data: {
                   status: 'paid',
-                  paidAt: new Date(),
+                  paidDate: new Date(),
                 },
               });
             }
@@ -317,15 +326,23 @@ export function setupPaymentRoutes(router: Router, prisma: PrismaClient, eventBu
 
           case 'invoice.paid': {
             const invoice = event.data.object as Stripe.Invoice;
-            
+
             // Handle subscription invoice paid
-            if (invoice.subscription) {
+            const subscriptionId = (invoice as any).subscription;
+            if (subscriptionId && typeof subscriptionId === 'string') {
+              const periodStart = (invoice as any).period_start;
+              const periodEnd = (invoice as any).period_end;
+
               await prisma.subscription.updateMany({
-                where: { providerSubscriptionId: invoice.subscription as string },
+                where: { providerSubscriptionId: subscriptionId },
                 data: {
                   status: 'active',
-                  currentPeriodStart: new Date((invoice.period_start || 0) * 1000),
-                  currentPeriodEnd: new Date((invoice.period_end || 0) * 1000),
+                  currentPeriodStart: periodStart
+                    ? new Date(periodStart * 1000)
+                    : undefined,
+                  currentPeriodEnd: periodEnd
+                    ? new Date(periodEnd * 1000)
+                    : undefined,
                 },
               });
             }

@@ -148,7 +148,10 @@ model User {
   assignedConversations ConversationAssignment[]
   assignedToConversations Conversation[] @relation("ConversationAssignedTo")
   conversationNotes ConversationNote[]
-  
+
+  // ERP
+  createdRecurringInvoices RecurringInvoice[] @relation("RecurringInvoiceCreatedBy")
+
   // Notifications
   notifications Notification[]
   
@@ -477,6 +480,7 @@ model Contact {
   interactions Interaction[]
   activities Activity[]
   invoices Invoice[]
+  recurringInvoices RecurringInvoice[] @relation("RecurringInvoiceContact")
 
   @@unique([companyId, email])
   @@index([stripeCustomerId])
@@ -658,6 +662,7 @@ model Invoice {
   total Float
   paidAmount Float @default(0)
   paidDate DateTime?
+  sentAt DateTime? // When invoice was sent
   paymentMethod String?
   notes String? @db.Text
   metadata Json?
@@ -2173,7 +2178,7 @@ model Payment {
   invoiceId   String?
   amount      Float
   currency    String   @default("USD")
-  method      String   // credit_card, bank_transfer, etc
+  method      String?  // credit_card, bank_transfer, etc (made optional)
   provider    String?  // stripe, paypal, etc
   providerPaymentId String? // ID from payment provider
   providerData Json?   // Additional provider-specific data
@@ -2181,6 +2186,7 @@ model Payment {
   reference   String?
   paidAt      DateTime?
   refundedAt  DateTime?
+  refundAmount Float?  // Amount refunded
   createdAt   DateTime @default(now())
 
   invoice     Invoice? @relation(fields: [invoiceId], references: [id])
@@ -2195,16 +2201,28 @@ model RecurringInvoice {
   id          String   @id @default(uuid())
   companyId   String
   contactId   String
+  createdById String?
+  productIds  String[] // Array of product IDs to include
   amount      Float
   currency    String   @default("USD")
   frequency   String   // daily, weekly, monthly, yearly
+  status      String   @default("active") // active, paused, cancelled
   nextDate    DateTime
+  nextInvoiceDate DateTime? // Alternative field name for nextDate
+  lastInvoiceDate DateTime? // Last time invoice was generated
   endDate     DateTime?
+  autoSend    Boolean  @default(true) // Auto-send generated invoices
+  emailReminder Boolean @default(true)
   isActive    Boolean  @default(true)
   templateData Json
   createdAt   DateTime @default(now())
 
+  contact     Contact  @relation("RecurringInvoiceContact", fields: [contactId], references: [id])
+  createdBy   User?    @relation("RecurringInvoiceCreatedBy", fields: [createdById], references: [id])
+
   @@index([companyId])
+  @@index([contactId])
+  @@index([createdById])
   @@map("recurring_invoices")
 }
 
@@ -2259,12 +2277,14 @@ model Subscription {
   contactId   String?  // Optional contact for subscription
   plan        String   // free, pro, enterprise
   status      String   @default("active")
+  provider    String?  // stripe, paypal, etc
+  providerSubscriptionId String? // Stripe/PayPal subscription ID
+  providerData Json?   // Additional provider-specific data
   startDate   DateTime @default(now())
   endDate     DateTime?
   currentPeriodStart DateTime?
   currentPeriodEnd   DateTime?
   cancelledAt DateTime?
-  providerSubscriptionId String? // Stripe/PayPal subscription ID
   features    Json
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
