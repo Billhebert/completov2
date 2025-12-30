@@ -1,3 +1,21 @@
+// Create mock function storage FIRST, outside jest.mock
+let globalMockCreate: jest.Mock;
+
+// Mock OpenAI BEFORE any imports
+jest.mock('openai', () => {
+  globalMockCreate = jest.fn();
+  return {
+    OpenAI: jest.fn().mockImplementation(function(this: any) {
+      this.chat = {
+        completions: {
+          create: globalMockCreate,
+        },
+      };
+      return this;
+    }),
+  };
+});
+
 import { PeopleGrowthService } from '../../modules/people-growth/service';
 import { PrismaClient } from '@prisma/client';
 import {
@@ -5,18 +23,9 @@ import {
   createTestUser,
   createTestContact,
   createTestInteraction,
-  mockOpenAI,
 } from '../helpers/test-helpers';
 
 const prisma = new PrismaClient();
-
-// Mock OpenAI
-jest.mock('openai', () => {
-  const { mockOpenAI } = require('../helpers/test-helpers');
-  return {
-    OpenAI: jest.fn().mockImplementation(() => mockOpenAI()),
-  };
-});
 
 describe('PeopleGrowthService', () => {
   let service: PeopleGrowthService;
@@ -25,6 +34,7 @@ describe('PeopleGrowthService', () => {
   let contact: any;
 
   beforeEach(async () => {
+    globalMockCreate.mockReset();
     service = new PeopleGrowthService();
     company = await createTestCompany();
     agent = await createTestUser(company.id, 'agent');
@@ -41,8 +51,7 @@ describe('PeopleGrowthService', () => {
       });
 
       // Mock OpenAI to return gaps
-      const openAI = mockOpenAI();
-      (openAI.chat.completions.create as jest.Mock).mockResolvedValue({
+      globalMockCreate.mockResolvedValue({
         choices: [
           {
             message: {
@@ -98,8 +107,7 @@ describe('PeopleGrowthService', () => {
       });
 
       // Mock OpenAI to return same gap
-      const openAI = mockOpenAI();
-      (openAI.chat.completions.create as jest.Mock).mockResolvedValue({
+      globalMockCreate.mockResolvedValue({
         choices: [
           {
             message: {
@@ -139,10 +147,7 @@ describe('PeopleGrowthService', () => {
       const interaction = await createTestInteraction(company.id, agent.id, contact.id);
 
       // Mock OpenAI to throw error
-      const openAI = mockOpenAI();
-      (openAI.chat.completions.create as jest.Mock).mockRejectedValue(
-        new Error('OpenAI API error')
-      );
+      globalMockCreate.mockRejectedValue(new Error('OpenAI API error'));
 
       const gaps = await service.detectGapsFromInteraction(interaction.id);
 
@@ -163,8 +168,7 @@ describe('PeopleGrowthService', () => {
       });
 
       // Mock OpenAI to return no gaps
-      const openAI = mockOpenAI();
-      (openAI.chat.completions.create as jest.Mock).mockResolvedValue({
+      globalMockCreate.mockResolvedValue({
         choices: [
           {
             message: {

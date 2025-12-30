@@ -3,7 +3,6 @@ import { logger } from '@core/logger';
 import { OpenAI } from 'openai';
 
 const prisma = new PrismaClient();
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export interface GapDetectionResult {
   skillId?: string;
@@ -17,6 +16,11 @@ export interface GapDetectionResult {
  * PeopleGrowthService - Detecta e gerencia gaps de desenvolvimento
  */
 export class PeopleGrowthService {
+  private openai: OpenAI;
+
+  constructor(openaiClient?: OpenAI) {
+    this.openai = openaiClient || new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  }
   /**
    * Detecta gaps a partir de uma interação
    */
@@ -210,7 +214,7 @@ export class PeopleGrowthService {
    */
   private async aiAnalyzeInteraction(interaction: any): Promise<any> {
     try {
-      const response = await openai.chat.completions.create({
+      const response = await this.openai.chat.completions.create({
         model: process.env.OPENAI_MODEL || 'gpt-4',
         messages: [
           {

@@ -1,3 +1,21 @@
+// Create mock function storage FIRST, outside jest.mock
+let globalMockCreate: jest.Mock;
+
+// Mock OpenAI BEFORE any imports
+jest.mock('openai', () => {
+  globalMockCreate = jest.fn();
+  return {
+    OpenAI: jest.fn().mockImplementation(function(this: any) {
+      this.chat = {
+        completions: {
+          create: globalMockCreate,
+        },
+      };
+      return this;
+    }),
+  };
+});
+
 import { CuratorService } from '../../modules/knowledge/curator.service';
 import { PrismaClient } from '@prisma/client';
 import {
@@ -10,32 +28,6 @@ import {
 
 const prisma = new PrismaClient();
 
-// Create shared mock - must be outside jest.mock to be accessible from tests
-// but referenced inside the factory via closure
-let sharedMockCreate: jest.Mock;
-
-jest.mock('openai', () => {
-  // Create the mock inside the factory
-  sharedMockCreate = jest.fn();
-
-  return {
-    OpenAI: jest.fn(() => ({
-      chat: {
-        completions: {
-          create: sharedMockCreate,
-        },
-      },
-    })),
-  };
-});
-
-// Wrap for easier access in tests
-const openAIMock = {
-  get mockCreate() {
-    return sharedMockCreate;
-  },
-};
-
 describe('CuratorService', () => {
   let curatorService: CuratorService;
   let company: any;
@@ -43,7 +35,7 @@ describe('CuratorService', () => {
   let contact: any;
 
   beforeEach(async () => {
-    openAIMock.mockCreate.mockReset();
+    globalMockCreate.mockReset();
     curatorService = new CuratorService();
     company = await createTestCompany();
     user = await createTestUser(company.id, 'agent');
@@ -145,7 +137,7 @@ describe('CuratorService', () => {
       };
 
       // Mock OpenAI to return commitments
-      (openAIMock.mockCreate as jest.Mock).mockResolvedValueOnce({
+      globalMockCreate.mockResolvedValueOnce({
         choices: [
           {
             message: {
@@ -193,7 +185,7 @@ describe('CuratorService', () => {
       };
 
       // Mock OpenAI to return no commitments
-      (openAIMock.mockCreate as jest.Mock).mockResolvedValueOnce({
+      globalMockCreate.mockResolvedValueOnce({
         choices: [
           {
             message: {
@@ -275,7 +267,7 @@ describe('CuratorService', () => {
       };
 
       // Mock OpenAI to return analysis
-      (openAIMock.mockCreate as jest.Mock).mockResolvedValueOnce({
+      globalMockCreate.mockResolvedValueOnce({
         choices: [
           {
             message: {
@@ -319,7 +311,7 @@ describe('CuratorService', () => {
       };
 
       // Mock OpenAI to return analysis
-      (openAIMock.mockCreate as jest.Mock).mockResolvedValueOnce({
+      globalMockCreate.mockResolvedValueOnce({
         choices: [
           {
             message: {
@@ -376,7 +368,7 @@ describe('CuratorService', () => {
 
   describe('Error handling', () => {
     it('should handle OpenAI API errors gracefully', async () => {
-      (openAIMock.mockCreate as jest.Mock).mockRejectedValueOnce(
+      globalMockCreate.mockRejectedValueOnce(
         new Error('OpenAI API error')
       );
 

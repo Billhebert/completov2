@@ -4,7 +4,6 @@ import { eventBus } from '@core/event-bus';
 import { OpenAI } from 'openai';
 
 const prisma = new PrismaClient();
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 /**
  * CuratorService - Auto-criação e auto-linking de Zettels
@@ -16,6 +15,11 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
  * - Interações -> Atualiza Zettels existentes
  */
 export class CuratorService {
+  private openai: OpenAI;
+
+  constructor(openaiClient?: OpenAI) {
+    this.openai = openaiClient || new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  }
   /**
    * Handler: conversation.created
    */
@@ -366,7 +370,7 @@ export class CuratorService {
 
   private async detectCommitments(messageContent: string): Promise<any[]> {
     try {
-      const response = await openai.chat.completions.create({
+      const response = await this.openai.chat.completions.create({
         model: process.env.OPENAI_MODEL || 'gpt-4',
         messages: [
           {
@@ -405,7 +409,7 @@ export class CuratorService {
         `- ${i.type} (${new Date(i.timestamp).toISOString()}): ${i.content.substring(0, 200)}`
       ).join('\n');
 
-      const response = await openai.chat.completions.create({
+      const response = await this.openai.chat.completions.create({
         model: process.env.OPENAI_MODEL || 'gpt-4',
         messages: [
           {
