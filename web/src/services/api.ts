@@ -39,6 +39,20 @@ import type {
   MCPServerLog,
   CreateMCPServer,
 } from '../types/mcp';
+import type {
+  Job,
+  JobApplication,
+  JobInterest,
+  JobZettelSuggestion,
+  CreateJob,
+} from '../types/jobs';
+import type {
+  Service,
+  ServiceProposal,
+  ServiceTransaction,
+  SystemSettings,
+  CreateService,
+} from '../types/services';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
 
@@ -563,6 +577,192 @@ class ApiClient {
     limit?: number;
   }): Promise<MCPServerLog[]> {
     const response = await this.client.get<MCPServerLog[]>(`/mcp/servers/${serverId}/logs`, { params });
+    return response.data;
+  }
+
+  // Jobs
+  async getJobs(params?: {
+    page?: number;
+    pageSize?: number;
+    status?: string;
+    type?: string;
+    isSpecialized?: boolean;
+    search?: string;
+  }): Promise<PaginatedResponse<Job>> {
+    const response = await this.client.get<PaginatedResponse<Job>>('/jobs', { params });
+    return response.data;
+  }
+
+  async getJob(id: string): Promise<Job> {
+    const response = await this.client.get<Job>(`/jobs/${id}`);
+    return response.data;
+  }
+
+  async createJob(data: CreateJob): Promise<Job> {
+    const response = await this.client.post<Job>('/jobs', data);
+    return response.data;
+  }
+
+  async updateJob(id: string, data: Partial<CreateJob>): Promise<Job> {
+    const response = await this.client.put<Job>(`/jobs/${id}`, data);
+    return response.data;
+  }
+
+  async deleteJob(id: string): Promise<void> {
+    await this.client.delete(`/jobs/${id}`);
+  }
+
+  async applyToJob(jobId: string, data: {
+    coverLetter?: string;
+    resume?: any;
+    documents?: any;
+  }): Promise<JobApplication> {
+    const response = await this.client.post<JobApplication>(`/jobs/${jobId}/apply`, data);
+    return response.data;
+  }
+
+  async markJobInterest(jobId: string, data: {
+    reason?: string;
+    notifyOnChanges?: boolean;
+  }): Promise<JobInterest> {
+    const response = await this.client.post<JobInterest>(`/jobs/${jobId}/interest`, data);
+    return response.data;
+  }
+
+  async getJobSuggestions(jobId: string): Promise<JobZettelSuggestion> {
+    const response = await this.client.get<JobZettelSuggestion>(`/jobs/${jobId}/suggestions`);
+    return response.data;
+  }
+
+  async getJobApplications(jobId: string): Promise<JobApplication[]> {
+    const response = await this.client.get<JobApplication[]>(`/jobs/${jobId}/applications`);
+    return response.data;
+  }
+
+  async updateJobApplication(applicationId: string, data: {
+    status?: string;
+    internalNotes?: string;
+    feedback?: string;
+    rating?: number;
+  }): Promise<JobApplication> {
+    const response = await this.client.patch<JobApplication>(`/jobs/applications/${applicationId}`, data);
+    return response.data;
+  }
+
+  // Services
+  async getServices(params?: {
+    page?: number;
+    pageSize?: number;
+    status?: string;
+    category?: string;
+    minBudget?: number;
+    maxBudget?: number;
+    search?: string;
+  }): Promise<PaginatedResponse<Service>> {
+    const response = await this.client.get<PaginatedResponse<Service>>('/services', { params });
+    return response.data;
+  }
+
+  async getService(id: string): Promise<Service> {
+    const response = await this.client.get<Service>(`/services/${id}`);
+    return response.data;
+  }
+
+  async createService(data: CreateService): Promise<Service> {
+    const response = await this.client.post<Service>('/services', data);
+    return response.data;
+  }
+
+  async updateService(id: string, data: Partial<CreateService>): Promise<Service> {
+    const response = await this.client.put<Service>(`/services/${id}`, data);
+    return response.data;
+  }
+
+  async deleteService(id: string): Promise<void> {
+    await this.client.delete(`/services/${id}`);
+  }
+
+  async submitServiceProposal(serviceId: string, data: {
+    proposerType: string;
+    message?: string;
+    estimatedDuration?: number;
+    portfolio?: any;
+  }): Promise<ServiceProposal> {
+    const response = await this.client.post<ServiceProposal>(`/services/${serviceId}/propose`, data);
+    return response.data;
+  }
+
+  async getServiceProposals(serviceId: string): Promise<ServiceProposal[]> {
+    const response = await this.client.get<ServiceProposal[]>(`/services/${serviceId}/proposals`);
+    return response.data;
+  }
+
+  async acceptServiceProposal(proposalId: string): Promise<{ message: string }> {
+    const response = await this.client.patch<{ message: string }>(`/services/proposals/${proposalId}/accept`);
+    return response.data;
+  }
+
+  async rejectServiceProposal(proposalId: string, reason?: string): Promise<{ message: string }> {
+    const response = await this.client.patch<{ message: string }>(`/services/proposals/${proposalId}/reject`, { reason });
+    return response.data;
+  }
+
+  async completeService(serviceId: string, data: {
+    deliverables?: any;
+    notes?: string;
+  }): Promise<{ message: string }> {
+    const response = await this.client.patch<{ message: string }>(`/services/${serviceId}/complete`, data);
+    return response.data;
+  }
+
+  async rateService(serviceId: string, data: {
+    rating: number;
+    feedback?: string;
+  }): Promise<{ message: string }> {
+    const response = await this.client.patch<{ message: string }>(`/services/${serviceId}/rate`, data);
+    return response.data;
+  }
+
+  async getServiceTransactions(params?: {
+    page?: number;
+    pageSize?: number;
+    paymentStatus?: string;
+  }): Promise<PaginatedResponse<ServiceTransaction>> {
+    const response = await this.client.get<PaginatedResponse<ServiceTransaction>>('/services/transactions', { params });
+    return response.data;
+  }
+
+  async updateTransactionPayment(transactionId: string, data: {
+    paymentStatus: string;
+    paymentMethod?: string;
+    transactionId?: string;
+  }): Promise<{ message: string }> {
+    const response = await this.client.patch<{ message: string }>(`/services/transactions/${transactionId}/payment`, data);
+    return response.data;
+  }
+
+  // System Settings
+  async getSystemSettings(): Promise<SystemSettings> {
+    const response = await this.client.get<SystemSettings>('/settings');
+    return response.data;
+  }
+
+  async updateSystemSettings(data: {
+    serviceFeePercentage?: number;
+    minServiceFee?: number;
+    maxServiceFee?: number;
+    currency?: string;
+    metadata?: any;
+  }): Promise<SystemSettings> {
+    const response = await this.client.put<SystemSettings>('/settings', data);
+    return response.data;
+  }
+
+  async getSettingsHistory(params?: {
+    page?: number;
+    pageSize?: number;
+  }): Promise<PaginatedResponse<SystemSettings>> {
+    const response = await this.client.get<PaginatedResponse<SystemSettings>>('/settings/history', { params });
     return response.data;
   }
 }

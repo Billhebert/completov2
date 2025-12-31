@@ -4,8 +4,21 @@ import { Express, Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticate, tenantIsolation } from '../core/middleware';
 
+// Import route modules
+import jobsRouter from '../modules/jobs';
+import servicesRouter from '../modules/services';
+import settingsRouter from '../modules/settings';
+
 export function setupAdditionalRoutes(app: Express, prisma: PrismaClient) {
   const baseUrl = '/api/v1';
+
+  // ============================================
+  // JOBS & SERVICES MODULE
+  // ============================================
+
+  app.use(`${baseUrl}/jobs`, jobsRouter);
+  app.use(`${baseUrl}/services`, servicesRouter);
+  app.use(`${baseUrl}/settings`, settingsRouter);
 
   // ============================================
   // DASHBOARD STATS
