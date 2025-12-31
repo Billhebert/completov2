@@ -19,6 +19,9 @@ import JobsPage from './pages/JobsPage';
 import ServicesPage from './pages/ServicesPage';
 import PartnershipsPage from './pages/PartnershipsPage';
 import SystemSettingsPage from './pages/SystemSettingsPage';
+import RBACPage from './pages/RBACPage';
+import WhatsAppPage from './pages/WhatsAppPage';
+import AIChatPage from './pages/AIChatPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, _hasHydrated } = useAuth();
@@ -156,6 +159,30 @@ function App() {
           element={
             <ProtectedRoute>
               <SystemSettingsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/rbac"
+          element={
+            <ProtectedRoute>
+              <RBACPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/whatsapp"
+          element={
+            <ProtectedRoute>
+              <WhatsAppPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/ai-chat"
+          element={
+            <ProtectedRoute>
+              <AIChatPage />
             </ProtectedRoute>
           }
         />

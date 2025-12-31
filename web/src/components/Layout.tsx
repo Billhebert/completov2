@@ -15,7 +15,11 @@ import {
   Menu,
   X,
   DollarSign,
-  Network
+  Network,
+  Settings,
+  Shield,
+  MessageCircle,
+  Bot
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
@@ -38,6 +42,10 @@ const navigation = [
   { name: 'Jobs', href: '/jobs', icon: Briefcase },
   { name: 'Services', href: '/services', icon: DollarSign },
   { name: 'Partnerships', href: '/partnerships', icon: Network },
+  { name: 'RBAC', href: '/rbac', icon: Shield },
+  { name: 'WhatsApp', href: '/whatsapp', icon: MessageCircle },
+  { name: 'AI Chat', href: '/ai-chat', icon: Bot },
+  { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
 export default function Layout({ children }: LayoutProps) {

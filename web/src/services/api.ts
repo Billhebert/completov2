@@ -12,6 +12,8 @@ import type {
   Workflow,
   DashboardStats,
   PaginatedResponse,
+  WhatsAppAccount,
+  CreateWhatsAppAccount,
 } from '../types';
 import type {
   EventDefinition,
@@ -20,6 +22,19 @@ import type {
   CreateEventDefinition,
   CreateWebhookEndpoint,
 } from '../types/webhooks';
+import type {
+  Department,
+  CustomRole,
+  RolePermission,
+  UserPermission,
+  UserPermissions,
+  PermissionAudit,
+  CreateDepartment,
+  CreateCustomRole,
+  CreateRolePermission,
+  CreateUserPermission,
+  AddUserToDepartment,
+} from '../types/rbac';
 import type {
   FieldTechnician,
   WorkOrder,
@@ -889,6 +904,192 @@ class ApiClient {
   async rejectPartnershipInvite(id: string, reason?: string): Promise<{ message: string }> {
     const response = await this.client.patch<{ message: string }>(`/partnerships/invites/${id}/reject`, { reason });
     return response.data;
+  }
+
+  // AI & RAG
+  async aiChat(data: {
+    message: string;
+    conversationHistory?: Array<{ role: string; content: string }>;
+  }): Promise<{
+    response: string;
+    conversationId?: string;
+  }> {
+    const response = await this.client.post<{
+      response: string;
+      conversationId?: string;
+    }>('/ai/chat', data);
+    return response.data;
+  }
+
+  async aiRagQuery(data: {
+    query: string;
+    useRag?: boolean;
+    conversationHistory?: Array<{ role: string; content: string }>;
+  }): Promise<{
+    response: string;
+    sources?: Array<{
+      id: string;
+      title: string;
+      content: string;
+      relevanceScore: number;
+    }>;
+    sourcesCount?: number;
+  }> {
+    const response = await this.client.post<{
+      response: string;
+      sources?: Array<{
+        id: string;
+        title: string;
+        content: string;
+        relevanceScore: number;
+      }>;
+      sourcesCount?: number;
+    }>('/ai/rag/query', data);
+    return response.data;
+  }
+
+  async aiRagSearch(data: {
+    query: string;
+    limit?: number;
+  }): Promise<{
+    results: Array<{
+      id: string;
+      title: string;
+      content: string;
+      relevanceScore: number;
+      type?: string;
+    }>;
+  }> {
+    const response = await this.client.post<{
+      results: Array<{
+        id: string;
+        title: string;
+        content: string;
+        relevanceScore: number;
+        type?: string;
+      }>;
+    }>('/ai/rag/search', data);
+    return response.data;
+  }
+
+  // WhatsApp
+  async getWhatsAppAccounts(): Promise<WhatsAppAccount[]> {
+    const response = await this.client.get<{ success: boolean; data: WhatsAppAccount[] }>('/omnichannel/whatsapp/accounts');
+    return response.data.data;
+  }
+
+  async createWhatsAppAccount(data: CreateWhatsAppAccount): Promise<WhatsAppAccount> {
+    const response = await this.client.post<{ success: boolean; data: WhatsAppAccount }>('/omnichannel/whatsapp/accounts', data);
+    return response.data.data;
+  }
+
+  async getWhatsAppQRCode(accountId: string): Promise<{ qrCode: string }> {
+    const response = await this.client.get<{ success: boolean; data: { qrCode: string } }>(`/omnichannel/whatsapp/accounts/${accountId}/qrcode`);
+    return response.data.data;
+  }
+
+  async sendWhatsAppMessage(accountId: string, data: { to: string; text: string }): Promise<any> {
+    const response = await this.client.post<{ success: boolean; data: any }>(`/omnichannel/whatsapp/accounts/${accountId}/send`, data);
+    return response.data.data;
+  }
+
+  async getWhatsAppStatus(accountId: string): Promise<any> {
+    const response = await this.client.get<{ success: boolean; data: any }>(`/omnichannel/whatsapp/accounts/${accountId}/status`);
+    return response.data.data;
+  }
+
+  async disconnectWhatsAppAccount(accountId: string): Promise<void> {
+    await this.client.post(`/omnichannel/whatsapp/accounts/${accountId}/disconnect`);
+  }
+
+  async deleteWhatsAppAccount(accountId: string): Promise<void> {
+    await this.client.delete(`/omnichannel/whatsapp/accounts/${accountId}`);
+  }
+
+  // RBAC - Departments
+  async getDepartments(): Promise<Department[]> {
+    const response = await this.client.get<{ success: boolean; data: Department[] }>('/rbac/departments');
+    return response.data.data;
+  }
+
+  async createDepartment(data: CreateDepartment): Promise<Department> {
+    const response = await this.client.post<{ success: boolean; data: Department }>('/rbac/departments', data);
+    return response.data.data;
+  }
+
+  async updateDepartment(id: string, data: Partial<CreateDepartment> & { isActive?: boolean }): Promise<Department> {
+    const response = await this.client.put<{ success: boolean; data: Department }>(`/rbac/departments/${id}`, data);
+    return response.data.data;
+  }
+
+  async deleteDepartment(id: string): Promise<void> {
+    await this.client.delete(`/rbac/departments/${id}`);
+  }
+
+  async addUserToDepartment(departmentId: string, data: AddUserToDepartment): Promise<any> {
+    const response = await this.client.post<{ success: boolean; data: any }>(`/rbac/departments/${departmentId}/users`, data);
+    return response.data.data;
+  }
+
+  // RBAC - Custom Roles
+  async getCustomRoles(): Promise<CustomRole[]> {
+    const response = await this.client.get<{ success: boolean; data: CustomRole[] }>('/rbac/roles');
+    return response.data.data;
+  }
+
+  async createCustomRole(data: CreateCustomRole): Promise<CustomRole> {
+    const response = await this.client.post<{ success: boolean; data: CustomRole }>('/rbac/roles', data);
+    return response.data.data;
+  }
+
+  async updateCustomRole(id: string, data: Partial<CreateCustomRole> & { isActive?: boolean }): Promise<CustomRole> {
+    const response = await this.client.put<{ success: boolean; data: CustomRole }>(`/rbac/roles/${id}`, data);
+    return response.data.data;
+  }
+
+  async deleteCustomRole(id: string): Promise<void> {
+    await this.client.delete(`/rbac/roles/${id}`);
+  }
+
+  // RBAC - Role Permissions
+  async getRolePermissions(roleId: string): Promise<RolePermission[]> {
+    const response = await this.client.get<{ success: boolean; data: RolePermission[] }>(`/rbac/roles/${roleId}/permissions`);
+    return response.data.data;
+  }
+
+  async addRolePermission(roleId: string, data: CreateRolePermission): Promise<RolePermission> {
+    const response = await this.client.post<{ success: boolean; data: RolePermission }>(`/rbac/roles/${roleId}/permissions`, data);
+    return response.data.data;
+  }
+
+  async deleteRolePermission(roleId: string, permissionId: string): Promise<void> {
+    await this.client.delete(`/rbac/roles/${roleId}/permissions/${permissionId}`);
+  }
+
+  // RBAC - User Permissions
+  async getUserPermissions(userId: string): Promise<UserPermissions> {
+    const response = await this.client.get<{ success: boolean; data: UserPermissions }>(`/rbac/users/${userId}/permissions`);
+    return response.data.data;
+  }
+
+  async setUserPermission(userId: string, data: CreateUserPermission): Promise<UserPermission> {
+    const response = await this.client.post<{ success: boolean; data: UserPermission }>(`/rbac/users/${userId}/permissions`, data);
+    return response.data.data;
+  }
+
+  async assignUserRole(userId: string, customRoleId: string | null): Promise<any> {
+    const response = await this.client.put<{ success: boolean; data: any }>(`/rbac/users/${userId}/role`, { customRoleId });
+    return response.data.data;
+  }
+
+  // RBAC - Audit
+  async getPermissionAudits(params?: {
+    entityType?: string;
+    entityId?: string;
+    limit?: number;
+  }): Promise<PermissionAudit[]> {
+    const response = await this.client.get<{ success: boolean; data: PermissionAudit[] }>('/rbac/audit', { params });
+    return response.data.data;
   }
 }
 

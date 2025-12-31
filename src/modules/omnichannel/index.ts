@@ -141,6 +141,30 @@ function setupRoutes(app: Express, prisma: PrismaClient, eventBus: EventBus) {
       next(error);
     }
   });
+
+  // Delete account
+  app.delete(`${base}/whatsapp/accounts/:accountId`, authenticate, tenantIsolation, async (req, res, next) => {
+    try {
+      // First try to disconnect the instance
+      try {
+        await evolutionService.disconnectInstance(req.params.accountId);
+      } catch (error) {
+        // Ignore disconnect errors, account might already be disconnected
+      }
+
+      // Delete from database
+      await prisma.whatsAppAccount.delete({
+        where: {
+          id: req.params.accountId,
+          companyId: req.companyId!, // Ensure user can only delete their own accounts
+        },
+      });
+
+      res.json({ success: true, message: 'Account deleted' });
+    } catch (error) {
+      next(error);
+    }
+  });
 }
 
 export const omnichannelModule: ModuleDefinition = {
