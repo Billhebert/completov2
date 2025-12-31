@@ -106,8 +106,32 @@ class ApiClient {
 
         if ((is404 || is500) && isModuleEndpoint) {
           console.warn(`[API] Module not available: ${url} (${error.response?.status})`);
-          // Return empty data instead of rejecting to prevent uncaught promise errors
-          return Promise.resolve({ data: [] } as any);
+
+          // Some endpoints return arrays directly, others return PaginatedResponse
+          const arrayEndpoints = [
+            /^\/workflows(\?.*)?$/,
+            /\/tools(\?.*)?$/,
+            /\/resources(\?.*)?$/,
+            /\/logs(\?.*)?$/,
+          ];
+
+          const isArrayEndpoint = arrayEndpoints.some(pattern => url.match(pattern));
+
+          // Return appropriate empty data structure
+          if (isArrayEndpoint) {
+            return Promise.resolve({ data: [] } as any);
+          } else {
+            // Return empty PaginatedResponse for other endpoints
+            return Promise.resolve({
+              data: {
+                data: [],
+                total: 0,
+                page: 1,
+                pageSize: 10,
+                totalPages: 0
+              }
+            } as any);
+          }
         }
 
         if (error.response?.status === 401) {
