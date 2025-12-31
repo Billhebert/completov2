@@ -98,6 +98,27 @@ model Company {
   customRoles CustomRole[]
   permissionTemplates PermissionTemplate[]
 
+  // Webhooks & Events (NEW)
+  eventDefinitions EventDefinition[]
+  webhookEndpoints WebhookEndpoint[]
+
+  // MCP Servers (NEW)
+  mcpServers MCPServer[]
+
+  // FSM - Field Service Management (NEW)
+  fieldTechnicians FieldTechnician[]
+  workOrders WorkOrder[]
+  technicianRoutes TechnicianRoute[]
+
+  // CMMS + EAM (NEW)
+  assets Asset[]
+  assetMaintenancePlans AssetMaintenancePlan[]
+  maintenanceRecords MaintenanceRecord[]
+  assetDowntime AssetDowntime[]
+  assetMeters AssetMeter[]
+  spareParts SparePart[]
+  sparePartMovements SparePartMovement[]
+
   @@unique([domain])
   @@map("companies")
 }
@@ -2672,3 +2693,528 @@ model PermissionAudit {
   @@index([timestamp])
   @@map("permission_audits")
 }
+
+// ============================================
+// WEBHOOKS & EVENTS SYSTEM
+// ============================================
+
+// Eventos customizados que podem disparar webhooks
+model EventDefinition {
+  id          String   @id @default(uuid())
+  companyId   String
+  name        String   // Ex: "deal.created", "contact.updated"
+  category    String   // Ex: "crm", "erp", "custom"
+  description String?
+  schema      Json?    // JSON Schema do payload
+  isSystem    Boolean  @default(false) // Eventos do sistema vs customizados
+  isActive    Boolean  @default(true)
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, name])
+  @@index([companyId, category])
+  @@index([isActive])
+  @@map("event_definitions")
+}
+
+// Webhook configurado pelo cliente
+model WebhookEndpoint {
+  id          String   @id @default(uuid())
+  companyId   String
+  name        String
+  url         String
+  secret      String   // Para assinar payloads (HMAC)
+  events      String[] // Array de event names que escuta
+  headers     Json?    // Headers customizados
+  timeout     Int      @default(30000) // Timeout em ms
+  retryConfig Json?    // {maxRetries: 3, backoff: 'exponential'}
+  isActive    Boolean  @default(true)
+  description String?
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  deliveries  WebhookDeliveryLog[]
+
+  @@index([companyId])
+  @@index([isActive])
+  @@map("webhook_endpoints")
+}
+
+// Log de entregas de webhooks
+model WebhookDeliveryLog {
+  id             String   @id @default(uuid())
+  endpointId     String
+  eventName      String
+  eventId        String   // ID do evento que disparou
+  payload        Json
+  request        Json     // Headers, URL, etc
+  response       Json?    // Status, body, headers
+  statusCode     Int?
+  success        Boolean
+  error          String?  @db.Text
+  attemptNumber  Int      @default(1)
+  nextRetryAt    DateTime?
+  deliveredAt    DateTime?
+  createdAt      DateTime @default(now())
+
+  endpoint       WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+
+  @@index([endpointId])
+  @@index([eventName])
+  @@index([success])
+  @@index([nextRetryAt])
+  @@index([createdAt])
+  @@map("webhook_delivery_logs")
+}
+
+// ============================================
+// MCP (Model Context Protocol) SERVERS
+// ============================================
+
+// MCP Servers customizados por empresa
+model MCPServer {
+  id          String   @id @default(uuid())
+  companyId   String
+  name        String
+  description String?
+  type        String   // "builtin", "custom", "community"
+  command     String   // Comando para executar o servidor
+  args        Json?    // Argumentos do comando
+  env         Json?    // Variaveis de ambiente
+  config      Json?    // Configuracao especifica do servidor
+  isActive    Boolean  @default(true)
+  isPublic    Boolean  @default(false) // Se outros podem usar
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  tools       MCPTool[]
+  resources   MCPResource[]
+  logs        MCPServerLog[]
+
+  @@index([companyId])
+  @@index([type])
+  @@index([isActive])
+  @@map("mcp_servers")
+}
+
+// Ferramentas (tools) expostas por um MCP server
+model MCPTool {
+  id          String   @id @default(uuid())
+  serverId    String
+  name        String
+  description String?
+  inputSchema Json     // JSON Schema dos parametros
+  createdAt   DateTime @default(now())
+
+  server      MCPServer @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@unique([serverId, name])
+  @@index([serverId])
+  @@map("mcp_tools")
+}
+
+// Recursos expostos por um MCP server
+model MCPResource {
+  id          String   @id @default(uuid())
+  serverId    String
+  uri         String
+  name        String
+  description String?
+  mimeType    String?
+  createdAt   DateTime @default(now())
+
+  server      MCPServer @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@unique([serverId, uri])
+  @@index([serverId])
+  @@map("mcp_resources")
+}
+
+// Logs de execucao de MCP servers
+model MCPServerLog {
+  id          String   @id @default(uuid())
+  serverId    String
+  level       String   // "info", "warn", "error", "debug"
+  message     String   @db.Text
+  metadata    Json?
+  timestamp   DateTime @default(now())
+
+  server      MCPServer @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@index([serverId])
+  @@index([level])
+  @@index([timestamp])
+  @@map("mcp_server_logs")
+}
+
+// ============================================
+// FSM - FIELD SERVICE MANAGEMENT
+// ============================================
+
+// Tecnicos de campo
+model FieldTechnician {
+  id          String   @id @default(uuid())
+  companyId   String
+  userId      String   // Link para User
+  skills      String[] // Skills do tecnico
+  certifications Json? // Certificacoes
+  availability Json    // Calendario de disponibilidade
+  location    Json?    // {lat, lng, address}
+  status      String   @default("available") // available, busy, offline
+  rating      Float    @default(0)
+  metadata    Json?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  workOrders  WorkOrder[]
+  routes      TechnicianRoute[]
+
+  @@index([companyId])
+  @@index([status])
+  @@index([isActive])
+  @@map("field_technicians")
+}
+
+// Ordem de servico
+model WorkOrder {
+  id              String   @id @default(uuid())
+  companyId       String
+  customerId      String?  // Link para Contact
+  assetId         String?  // Link para Asset (CMMS)
+  technicianId    String?
+  title           String
+  description     String   @db.Text
+  type            String   // "installation", "maintenance", "repair", "inspection"
+  priority        String   @default("medium") // low, medium, high, urgent
+  status          String   @default("open") // open, assigned, in_progress, completed, cancelled
+  scheduledStart  DateTime?
+  scheduledEnd    DateTime?
+  actualStart     DateTime?
+  actualEnd       DateTime?
+  location        Json     // {lat, lng, address}
+  instructions    String?  @db.Text
+  partsRequired   Json?    // Lista de pecas necessarias
+  estimatedHours  Float?
+  actualHours     Float?
+  cost            Float?
+  attachments     Json?    // Array de file URLs
+  signature       String?  // Assinatura digital do cliente
+  feedback        Json?    // Rating e comentarios
+  metadata        Json?
+  createdBy       String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  asset           Asset?   @relation("AssetWorkOrders", fields: [assetId], references: [id])
+  technician      FieldTechnician? @relation(fields: [technicianId], references: [id])
+  tasks           WorkOrderTask[]
+  checklistItems  WorkOrderChecklist[]
+  timeEntries     WorkOrderTimeEntry[]
+
+  @@index([companyId])
+  @@index([assetId])
+  @@index([technicianId])
+  @@index([status])
+  @@index([priority])
+  @@index([scheduledStart])
+  @@map("work_orders")
+}
+
+// Tarefas dentro de uma ordem de servico
+model WorkOrderTask {
+  id          String   @id @default(uuid())
+  workOrderId String
+  title       String
+  description String?
+  isCompleted Boolean  @default(false)
+  completedAt DateTime?
+  completedBy String?
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+
+  @@index([workOrderId])
+  @@map("work_order_tasks")
+}
+
+// Checklist de verificacao
+model WorkOrderChecklist {
+  id          String   @id @default(uuid())
+  workOrderId String
+  item        String
+  isChecked   Boolean  @default(false)
+  checkedAt   DateTime?
+  checkedBy   String?
+  notes       String?
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+
+  @@index([workOrderId])
+  @@map("work_order_checklists")
+}
+
+// Registro de tempo
+model WorkOrderTimeEntry {
+  id          String   @id @default(uuid())
+  workOrderId String
+  technicianId String
+  startTime   DateTime
+  endTime     DateTime?
+  duration    Int?     // Minutos
+  description String?
+  createdAt   DateTime @default(now())
+
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+
+  @@index([workOrderId])
+  @@index([technicianId])
+  @@map("work_order_time_entries")
+}
+
+// Rotas otimizadas para tecnicos
+model TechnicianRoute {
+  id           String   @id @default(uuid())
+  companyId    String
+  technicianId String
+  date         DateTime
+  workOrders   Json     // Array de work order IDs na ordem otimizada
+  totalDistance Float?   // Em km
+  totalDuration Int?     // Em minutos
+  optimizedBy  String?  // "manual", "ai", "algorithm"
+  createdAt    DateTime @default(now())
+
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  technician   FieldTechnician @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([technicianId])
+  @@index([date])
+  @@map("technician_routes")
+}
+
+// ============================================
+// CMMS + EAM - MAINTENANCE & ASSET MANAGEMENT
+// ============================================
+
+// Ativos da empresa
+model Asset {
+  id              String   @id @default(uuid())
+  companyId       String
+  name            String
+  assetTag        String   // Codigo unico do ativo
+  category        String   // "equipment", "vehicle", "facility", "tool"
+  type            String?  // Tipo especifico
+  manufacturer    String?
+  model           String?
+  serialNumber    String?
+  purchaseDate    DateTime?
+  purchaseCost    Float?
+  warrantyExpiry  DateTime?
+  location        Json?    // {building, floor, room} ou {lat, lng}
+  status          String   @default("operational") // operational, maintenance, down, retired
+  condition       String?  // excellent, good, fair, poor
+  criticality     String   @default("medium") // low, medium, high, critical
+  parentAssetId   String?  // Para hierarquia de ativos
+  specifications  Json?    // Specs tecnicas
+  documents       Json?    // Manuais, certificados, etc
+  qrCode          String?  // QR code para identificacao rapida
+  customFields    Json?
+  createdBy       String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  parentAsset     Asset?   @relation("AssetHierarchy", fields: [parentAssetId], references: [id])
+  childAssets     Asset[]  @relation("AssetHierarchy")
+  maintenancePlans AssetMaintenancePlan[]
+  maintenanceHistory MaintenanceRecord[]
+  workOrders      WorkOrder[] @relation("AssetWorkOrders")
+  downtime        AssetDowntime[]
+  meters          AssetMeter[]
+
+  @@unique([companyId, assetTag])
+  @@index([companyId])
+  @@index([category])
+  @@index([status])
+  @@index([parentAssetId])
+  @@map("assets")
+}
+
+// Planos de manutencao preventiva
+model AssetMaintenancePlan {
+  id              String   @id @default(uuid())
+  companyId       String
+  assetId         String
+  name            String
+  description     String?  @db.Text
+  type            String   // "time-based", "meter-based", "condition-based"
+  frequency       Json     // {value: 30, unit: "days"} ou {value: 1000, unit: "hours"}
+  tasks           Json     // Array de tarefas a executar
+  estimatedDuration Int?   // Minutos
+  assignedToId    String?  // Tecnico ou equipe
+  priority        String   @default("medium")
+  isActive        Boolean  @default(true)
+  lastPerformed   DateTime?
+  nextDue         DateTime?
+  metadata        Json?
+  createdBy       String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  asset           Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([assetId])
+  @@index([isActive])
+  @@index([nextDue])
+  @@map("asset_maintenance_plans")
+}
+
+// Historico de manutencao
+model MaintenanceRecord {
+  id              String   @id @default(uuid())
+  companyId       String
+  assetId         String
+  planId          String?  // Se foi manutencao planejada
+  type            String   // "preventive", "corrective", "predictive", "emergency"
+  title           String
+  description     String   @db.Text
+  performedBy     String?  // Tecnico
+  startTime       DateTime
+  endTime         DateTime?
+  duration        Int?     // Minutos
+  partsUsed       Json?    // [{partId, quantity, cost}]
+  laborCost       Float?
+  partsCost       Float?
+  totalCost       Float?
+  outcome         String?  // "completed", "partial", "failed"
+  notes           String?  @db.Text
+  attachments     Json?
+  createdBy       String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  asset           Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([assetId])
+  @@index([type])
+  @@index([startTime])
+  @@map("maintenance_records")
+}
+
+// Tempo de inatividade dos ativos
+model AssetDowntime {
+  id          String   @id @default(uuid())
+  companyId   String
+  assetId     String
+  reason      String   // "maintenance", "breakdown", "no_operator", "planned"
+  description String?  @db.Text
+  startTime   DateTime
+  endTime     DateTime?
+  duration    Int?     // Minutos
+  impact      String?  // "low", "medium", "high", "critical"
+  cost        Float?   // Custo estimado da inatividade
+  resolvedBy  String?
+  createdAt   DateTime @default(now())
+
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  asset       Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([assetId])
+  @@index([reason])
+  @@index([startTime])
+  @@map("asset_downtime")
+}
+
+// Medidores de ativos (horas de uso, km, ciclos, etc)
+model AssetMeter {
+  id          String   @id @default(uuid())
+  companyId   String
+  assetId     String
+  name        String   // "hours", "kilometers", "cycles"
+  unit        String   // "h", "km", "cycles"
+  currentValue Float
+  lastReading DateTime
+  readingHistory Json? // Historico de leituras
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  asset       Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@unique([assetId, name])
+  @@index([companyId])
+  @@index([assetId])
+  @@map("asset_meters")
+}
+
+// Inventario de pecas de reposicao
+model SparePart {
+  id            String   @id @default(uuid())
+  companyId     String
+  partNumber    String
+  name          String
+  description   String?
+  category      String?
+  manufacturer  String?
+  supplier      String?
+  unitCost      Float?
+  quantityOnHand Int     @default(0)
+  minQuantity   Int      @default(0) // Ponto de reposicao
+  maxQuantity   Int?
+  location      String?  // Onde esta armazenado
+  compatibleAssets Json? // Array de asset IDs compativeis
+  lastRestocked DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  movements     SparePartMovement[]
+
+  @@unique([companyId, partNumber])
+  @@index([companyId])
+  @@index([category])
+  @@index([quantityOnHand])
+  @@map("spare_parts")
+}
+
+// Movimentacao de pecas
+model SparePartMovement {
+  id          String   @id @default(uuid())
+  companyId   String
+  partId      String
+  type        String   // "in", "out", "adjustment"
+  quantity    Int
+  reason      String?  // "maintenance", "installation", "return", "stock"
+  reference   String?  // Work order ID, purchase order, etc
+  performedBy String
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  part        SparePart @relation(fields: [partId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([partId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("spare_part_movements")
+}
+
