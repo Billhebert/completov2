@@ -93,6 +93,11 @@ model Company {
   // Reminders (NEW)
   reminders Reminder[]
 
+  // RBAC - Advanced (NEW)
+  departments Department[]
+  customRoles CustomRole[]
+  permissionTemplates PermissionTemplate[]
+
   @@unique([domain])
   @@map("companies")
 }
@@ -103,7 +108,8 @@ model User {
   email String
   passwordHash String
   name String
-  role String
+  role String  // System role: DEV, admin, admin_empresa, cliente
+  customRoleId String?  // Custom role criado pelo admin_empresa (opcional)
   active Boolean @default(true)
   twoFactorSecret String?
   lastLogin DateTime?
@@ -111,7 +117,7 @@ model User {
   timezone String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   
   // Knowledge
@@ -202,7 +208,12 @@ model User {
   // Chatbot - Advanced
   createdChatbots Chatbot[] @relation("ChatbotCreatedBy")
 
+  // RBAC - Advanced (NEW)
+  userDepartments UserDepartment[] @relation("UserDepartments")
+  userPermissions UserPermission[] @relation("UserPermissions")
+
   @@unique([companyId, email])
+  @@index([customRoleId])
   @@map("users")
 }
 
@@ -2479,4 +2490,185 @@ model RAGDocument {
   @@index([companyId, status])
   @@index([uploadedBy])
   @@map("rag_documents")
+}
+
+// ============================================
+// RBAC - ADVANCED HIERARCHICAL SYSTEM
+// ============================================
+
+// Departamento da empresa
+// O admin_empresa pode criar quantos departamentos quiser
+model Department {
+  id          String   @id @default(uuid())
+  companyId   String
+  name        String
+  description String?
+  parentId    String?  // Para criar subdepartamentos
+  isActive    Boolean  @default(true)
+  metadata    Json? // Configuracoes customizadas
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company     Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  parent      Department?  @relation("DepartmentHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
+  children    Department[] @relation("DepartmentHierarchy")
+
+  // Usuários neste departamento
+  userDepartments UserDepartment[]
+
+  // Permissões específicas do departamento
+  departmentPermissions DepartmentPermission[]
+
+  @@index([companyId])
+  @@index([parentId])
+  @@index([companyId, isActive])
+  @@map("departments")
+}
+
+// Relacao Many-to-Many entre User e Department
+// Um usuario pode estar em multiplos departamentos
+model UserDepartment {
+  id           String   @id @default(uuid())
+  userId       String
+  departmentId String
+  isPrimary    Boolean  @default(false) // Departamento principal do usuário
+  assignedAt   DateTime @default(now())
+  assignedBy   String
+
+  user         User       @relation("UserDepartments", fields: [userId], references: [id], onDelete: Cascade)
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, departmentId])
+  @@index([userId])
+  @@index([departmentId])
+  @@map("user_departments")
+}
+
+// Cargos/Funcoes customizadas criadas pelo admin_empresa
+// Permite criar quantos niveis de acesso quiser
+model CustomRole {
+  id          String   @id @default(uuid())
+  companyId   String
+  name        String   // Ex: "Vendedor Jr", "Gerente de Vendas", "Analista"
+  description String?
+  level       Int      @default(0) // Hierarquia: quanto maior, mais poder
+  isActive    Boolean  @default(true)
+  isSystem    Boolean  @default(false) // Roles do sistema (DEV, admin, admin_empresa)
+  metadata    Json? // Configuracoes extras
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company     Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // Permissões desta role
+  rolePermissions RolePermission[]
+
+  // Permissões por departamento
+  departmentPermissions DepartmentPermission[]
+
+  @@unique([companyId, name])
+  @@index([companyId, isActive])
+  @@map("custom_roles")
+}
+
+// Permissoes de cada cargo customizado
+// Define o que cada cargo pode fazer
+model RolePermission {
+  id         String   @id @default(uuid())
+  roleId     String
+  resource   String   // Ex: "contact", "deal", "product", "invoice"
+  action     String   // Ex: "read", "create", "update", "delete", "export"
+  conditions Json? // Condicoes extras (ex: só seus proprios registros)
+  createdAt  DateTime @default(now())
+
+  role       CustomRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, resource, action])
+  @@index([roleId])
+  @@map("role_permissions")
+}
+
+// Permissoes especificas por departamento
+// Um cargo pode ter permissoes diferentes em departamentos diferentes
+model DepartmentPermission {
+  id           String   @id @default(uuid())
+  departmentId String
+  roleId       String
+  resource     String
+  action       String
+  conditions   Json?
+  createdAt    DateTime @default(now())
+
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  role         CustomRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([departmentId, roleId, resource, action])
+  @@index([departmentId])
+  @@index([roleId])
+  @@map("department_permissions")
+}
+
+// Permissoes especificas por usuario (override)
+// Permite dar/remover permissoes especificas de um usuario
+model UserPermission {
+  id         String   @id @default(uuid())
+  userId     String
+  resource   String
+  action     String
+  granted    Boolean  @default(true) // true = concede, false = revoga
+  conditions Json?
+  reason     String?  // Motivo da concessao/revogacao
+  grantedBy  String
+  expiresAt  DateTime? // Permissao temporaria
+  createdAt  DateTime @default(now())
+
+  user       User     @relation("UserPermissions", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, resource, action])
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("user_permissions")
+}
+
+// Templates de permissoes para facilitar
+// Admin_empresa pode criar templates e aplicar em cargos
+model PermissionTemplate {
+  id          String   @id @default(uuid())
+  companyId   String
+  name        String   // Ex: "Vendedor Completo", "Suporte Básico"
+  description String?
+  permissions Json     // Array de {resource, action, conditions}
+  isPublic    Boolean  @default(false) // Se outros admins podem usar
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company     Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([isPublic])
+  @@map("permission_templates")
+}
+
+// Historico de mudancas de permissoes (auditoria)
+model PermissionAudit {
+  id          String   @id @default(uuid())
+  companyId   String
+  entityType  String   // "user", "role", "department"
+  entityId    String
+  action      String   // "grant", "revoke", "update"
+  resource    String
+  permission  String
+  oldValue    Json?
+  newValue    Json?
+  changedBy   String
+  reason      String?
+  timestamp   DateTime @default(now())
+
+  @@index([companyId])
+  @@index([entityType, entityId])
+  @@index([timestamp])
+  @@map("permission_audits")
 }
