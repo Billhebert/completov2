@@ -13,6 +13,32 @@ import type {
   DashboardStats,
   PaginatedResponse,
 } from '../types';
+import type {
+  EventDefinition,
+  WebhookEndpoint,
+  WebhookDelivery,
+  CreateEventDefinition,
+  CreateWebhookEndpoint,
+} from '../types/webhooks';
+import type {
+  FieldTechnician,
+  WorkOrder,
+  CreateWorkOrder,
+} from '../types/fsm';
+import type {
+  Asset,
+  MaintenancePlan,
+  MaintenanceRecord,
+  SparePart,
+  CreateAsset,
+} from '../types/cmms';
+import type {
+  MCPServer,
+  MCPTool,
+  MCPResource,
+  MCPServerLog,
+  CreateMCPServer,
+} from '../types/mcp';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
 
@@ -237,6 +263,306 @@ class ApiClient {
   // Dashboard
   async getDashboardStats(): Promise<DashboardStats> {
     const response = await this.client.get<DashboardStats>('/dashboard/stats');
+    return response.data;
+  }
+
+  // Webhooks & Events
+  async getEventDefinitions(params?: {
+    page?: number;
+    pageSize?: number;
+    category?: string;
+  }): Promise<PaginatedResponse<EventDefinition>> {
+    const response = await this.client.get<PaginatedResponse<EventDefinition>>('/webhooks/events', { params });
+    return response.data;
+  }
+
+  async createEventDefinition(data: CreateEventDefinition): Promise<EventDefinition> {
+    const response = await this.client.post<EventDefinition>('/webhooks/events', data);
+    return response.data;
+  }
+
+  async updateEventDefinition(id: string, data: Partial<CreateEventDefinition>): Promise<EventDefinition> {
+    const response = await this.client.put<EventDefinition>(`/webhooks/events/${id}`, data);
+    return response.data;
+  }
+
+  async deleteEventDefinition(id: string): Promise<void> {
+    await this.client.delete(`/webhooks/events/${id}`);
+  }
+
+  async getWebhookEndpoints(params?: {
+    page?: number;
+    pageSize?: number;
+  }): Promise<PaginatedResponse<WebhookEndpoint>> {
+    const response = await this.client.get<PaginatedResponse<WebhookEndpoint>>('/webhooks/endpoints', { params });
+    return response.data;
+  }
+
+  async createWebhookEndpoint(data: CreateWebhookEndpoint): Promise<WebhookEndpoint> {
+    const response = await this.client.post<WebhookEndpoint>('/webhooks/endpoints', data);
+    return response.data;
+  }
+
+  async updateWebhookEndpoint(id: string, data: Partial<CreateWebhookEndpoint>): Promise<WebhookEndpoint> {
+    const response = await this.client.put<WebhookEndpoint>(`/webhooks/endpoints/${id}`, data);
+    return response.data;
+  }
+
+  async deleteWebhookEndpoint(id: string): Promise<void> {
+    await this.client.delete(`/webhooks/endpoints/${id}`);
+  }
+
+  async toggleWebhookEndpoint(id: string, isActive: boolean): Promise<WebhookEndpoint> {
+    const response = await this.client.patch<WebhookEndpoint>(`/webhooks/endpoints/${id}/toggle`, { isActive });
+    return response.data;
+  }
+
+  async testWebhookEndpoint(id: string): Promise<void> {
+    await this.client.post(`/webhooks/endpoints/${id}/test`);
+  }
+
+  async getWebhookDeliveries(params?: {
+    endpointId?: string;
+    eventName?: string;
+    success?: boolean;
+    page?: number;
+    pageSize?: number;
+  }): Promise<PaginatedResponse<WebhookDelivery>> {
+    const response = await this.client.get<PaginatedResponse<WebhookDelivery>>('/webhooks/deliveries', { params });
+    return response.data;
+  }
+
+  async retryWebhookDelivery(id: string): Promise<void> {
+    await this.client.post(`/webhooks/deliveries/${id}/retry`);
+  }
+
+  // Field Service Management (FSM)
+  async getTechnicians(params?: {
+    page?: number;
+    pageSize?: number;
+    status?: string;
+  }): Promise<PaginatedResponse<FieldTechnician>> {
+    const response = await this.client.get<PaginatedResponse<FieldTechnician>>('/fsm/technicians', { params });
+    return response.data;
+  }
+
+  async getTechnician(id: string): Promise<FieldTechnician> {
+    const response = await this.client.get<FieldTechnician>(`/fsm/technicians/${id}`);
+    return response.data;
+  }
+
+  async createTechnician(data: Partial<FieldTechnician>): Promise<FieldTechnician> {
+    const response = await this.client.post<FieldTechnician>('/fsm/technicians', data);
+    return response.data;
+  }
+
+  async updateTechnician(id: string, data: Partial<FieldTechnician>): Promise<FieldTechnician> {
+    const response = await this.client.put<FieldTechnician>(`/fsm/technicians/${id}`, data);
+    return response.data;
+  }
+
+  async updateTechnicianLocation(id: string, location: { lat: number; lng: number; address: string }): Promise<void> {
+    await this.client.patch(`/fsm/technicians/${id}/location`, location);
+  }
+
+  async getWorkOrders(params?: {
+    page?: number;
+    pageSize?: number;
+    status?: string;
+    priority?: string;
+    technicianId?: string;
+  }): Promise<PaginatedResponse<WorkOrder>> {
+    const response = await this.client.get<PaginatedResponse<WorkOrder>>('/fsm/workorders', { params });
+    return response.data;
+  }
+
+  async getWorkOrder(id: string): Promise<WorkOrder> {
+    const response = await this.client.get<WorkOrder>(`/fsm/workorders/${id}`);
+    return response.data;
+  }
+
+  async createWorkOrder(data: CreateWorkOrder): Promise<WorkOrder> {
+    const response = await this.client.post<WorkOrder>('/fsm/workorders', data);
+    return response.data;
+  }
+
+  async updateWorkOrder(id: string, data: Partial<CreateWorkOrder>): Promise<WorkOrder> {
+    const response = await this.client.put<WorkOrder>(`/fsm/workorders/${id}`, data);
+    return response.data;
+  }
+
+  async assignWorkOrder(id: string, technicianId: string): Promise<WorkOrder> {
+    const response = await this.client.patch<WorkOrder>(`/fsm/workorders/${id}/assign`, { technicianId });
+    return response.data;
+  }
+
+  async startWorkOrder(id: string): Promise<WorkOrder> {
+    const response = await this.client.post<WorkOrder>(`/fsm/workorders/${id}/start`);
+    return response.data;
+  }
+
+  async completeWorkOrder(id: string, data?: { signature?: string; feedback?: any }): Promise<WorkOrder> {
+    const response = await this.client.post<WorkOrder>(`/fsm/workorders/${id}/complete`, data);
+    return response.data;
+  }
+
+  async addWorkOrderTask(workOrderId: string, task: { title: string; description?: string }): Promise<void> {
+    await this.client.post(`/fsm/workorders/${workOrderId}/tasks`, task);
+  }
+
+  async toggleWorkOrderTask(workOrderId: string, taskId: string): Promise<void> {
+    await this.client.patch(`/fsm/workorders/${workOrderId}/tasks/${taskId}/toggle`);
+  }
+
+  // CMMS + EAM
+  async getAssets(params?: {
+    page?: number;
+    pageSize?: number;
+    category?: string;
+    status?: string;
+    parentAssetId?: string;
+  }): Promise<PaginatedResponse<Asset>> {
+    const response = await this.client.get<PaginatedResponse<Asset>>('/cmms/assets', { params });
+    return response.data;
+  }
+
+  async getAsset(id: string): Promise<Asset> {
+    const response = await this.client.get<Asset>(`/cmms/assets/${id}`);
+    return response.data;
+  }
+
+  async createAsset(data: CreateAsset): Promise<Asset> {
+    const response = await this.client.post<Asset>('/cmms/assets', data);
+    return response.data;
+  }
+
+  async updateAsset(id: string, data: Partial<CreateAsset>): Promise<Asset> {
+    const response = await this.client.put<Asset>(`/cmms/assets/${id}`, data);
+    return response.data;
+  }
+
+  async deleteAsset(id: string): Promise<void> {
+    await this.client.delete(`/cmms/assets/${id}`);
+  }
+
+  async generateAssetQRCode(id: string): Promise<{ qrCode: string }> {
+    const response = await this.client.post<{ qrCode: string }>(`/cmms/assets/${id}/qr-code`);
+    return response.data;
+  }
+
+  async getMaintenancePlans(params?: {
+    page?: number;
+    pageSize?: number;
+    assetId?: string;
+    isActive?: boolean;
+  }): Promise<PaginatedResponse<MaintenancePlan>> {
+    const response = await this.client.get<PaginatedResponse<MaintenancePlan>>('/cmms/maintenance-plans', { params });
+    return response.data;
+  }
+
+  async createMaintenancePlan(data: Partial<MaintenancePlan>): Promise<MaintenancePlan> {
+    const response = await this.client.post<MaintenancePlan>('/cmms/maintenance-plans', data);
+    return response.data;
+  }
+
+  async updateMaintenancePlan(id: string, data: Partial<MaintenancePlan>): Promise<MaintenancePlan> {
+    const response = await this.client.put<MaintenancePlan>(`/cmms/maintenance-plans/${id}`, data);
+    return response.data;
+  }
+
+  async deleteMaintenancePlan(id: string): Promise<void> {
+    await this.client.delete(`/cmms/maintenance-plans/${id}`);
+  }
+
+  async getMaintenanceRecords(params?: {
+    page?: number;
+    pageSize?: number;
+    assetId?: string;
+    type?: string;
+  }): Promise<PaginatedResponse<MaintenanceRecord>> {
+    const response = await this.client.get<PaginatedResponse<MaintenanceRecord>>('/cmms/maintenance-records', { params });
+    return response.data;
+  }
+
+  async createMaintenanceRecord(data: Partial<MaintenanceRecord>): Promise<MaintenanceRecord> {
+    const response = await this.client.post<MaintenanceRecord>('/cmms/maintenance-records', data);
+    return response.data;
+  }
+
+  async getSpareParts(params?: {
+    page?: number;
+    pageSize?: number;
+    lowStock?: boolean;
+  }): Promise<PaginatedResponse<SparePart>> {
+    const response = await this.client.get<PaginatedResponse<SparePart>>('/cmms/spare-parts', { params });
+    return response.data;
+  }
+
+  async createSparePart(data: Partial<SparePart>): Promise<SparePart> {
+    const response = await this.client.post<SparePart>('/cmms/spare-parts', data);
+    return response.data;
+  }
+
+  async updateSparePart(id: string, data: Partial<SparePart>): Promise<SparePart> {
+    const response = await this.client.put<SparePart>(`/cmms/spare-parts/${id}`, data);
+    return response.data;
+  }
+
+  // MCP Servers
+  async getMCPServers(params?: {
+    page?: number;
+    pageSize?: number;
+    type?: string;
+    isActive?: boolean;
+  }): Promise<PaginatedResponse<MCPServer>> {
+    const response = await this.client.get<PaginatedResponse<MCPServer>>('/mcp/servers', { params });
+    return response.data;
+  }
+
+  async getMCPServer(id: string): Promise<MCPServer> {
+    const response = await this.client.get<MCPServer>(`/mcp/servers/${id}`);
+    return response.data;
+  }
+
+  async createMCPServer(data: CreateMCPServer): Promise<MCPServer> {
+    const response = await this.client.post<MCPServer>('/mcp/servers', data);
+    return response.data;
+  }
+
+  async updateMCPServer(id: string, data: Partial<CreateMCPServer>): Promise<MCPServer> {
+    const response = await this.client.put<MCPServer>(`/mcp/servers/${id}`, data);
+    return response.data;
+  }
+
+  async deleteMCPServer(id: string): Promise<void> {
+    await this.client.delete(`/mcp/servers/${id}`);
+  }
+
+  async toggleMCPServer(id: string, isActive: boolean): Promise<MCPServer> {
+    const response = await this.client.patch<MCPServer>(`/mcp/servers/${id}/toggle`, { isActive });
+    return response.data;
+  }
+
+  async testMCPServer(id: string): Promise<{ success: boolean; message: string }> {
+    const response = await this.client.post<{ success: boolean; message: string }>(`/mcp/servers/${id}/test`);
+    return response.data;
+  }
+
+  async getMCPTools(serverId: string): Promise<MCPTool[]> {
+    const response = await this.client.get<MCPTool[]>(`/mcp/servers/${serverId}/tools`);
+    return response.data;
+  }
+
+  async getMCPResources(serverId: string): Promise<MCPResource[]> {
+    const response = await this.client.get<MCPResource[]>(`/mcp/servers/${serverId}/resources`);
+    return response.data;
+  }
+
+  async getMCPServerLogs(serverId: string, params?: {
+    level?: string;
+    limit?: number;
+  }): Promise<MCPServerLog[]> {
+    const response = await this.client.get<MCPServerLog[]>(`/mcp/servers/${serverId}/logs`, { params });
     return response.data;
   }
 }

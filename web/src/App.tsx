@@ -9,6 +9,10 @@ import ContactsPage from './pages/ContactsPage';
 import DealsPage from './pages/DealsPage';
 import KnowledgePage from './pages/KnowledgePage';
 import WorkflowsPage from './pages/WorkflowsPage';
+import WebhooksPage from './pages/WebhooksPage';
+import FSMPage from './pages/FSMPage';
+import CMmsPage from './pages/CMmsPage';
+import MCPPage from './pages/MCPPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -79,6 +83,38 @@ function App() {
           element={
             <ProtectedRoute>
               <WorkflowsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/webhooks"
+          element={
+            <ProtectedRoute>
+              <WebhooksPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/fsm"
+          element={
+            <ProtectedRoute>
+              <FSMPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/cmms"
+          element={
+            <ProtectedRoute>
+              <CMmsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/mcp"
+          element={
+            <ProtectedRoute>
+              <MCPPage />
             </ProtectedRoute>
           }
         />

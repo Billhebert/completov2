@@ -7,6 +7,10 @@ import {
   BookOpen,
   Briefcase,
   Workflow,
+  Webhook,
+  Wrench,
+  Package,
+  Cpu,
   LogOut,
   Menu,
   X
@@ -25,6 +29,10 @@ const navigation = [
   { name: 'Deals', href: '/deals', icon: Briefcase },
   { name: 'Knowledge', href: '/knowledge', icon: BookOpen },
   { name: 'Workflows', href: '/workflows', icon: Workflow },
+  { name: 'Webhooks', href: '/webhooks', icon: Webhook },
+  { name: 'Field Service', href: '/fsm', icon: Wrench },
+  { name: 'Assets (CMMS)', href: '/cmms', icon: Package },
+  { name: 'MCP Servers', href: '/mcp', icon: Cpu },
 ];
 
 export default function Layout({ children }: LayoutProps) {
