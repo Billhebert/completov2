@@ -59,6 +59,33 @@ services:
     networks:
       - completov2
 
+  # Ollama AI (Local LLM)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: completov2-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - completov2
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    # Auto-pull models on startup
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        ollama serve &
+        sleep 5
+        ollama pull llama2
+        ollama pull mistral
+        wait
+
   # Backend (Development with hot-reload)
   backend:
     build:
@@ -79,6 +106,12 @@ services:
       MINIO_SECRET_KEY: minioadmin
       MINIO_USE_SSL: false
       JWT_SECRET: your-super-secret-jwt-key-change-this-in-production-min-32-chars
+      # AI Configuration
+      OLLAMA_URL: http://ollama:11434
+      OLLAMA_MODEL: llama2
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: gpt-4
+      AI_MODE: auto
     volumes:
       - .:/app
       - /app/node_modules
@@ -115,6 +148,7 @@ volumes:
   redis_data:
   qdrant_data:
   minio_data:
+  ollama_data:
 
 networks:
   completov2:
