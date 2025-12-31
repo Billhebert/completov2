@@ -240,6 +240,107 @@ const embedding = await ragService.generateEmbedding(text);
 
 ---
 
+## 🎯 Recursos Inteligentes Implementados
+
+### 1. Zettels Inteligentes (Knowledge Graph)
+
+**Endpoints:**
+- `GET /api/v1/knowledge/nodes/:id/suggestions` - Sugestões de nós relacionados (AI-powered)
+- `POST /api/v1/knowledge/nodes/suggest-tags` - Sugestões de tags
+- `GET /api/v1/knowledge/nodes/:id/suggest-links` - Sugestões de links
+
+**Recursos:**
+- ✅ Sugestões semânticas de nós relacionados (não apenas tags)
+- ✅ Sugestões automáticas de tags baseadas em conteúdo
+- ✅ Sugestões de links com tipos de relacionamento (related, derives, supports, contradicts)
+- ✅ Fallback para matching de tags se IA falhar
+- ✅ Análise contextual usando base de conhecimento existente
+
+**Exemplo de Uso:**
+```typescript
+// Sugestões de tags ao criar zettel
+POST /api/v1/knowledge/nodes/suggest-tags
+{
+  "title": "Melhores práticas de vendas B2B",
+  "content": "Estratégias para aumentar conversão..."
+}
+
+// Resposta:
+{
+  "success": true,
+  "data": {
+    "tags": ["vendas", "b2b", "conversão", "estratégia"]
+  }
+}
+
+// Sugestões de nós relacionados
+GET /api/v1/knowledge/nodes/123/suggestions
+
+// Resposta:
+{
+  "success": true,
+  "data": [...nodes relacionados...],
+  "aiPowered": true
+}
+```
+
+### 2. Notificações Inteligentes
+
+**Endpoints:**
+- `GET /api/v1/notifications?sortByPriority=true` - Lista com ordenação por prioridade AI
+- `GET /api/v1/notifications/summary` - Resumo inteligente
+
+**Recursos:**
+- ✅ Análise de sentimento automática (positive/neutral/negative)
+- ✅ Score de prioridade AI (0-1) para cada notificação
+- ✅ Ordenação inteligente por prioridade
+- ✅ Resumo AI de notificações não lidas
+- ✅ Detecção de keywords de urgência (pt-BR e en)
+- ✅ Metadata enriquecida sem quebrar funcionalidade existente
+
+**Metadata Adicionada:**
+```json
+{
+  "metadata": {
+    "aiSentiment": "positive",
+    "aiSentimentScore": 0.85,
+    "aiPriority": 0.9
+  }
+}
+```
+
+**Exemplo de Uso:**
+```typescript
+// Obter resumo inteligente
+GET /api/v1/notifications/summary
+
+// Resposta:
+{
+  "success": true,
+  "data": {
+    "summary": "Você ganhou 2 deals importantes e tem 3 mensagens urgentes...",
+    "totalUnread": 15,
+    "highPriority": 5,
+    "categories": {
+      "deal_won": 2,
+      "chat_message": 8,
+      "task_assigned": 5
+    },
+    "topNotifications": [
+      {
+        "id": "...",
+        "type": "deal_won",
+        "title": "Deal Won!",
+        "priority": 0.9,
+        "sentiment": "positive"
+      }
+    ]
+  }
+}
+```
+
+---
+
 ## 📊 Análise de Complexidade (Modo AUTO)
 
 ### Fatores Analisados:
@@ -322,8 +423,8 @@ Custo: ~$0.15
 - [ ] Feedback loop para melhorar decisões AUTO
 
 ### Aplicar em:
-- [ ] Zettels inteligentes (sugestões automáticas)
-- [ ] Notificações inteligentes (priorização)
+- [x] Zettels inteligentes (sugestões automáticas) ✅ **IMPLEMENTADO**
+- [x] Notificações inteligentes (priorização) ✅ **IMPLEMENTADO**
 - [ ] Deals (análise de probabilidade)
 - [ ] Contacts (enriquecimento de dados)
 - [ ] Workflows (automação inteligente)
@@ -419,19 +520,27 @@ curl https://api.openai.com/v1/chat/completions \
 - [x] Ollama no Docker
 - [x] Configuração de ambiente
 - [x] Documentação completa
+- [x] **Aplicar em Zettels** ✅ **CONCLUÍDO**
+  - [x] Sugestões de nós relacionados (AI-powered)
+  - [x] Sugestões de tags automáticas
+  - [x] Sugestões de links inteligentes
+- [x] **Aplicar em Notificações** ✅ **CONCLUÍDO**
+  - [x] Análise de sentimento
+  - [x] Score de prioridade AI
+  - [x] Resumo inteligente
+  - [x] Ordenação por prioridade
 - [ ] UI para seletor de modo
 - [ ] Tracking de custos
 - [ ] Dashboard de métricas
-- [ ] Aplicar em Zettels
-- [ ] Aplicar em Notificações
 
 ---
 
 ## 🎊 Status
 
-**Implementado:** ✅ Sistema Core Completo
-**Testado:** ⚠️ Requer teste manual
-**Produção:** 🟡 Pronto para uso (falta UI)
+**Implementado:** ✅ Sistema Core Completo + Zettels + Notificações
+**Aplicado em:** ✅ Chat AI | ✅ RAG/Embeddings | ✅ Zettels | ✅ Notificações
+**Testado:** ⚠️ Requer teste manual com Ollama + OpenAI
+**Produção:** 🟡 Pronto para uso (falta UI de seleção de modo)
 
 ---
 
