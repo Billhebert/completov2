@@ -38,13 +38,25 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
         try {
           const response = await api.login(credentials);
+
+          console.log('[AuthStore] Login response:', {
+            hasSuccess: !!response?.success,
+            hasData: !!response?.data,
+            responseKeys: response ? Object.keys(response) : []
+          });
+
+          if (!response || !response.data) {
+            throw new Error('Invalid response format from server');
+          }
+
           const token = response.data.accessToken;
           const user = response.data.user;
 
           console.log('[AuthStore] Login successful:', {
             hasToken: !!token,
             tokenPreview: token ? `${token.substring(0, 20)}...` : 'none',
-            user: user.email
+            hasUser: !!user,
+            userEmail: user?.email || 'no email'
           });
 
           if (token) {
@@ -62,6 +74,8 @@ export const useAuthStore = create<AuthState>()(
 
           console.log('[AuthStore] State updated, isAuthenticated:', true);
         } catch (error: any) {
+          console.error('[AuthStore] Login error:', error);
+
           let errorMessage = 'Login failed';
 
           if (error.response?.data?.error) {
@@ -74,10 +88,12 @@ export const useAuthStore = create<AuthState>()(
             errorMessage = 'Server not found. Please make sure the backend is running.';
           } else if (error.code === 'ERR_NETWORK') {
             errorMessage = 'Network error. Please check if the backend server is running.';
+          } else if (typeof error === 'object') {
+            errorMessage = JSON.stringify(error);
           }
 
           set({ isLoading: false, error: errorMessage });
-          throw error;
+          throw new Error(errorMessage);
         }
       },
 
@@ -100,6 +116,8 @@ export const useAuthStore = create<AuthState>()(
             error: null,
           });
         } catch (error: any) {
+          console.error('[AuthStore] Registration error:', error);
+
           let errorMessage = 'Registration failed';
 
           if (error.response?.data?.error) {
@@ -112,10 +130,12 @@ export const useAuthStore = create<AuthState>()(
             errorMessage = 'Server not found. Please make sure the backend is running.';
           } else if (error.code === 'ERR_NETWORK') {
             errorMessage = 'Network error. Please check if the backend server is running.';
+          } else if (typeof error === 'object') {
+            errorMessage = JSON.stringify(error);
           }
 
           set({ isLoading: false, error: errorMessage });
-          throw error;
+          throw new Error(errorMessage);
         }
       },
 
