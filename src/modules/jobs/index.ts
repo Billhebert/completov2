@@ -502,3 +502,18 @@ router.patch('/applications/:id', authenticateToken, async (req: Request, res: R
 });
 
 export default router;
+
+// Module export
+import { ModuleDefinition } from '../../core/types';
+import { EventBus } from '../../core/event-bus';
+
+function setupRoutes(app: Express, prisma: PrismaClient, eventBus: EventBus) {
+  app.use('/api/v1/jobs', router);
+}
+
+export const jobsModule: ModuleDefinition = {
+  name: 'jobs',
+  version: '1.0.0',
+  provides: ['jobs', 'recruitment', 'applications'],
+  routes: (ctx) => setupRoutes(ctx.app, ctx.prisma, ctx.eventBus),
+};

@@ -168,3 +168,18 @@ router.get('/history', authenticateToken, async (req: Request, res: Response) =>
 });
 
 export default router;
+
+// Module export
+import { ModuleDefinition } from '../../core/types';
+import { EventBus } from '../../core/event-bus';
+
+function setupRoutes(app: Express, prisma: PrismaClient, eventBus: EventBus) {
+  app.use('/api/v1/settings', router);
+}
+
+export const settingsModule: ModuleDefinition = {
+  name: 'settings',
+  version: '1.0.0',
+  provides: ['settings', 'configuration'],
+  routes: (ctx) => setupRoutes(ctx.app, ctx.prisma, ctx.eventBus),
+};

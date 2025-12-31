@@ -176,3 +176,13 @@ export default function registerWebhookRoutes(app: Express) {
 }
 
 export { webhookService };
+
+// Module export
+import { ModuleDefinition } from '../../core/types';
+
+export const webhooksModule: ModuleDefinition = {
+  name: 'webhooks',
+  version: '1.0.0',
+  provides: ['webhooks', 'events', 'integrations'],
+  routes: (ctx) => registerWebhookRoutes(ctx.app),
+};

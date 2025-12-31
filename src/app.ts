@@ -39,6 +39,12 @@ import { automationsModule } from './modules/automations/module';
 import { narrativeModule } from './modules/narrative/module';
 import { simulationModule } from './modules/simulation/module';
 import { peopleGrowthModule } from './modules/people-growth';
+import { rbacModule } from './modules/rbac';
+import { jobsModule } from './modules/jobs';
+import { servicesModule } from './modules/services';
+import { partnershipsModule } from './modules/partnerships';
+import { settingsModule } from './modules/settings';
+import { webhooksModule } from './modules/webhooks';
 import { startWorkers } from './workers';
 import { i18nMiddleware } from './core/i18n';
 import { timezoneMiddleware } from './core/timezone';
@@ -167,6 +173,12 @@ export async function createApp(): Promise<AppContext> {
   moduleLoader.register(narrativeModule);
   moduleLoader.register(simulationModule);
   moduleLoader.register(peopleGrowthModule);
+  moduleLoader.register(rbacModule);
+  moduleLoader.register(jobsModule);
+  moduleLoader.register(servicesModule);
+  moduleLoader.register(partnershipsModule);
+  moduleLoader.register(settingsModule);
+  moduleLoader.register(webhooksModule);
 
   // Enable modules (could be loaded from database per tenant)
   const enabledModules = [
@@ -193,6 +205,11 @@ export async function createApp(): Promise<AppContext> {
     'narrative',
     'simulation',
     'people-growth',
+    'rbac',
+    'jobs',
+    'services',
+    'partnerships',
+    'settings',
   ];
 
   await moduleLoader.enableModules(enabledModules);
