@@ -5,6 +5,7 @@ import { PrismaClient } from '@prisma/client';
 import { authenticate, tenantIsolation, validateBody, requirePermission, Permission } from '../../core/middleware';
 import { z } from 'zod';
 import advancedRoutes from './advanced-routes';
+import { initializeAutoConvert } from './auto-convert';
 
 const nodeSchema = z.object({
   title: z.string(),
@@ -895,6 +896,208 @@ function setupRoutes(app: Express, prisma: PrismaClient) {
   });
 
   // ============================================
+  // RAG SEMANTIC SEARCH
+  // ============================================
+
+  // Semantic search using RAG (vector similarity)
+  app.post(`${base}/search/semantic`, authenticate, tenantIsolation, async (req, res, next) => {
+    try {
+      const { query, limit = 10, minScore = 0.7 } = req.body;
+
+      if (!query) {
+        return res.status(400).json({
+          success: false,
+          error: { message: 'Query is required' }
+        });
+      }
+
+      const userRole = (req.user as any)?.role;
+      const isDev = userRole === 'dev';
+      const isAdminGeral = userRole === 'admin_geral';
+
+      // Generate embedding for query
+      const { getAIService } = await import('../../core/ai/ai.service');
+      const aiService = getAIService(prisma);
+
+      const queryEmbedding = await aiService.generateEmbedding(query);
+
+      // Get all embeddings with their nodes (respecting permissions)
+      const embeddings = await prisma.embedding.findMany({
+        where: isDev || isAdminGeral ? {} : {
+          companyId: req.companyId!,
+        },
+        include: {
+          node: {
+            where: {
+              deletedAt: null,
+              ...(isDev || isAdminGeral ? {} : {
+                OR: [
+                  { isCompanyWide: true },
+                  { ownerId: req.user!.id },
+                ],
+              }),
+            },
+          },
+        },
+        take: 500, // Limit for performance
+      });
+
+      // Calculate cosine similarity
+      const results = embeddings
+        .filter(e => e.node) // Only include embeddings with valid nodes
+        .map(e => {
+          const similarity = cosineSimilarity(queryEmbedding, e.embedding as number[]);
+          return {
+            node: e.node,
+            similarity,
+          };
+        })
+        .filter(r => r.similarity >= minScore)
+        .sort((a, b) => b.similarity - a.similarity)
+        .slice(0, limit);
+
+      res.json({
+        success: true,
+        data: {
+          query,
+          results: results.map(r => ({
+            ...r.node,
+            relevanceScore: r.similarity,
+          })),
+          count: results.length,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Helper function for cosine similarity
+  function cosineSimilarity(a: number[], b: number[]): number {
+    if (a.length !== b.length) return 0;
+
+    let dotProduct = 0;
+    let normA = 0;
+    let normB = 0;
+
+    for (let i = 0; i < a.length; i++) {
+      dotProduct += a[i] * b[i];
+      normA += a[i] * a[i];
+      normB += b[i] * b[i];
+    }
+
+    return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+  }
+
+  // AI-powered question answering using RAG
+  app.post(`${base}/ask`, authenticate, tenantIsolation, async (req, res, next) => {
+    try {
+      const { question, maxContext = 5 } = req.body;
+
+      if (!question) {
+        return res.status(400).json({
+          success: false,
+          error: { message: 'Question is required' }
+        });
+      }
+
+      const userRole = (req.user as any)?.role;
+      const isDev = userRole === 'dev';
+      const isAdminGeral = userRole === 'admin_geral';
+
+      // Get relevant context using semantic search
+      const { getAIService } = await import('../../core/ai/ai.service');
+      const aiService = getAIService(prisma);
+
+      const queryEmbedding = await aiService.generateEmbedding(question);
+
+      // Get embeddings
+      const embeddings = await prisma.embedding.findMany({
+        where: isDev || isAdminGeral ? {} : {
+          companyId: req.companyId!,
+        },
+        include: {
+          node: {
+            where: {
+              deletedAt: null,
+              ...(isDev || isAdminGeral ? {} : {
+                OR: [
+                  { isCompanyWide: true },
+                  { ownerId: req.user!.id },
+                ],
+              }),
+            },
+          },
+        },
+        take: 500,
+      });
+
+      // Find most relevant nodes
+      const relevantNodes = embeddings
+        .filter(e => e.node)
+        .map(e => ({
+          node: e.node!,
+          similarity: cosineSimilarity(queryEmbedding, e.embedding as number[]),
+        }))
+        .filter(r => r.similarity >= 0.6)
+        .sort((a, b) => b.similarity - a.similarity)
+        .slice(0, maxContext);
+
+      if (relevantNodes.length === 0) {
+        return res.json({
+          success: true,
+          data: {
+            answer: 'Não encontrei informações relevantes na base de conhecimento para responder essa pergunta.',
+            sources: [],
+            confidence: 'low',
+          },
+        });
+      }
+
+      // Build context from relevant nodes
+      const context = relevantNodes
+        .map((r, i) => `[${i + 1}] ${r.node.title}\n${r.node.content.substring(0, 500)}...\n`)
+        .join('\n\n');
+
+      // Ask AI with context
+      const prompt = `
+Baseado nas seguintes informações da base de conhecimento:
+
+${context}
+
+Pergunta: ${question}
+
+Forneça uma resposta detalhada e precisa em português (pt-BR), citando as fontes relevantes quando apropriado.
+      `;
+
+      const aiResponse = await aiService.complete({
+        prompt,
+        systemMessage: 'Você é um assistente que responde perguntas baseado em uma base de conhecimento. Seja preciso e cite as fontes.',
+        temperature: 0.7,
+      });
+
+      res.json({
+        success: true,
+        data: {
+          answer: aiResponse.content,
+          sources: relevantNodes.map(r => ({
+            id: r.node.id,
+            title: r.node.title,
+            type: r.node.nodeType,
+            relevance: r.similarity,
+          })),
+          confidence: relevantNodes[0].similarity > 0.8 ? 'high' :
+                     relevantNodes[0].similarity > 0.6 ? 'medium' : 'low',
+          model: aiResponse.model,
+          provider: aiResponse.provider,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // ============================================
   // ADVANCED ROUTES (Reminders, Truth Layer)
   // ============================================
   app.use(`${base}`, authenticate, tenantIsolation, advancedRoutes);
@@ -903,6 +1106,14 @@ function setupRoutes(app: Express, prisma: PrismaClient) {
 export const knowledgeModule: ModuleDefinition = {
   name: 'knowledge',
   version: '1.0.0',
-  provides: ['knowledge', 'graph'],
-  routes: (ctx) => setupRoutes(ctx.app, ctx.prisma),
+  provides: ['knowledge', 'graph', 'rag'],
+  routes: (ctx) => {
+    setupRoutes(ctx.app, ctx.prisma);
+
+    // Initialize auto-convert service (converts everything to zettels)
+    if (ctx.eventBus) {
+      initializeAutoConvert(ctx.prisma, ctx.eventBus);
+      console.log('✅ Auto-convert service initialized - Everything will become a zettel!');
+    }
+  },
 };
