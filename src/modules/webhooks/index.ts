@@ -1,188 +1,178 @@
 // src/modules/webhooks/index.ts
-import { ModuleDefinition } from '../../core/types';
 import { Express } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { authenticate, tenantIsolation, validateBody } from '../../core/middleware';
-import { WebhookService } from './service';
-import { z } from 'zod';
+import { authenticate } from '../../core/middleware/auth';
+import { tenantIsolation } from '../../core/middleware/tenant';
+import { companyAdminOnly } from '../rbac/middleware';
+import { WebhookService } from './webhook.service';
 import crypto from 'crypto';
 
-const createSubscriptionSchema = z.object({
-  url: z.string().url(),
-  events: z.array(z.string()),
-  description: z.string().optional(),
-});
+const prisma = new PrismaClient();
+const webhookService = new WebhookService(prisma);
 
-function setupRoutes(app: Express, prisma: PrismaClient) {
+export default function registerWebhookRoutes(app: Express) {
   const base = '/api/v1/webhooks';
-  const webhookService = new WebhookService(prisma);
 
-  // List subscriptions
-  app.get(`${base}/subscriptions`, authenticate, tenantIsolation, async (req, res, next) => {
+  // ===== Event Definitions =====
+  
+  app.get(`${base}/events`, authenticate, tenantIsolation, async (req, res, next) => {
     try {
-      const subscriptions = await prisma.webhookSubscription.findMany({
+      const events = await prisma.eventDefinition.findMany({
+        where: { companyId: req.companyId!, isActive: true },
+        orderBy: { category: 'asc' },
+      });
+      res.json({ success: true, data: events });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post(`${base}/events`, authenticate, tenantIsolation, companyAdminOnly, async (req, res, next) => {
+    try {
+      const { name, category, description, schema } = req.body;
+      
+      const event = await prisma.eventDefinition.create({
+        data: {
+          companyId: req.companyId!,
+          name,
+          category: category || 'custom',
+          description,
+          schema,
+          createdBy: req.user!.id,
+        },
+      });
+      
+      res.json({ success: true, data: event });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // ===== Webhook Endpoints =====
+  
+  app.get(`${base}/endpoints`, authenticate, tenantIsolation, async (req, res, next) => {
+    try {
+      const endpoints = await prisma.webhookEndpoint.findMany({
         where: { companyId: req.companyId! },
         select: {
           id: true,
+          name: true,
           url: true,
           events: true,
-          description: true,
-          active: true,
+          isActive: true,
           createdAt: true,
+          updatedAt: true,
           _count: { select: { deliveries: true } },
         },
       });
-
-      res.json({ success: true, data: subscriptions });
+      res.json({ success: true, data: endpoints });
     } catch (error) {
       next(error);
     }
   });
 
-  // Create subscription
-  app.post(
-    `${base}/subscriptions`,
-    authenticate,
-    tenantIsolation,
-    validateBody(createSubscriptionSchema),
-    async (req, res, next) => {
-      try {
-        const secret = crypto.randomBytes(32).toString('hex');
-
-        const subscription = await prisma.webhookSubscription.create({
-          data: {
-            companyId: req.companyId!,
-            url: req.body.url,
-            events: req.body.events,
-            description: req.body.description,
-            secret,
-            active: true,
-          },
-        });
-
-        res.status(201).json({ success: true, data: subscription });
-      } catch (error) {
-        next(error);
-      }
-    }
-  );
-
-  // Update subscription
-  app.patch(
-    `${base}/subscriptions/:id`,
-    authenticate,
-    tenantIsolation,
-    async (req, res, next) => {
-      try {
-        const subscription = await prisma.webhookSubscription.update({
-          where: {
-            id: req.params.id,
-            companyId: req.companyId!,
-          },
-          data: {
-            url: req.body.url,
-            events: req.body.events,
-            description: req.body.description,
-            active: req.body.active,
-          },
-        });
-
-        res.json({ success: true, data: subscription });
-      } catch (error) {
-        next(error);
-      }
-    }
-  );
-
-  // Delete subscription
-  app.delete(`${base}/subscriptions/:id`, authenticate, tenantIsolation, async (req, res, next) => {
+  app.post(`${base}/endpoints`, authenticate, tenantIsolation, companyAdminOnly, async (req, res, next) => {
     try {
-      await prisma.webhookSubscription.delete({
-        where: {
-          id: req.params.id,
+      const { name, url, events, headers, timeout, retryConfig, description } = req.body;
+      
+      const endpoint = await prisma.webhookEndpoint.create({
+        data: {
           companyId: req.companyId!,
+          name,
+          url,
+          secret: crypto.randomBytes(32).toString('hex'),
+          events: events || [],
+          headers: headers || null,
+          timeout: timeout || 30000,
+          retryConfig: retryConfig || { maxRetries: 3, backoff: 'exponential' },
+          description,
+          createdBy: req.user!.id,
         },
       });
-
-      res.json({ success: true, message: 'Subscription deleted' });
+      
+      res.json({ success: true, data: endpoint });
     } catch (error) {
       next(error);
     }
   });
 
-  // Get deliveries
+  app.put(`${base}/endpoints/:id`, authenticate, tenantIsolation, companyAdminOnly, async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const { name, url, events, headers, timeout, retryConfig, isActive, description } = req.body;
+      
+      const endpoint = await prisma.webhookEndpoint.update({
+        where: { id, companyId: req.companyId! },
+        data: { name, url, events, headers, timeout, retryConfig, isActive, description },
+      });
+      
+      res.json({ success: true, data: endpoint });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.delete(`${base}/endpoints/:id`, authenticate, tenantIsolation, companyAdminOnly, async (req, res, next) => {
+    try {
+      await prisma.webhookEndpoint.delete({
+        where: { id: req.params.id, companyId: req.companyId! },
+      });
+      res.json({ success: true });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // ===== Delivery Logs =====
+  
   app.get(`${base}/deliveries`, authenticate, tenantIsolation, async (req, res, next) => {
     try {
-      const deliveries = await prisma.webhookDelivery.findMany({
-        where: {
-          subscription: { companyId: req.companyId! },
-        },
-        include: {
-          subscription: {
-            select: { url: true, events: true },
-          },
-        },
+      const { endpointId, eventName, success, limit = 100 } = req.query;
+      
+      const where: any = {
+        endpoint: { companyId: req.companyId! },
+      };
+      
+      if (endpointId) where.endpointId = endpointId;
+      if (eventName) where.eventName = eventName;
+      if (success !== undefined) where.success = success === 'true';
+      
+      const deliveries = await prisma.webhookDeliveryLog.findMany({
+        where,
+        include: { endpoint: { select: { name: true, url: true } } },
         orderBy: { createdAt: 'desc' },
-        take: 100,
+        take: parseInt(limit as string),
       });
-
+      
       res.json({ success: true, data: deliveries });
     } catch (error) {
       next(error);
     }
   });
 
-  // Test webhook
-  app.post(`${base}/test/:id`, authenticate, tenantIsolation, async (req, res, next) => {
+  // ===== Test Endpoint =====
+  
+  app.post(`${base}/test/:id`, authenticate, tenantIsolation, companyAdminOnly, async (req, res, next) => {
     try {
-      const subscription = await prisma.webhookSubscription.findFirst({
-        where: {
-          id: req.params.id,
-          companyId: req.companyId!,
-        },
+      const endpoint = await prisma.webhookEndpoint.findUnique({
+        where: { id: req.params.id, companyId: req.companyId! },
       });
-
-      if (!subscription) {
-        return res.status(404).json({
-          success: false,
-          error: { message: 'Subscription not found' },
-        });
+      
+      if (!endpoint) {
+        return res.status(404).json({ success: false, error: { message: 'Endpoint not found' } });
       }
-
-      await webhookService.send(req.companyId!, 'test.ping', {
-        message: 'This is a test webhook',
-        timestamp: new Date(),
+      
+      await webhookService.emitEvent({
+        companyId: req.companyId!,
+        eventName: 'test.webhook',
+        payload: { message: 'Test webhook delivery', timestamp: new Date() },
       });
-
-      res.json({ success: true, message: 'Test webhook sent' });
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  // Rotate secret
-  app.post(`${base}/subscriptions/:id/rotate-secret`, authenticate, tenantIsolation, async (req, res, next) => {
-    try {
-      const newSecret = crypto.randomBytes(32).toString('hex');
-
-      const subscription = await prisma.webhookSubscription.update({
-        where: {
-          id: req.params.id,
-          companyId: req.companyId!,
-        },
-        data: { secret: newSecret },
-      });
-
-      res.json({ success: true, data: { secret: subscription.secret } });
+      
+      res.json({ success: true, message: 'Test webhook dispatched' });
     } catch (error) {
       next(error);
     }
   });
 }
 
-export const webhooksModule: ModuleDefinition = {
-  name: 'webhooks',
-  version: '1.0.0',
-  provides: ['webhooks', 'events'],
-  routes: (ctx) => setupRoutes(ctx.app, ctx.prisma),
-};
+export { webhookService };

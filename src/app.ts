@@ -28,7 +28,7 @@ import { syncModule } from './modules/sync';
 import { learningModule } from './modules/learning';
 import { analyticsModule } from './modules/analytics';
 import { filesModule } from './modules/files';
-import { webhooksModule } from './modules/webhooks';
+// import { webhooksModule } from './modules/webhooks'; // TODO: Update to new webhook system
 import { apikeysModule } from './modules/apikeys';
 import { emailTemplatesModule } from './modules/email-templates';
 import { searchModule } from './modules/search';
@@ -156,7 +156,7 @@ export async function createApp(): Promise<AppContext> {
   moduleLoader.register(learningModule);
   moduleLoader.register(analyticsModule);
   moduleLoader.register(filesModule);
-  moduleLoader.register(webhooksModule);
+  // moduleLoader.register(webhooksModule); // TODO: Update to new webhook system
   moduleLoader.register(apikeysModule);
   moduleLoader.register(emailTemplatesModule);
   moduleLoader.register(searchModule);
