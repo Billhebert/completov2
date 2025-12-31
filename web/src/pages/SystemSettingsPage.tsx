@@ -16,7 +16,7 @@ export const SystemSettingsPage: React.FC = () => {
   const [settingsForm, setSettingsForm] = useState({
     serviceFeePercentage: 10.0,
     minServiceFee: 5.0,
-    maxServiceFee: null as number | null,
+    maxServiceFee: undefined as number | undefined,
     currency: 'BRL',
     metadata: null as any,
   });
@@ -30,7 +30,7 @@ export const SystemSettingsPage: React.FC = () => {
       setSettingsForm({
         serviceFeePercentage: systemSettings.serviceFeePercentage,
         minServiceFee: systemSettings.minServiceFee,
-        maxServiceFee: systemSettings.maxServiceFee || null,
+        maxServiceFee: systemSettings.maxServiceFee || undefined,
         currency: systemSettings.currency,
         metadata: systemSettings.metadata,
       });
@@ -151,7 +151,7 @@ export const SystemSettingsPage: React.FC = () => {
                   value={settingsForm.maxServiceFee || ''}
                   onChange={(e) => setSettingsForm({
                     ...settingsForm,
-                    maxServiceFee: e.target.value ? Number(e.target.value) : null
+                    maxServiceFee: e.target.value ? Number(e.target.value) : undefined
                   })}
                   disabled={!isEditing}
                   className="w-full border rounded px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
@@ -234,7 +234,7 @@ export const SystemSettingsPage: React.FC = () => {
                         setSettingsForm({
                           serviceFeePercentage: systemSettings.serviceFeePercentage,
                           minServiceFee: systemSettings.minServiceFee,
-                          maxServiceFee: systemSettings.maxServiceFee || null,
+                          maxServiceFee: systemSettings.maxServiceFee || undefined,
                           currency: systemSettings.currency,
                           metadata: systemSettings.metadata,
                         });

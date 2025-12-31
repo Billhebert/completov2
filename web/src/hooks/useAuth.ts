@@ -3,13 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 
 export const useAuth = () => {
-  const { user, isAuthenticated, isLoading, login, logout, checkAuth, error, clearError } = useAuthStore();
+  const { user, isAuthenticated, isLoading, login, register, logout, checkAuth, error, clearError } = useAuthStore();
 
   return {
     user,
     isAuthenticated,
     isLoading,
     login,
+    register,
     logout,
     checkAuth,
     error,

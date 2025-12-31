@@ -21,8 +21,8 @@ export const PartnershipsPage: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<'partnerships' | 'sent' | 'received'>('partnerships');
   const [showInviteModal, setShowInviteModal] = useState(false);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [_showDetailsModal, _setShowDetailsModal] = useState(false);
+  const [_selectedItem, _setSelectedItem] = useState<any>(null);
 
   const [inviteForm, setInviteForm] = useState<CreatePartnershipInvite>({
     toCompanyId: '',

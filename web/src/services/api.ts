@@ -106,6 +106,17 @@ class ApiClient {
     return response.data;
   }
 
+  async register(data: {
+    name: string;
+    email: string;
+    password: string;
+    companyName: string;
+    companyDomain: string;
+  }): Promise<LoginResponse> {
+    const response = await this.client.post<LoginResponse>('/auth/register', data);
+    return response.data;
+  }
+
   async logout(): Promise<void> {
     await this.client.post('/auth/logout');
   }

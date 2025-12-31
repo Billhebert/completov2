@@ -10,6 +10,13 @@ interface AuthState {
   isLoading: boolean;
   error: string | null;
   login: (credentials: LoginRequest) => Promise<void>;
+  register: (data: {
+    name: string;
+    email: string;
+    password: string;
+    companyName: string;
+    companyDomain: string;
+  }) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
   clearError: () => void;
@@ -28,16 +35,47 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
         try {
           const response = await api.login(credentials);
-          localStorage.setItem('auth_token', response.token);
+          const token = response.data.accessToken;
+          const user = response.data.user;
+
+          if (token) {
+            localStorage.setItem('auth_token', token);
+          }
+
           set({
-            user: response.user,
-            token: response.token,
+            user,
+            token,
             isAuthenticated: true,
             isLoading: false,
             error: null,
           });
         } catch (error: any) {
-          const errorMessage = error.response?.data?.message || 'Login failed';
+          const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Login failed';
+          set({ isLoading: false, error: errorMessage });
+          throw error;
+        }
+      },
+
+      register: async (data) => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await api.register(data);
+          const token = response.data.accessToken;
+          const user = response.data.user;
+
+          if (token) {
+            localStorage.setItem('auth_token', token);
+          }
+
+          set({
+            user,
+            token,
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+          });
+        } catch (error: any) {
+          const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Registration failed';
           set({ isLoading: false, error: errorMessage });
           throw error;
         }
@@ -69,9 +107,10 @@ export const useAuthStore = create<AuthState>()(
 
         set({ isLoading: true });
         try {
-          const user = await api.getCurrentUser();
+          const response = await api.getCurrentUser();
+
           set({
-            user,
+            user: response,
             token,
             isAuthenticated: true,
             isLoading: false,

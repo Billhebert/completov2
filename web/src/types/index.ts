@@ -15,8 +15,11 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  user: User;
-  token: string;
+  success: boolean;
+  data: {
+    user: User;
+    accessToken: string;
+  };
 }
 
 // Contact Types

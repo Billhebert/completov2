@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuth } from '../hooks/useAuth';
 
@@ -29,7 +29,7 @@ export default function LoginPage() {
       <div className="max-w-md w-full space-y-8 p-8 bg-card rounded-lg shadow-lg border border-border">
         <div>
           <h2 className="text-center text-3xl font-bold text-foreground">
-            OMNI Platform
+            Completo V2
           </h2>
           <p className="mt-2 text-center text-sm text-muted-foreground">
             Sign in to your account
@@ -87,6 +87,15 @@ export default function LoginPage() {
             >
               {isLoading ? 'Signing in...' : 'Sign in'}
             </button>
+          </div>
+
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground">
+              Don't have an account?{' '}
+              <Link to="/register" className="font-medium text-primary hover:text-primary/80">
+                Sign up
+              </Link>
+            </p>
           </div>
         </form>
       </div>

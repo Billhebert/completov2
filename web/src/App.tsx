@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast';
 import { useAuth } from './hooks/useAuth';
 import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import ConversationsPage from './pages/ConversationsPage';
 import ContactsPage from './pages/ContactsPage';
@@ -13,6 +14,10 @@ import WebhooksPage from './pages/WebhooksPage';
 import FSMPage from './pages/FSMPage';
 import CMmsPage from './pages/CMmsPage';
 import MCPPage from './pages/MCPPage';
+import JobsPage from './pages/JobsPage';
+import ServicesPage from './pages/ServicesPage';
+import PartnershipsPage from './pages/PartnershipsPage';
+import SystemSettingsPage from './pages/SystemSettingsPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -38,6 +43,7 @@ function App() {
       <Toaster position="top-right" />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
         <Route
           path="/"
           element={
@@ -115,6 +121,38 @@ function App() {
           element={
             <ProtectedRoute>
               <MCPPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/jobs"
+          element={
+            <ProtectedRoute>
+              <JobsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/services"
+          element={
+            <ProtectedRoute>
+              <ServicesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/partnerships"
+          element={
+            <ProtectedRoute>
+              <PartnershipsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <SystemSettingsPage />
             </ProtectedRoute>
           }
         />

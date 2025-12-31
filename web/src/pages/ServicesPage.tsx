@@ -8,7 +8,7 @@ export const ServicesPage: React.FC = () => {
     services,
     selectedService,
     proposals,
-    transactions,
+    transactions: _transactions,
     isLoading,
     error,
     fetchServices,
