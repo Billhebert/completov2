@@ -9,9 +9,11 @@ import advancedRoutes from './advanced-routes';
 const nodeSchema = z.object({
   title: z.string(),
   content: z.string(),
-  nodeType: z.enum(['zettel', 'documentation', 'procedure', 'reference', 'insight']),
+  nodeType: z.enum(['zettel', 'documentation', 'procedure', 'reference', 'insight', 'deal', 'message', 'conversation', 'meeting', 'task']),
   tags: z.array(z.string()).optional(),
   importanceScore: z.number().min(0).max(1).optional(),
+  ownerId: z.string().optional(), // For personal zettels
+  isCompanyWide: z.boolean().optional(), // true = company zettel, false = personal zettel
 });
 
 const linkSchema = z.object({
@@ -29,20 +31,54 @@ function setupRoutes(app: Express, prisma: PrismaClient) {
 
   app.get(`${base}/nodes`, authenticate, tenantIsolation, async (req, res, next) => {
     try {
-      const { search, nodeType, tag, minImportance } = req.query;
-      
-      const where: any = { 
-        companyId: req.companyId!,
+      const { search, nodeType, tag, minImportance, scope = 'accessible' } = req.query;
+
+      const userRole = (req.user as any)?.role;
+      const isDev = userRole === 'dev';
+      const isAdminGeral = userRole === 'admin_geral';
+
+      let where: any = {
         deletedAt: null,
       };
-      
+
+      // DEV and ADMIN_GERAL can see ALL zettels from ALL companies
+      if (isDev || isAdminGeral) {
+        // No company restriction for DEV/ADMIN_GERAL
+      } else {
+        // Normal users: see company zettels + their own personal zettels
+        where.companyId = req.companyId!;
+
+        if (scope === 'accessible') {
+          // Can see: company-wide zettels OR personal zettels they own
+          where.OR = [
+            { isCompanyWide: true },
+            { ownerId: req.user!.id },
+          ];
+        } else if (scope === 'company') {
+          where.isCompanyWide = true;
+        } else if (scope === 'personal') {
+          where.ownerId = req.user!.id;
+        }
+      }
+
       if (search) {
-        where.OR = [
+        const searchCondition = [
           { title: { contains: search as string, mode: 'insensitive' } },
           { content: { contains: search as string, mode: 'insensitive' } },
         ];
+
+        if (where.OR) {
+          // Combine existing OR with search OR
+          where.AND = [
+            { OR: where.OR },
+            { OR: searchCondition },
+          ];
+          delete where.OR;
+        } else {
+          where.OR = searchCondition;
+        }
       }
-      
+
       if (nodeType) where.nodeType = nodeType;
       if (tag) where.tags = { has: tag as string };
       if (minImportance) where.importanceScore = { gte: parseFloat(minImportance as string) };
@@ -74,15 +110,43 @@ function setupRoutes(app: Express, prisma: PrismaClient) {
 
   app.post(`${base}/nodes`, authenticate, tenantIsolation, requirePermission(Permission.KNOWLEDGE_READ), validateBody(nodeSchema), async (req, res, next) => {
     try {
+      // Determine if it's a company-wide or personal zettel
+      const isCompanyWide = req.body.isCompanyWide !== false; // Default to company-wide
+      const ownerId = isCompanyWide ? null : (req.body.ownerId || req.user!.id);
+
       const node = await prisma.knowledgeNode.create({
         data: {
           ...req.body,
           companyId: req.companyId!,
           createdById: req.user!.id,
+          ownerId,
+          isCompanyWide,
           tags: req.body.tags || [],
           importanceScore: req.body.importanceScore || 0.5,
         },
       });
+
+      // Auto-index in RAG (vector database)
+      try {
+        const { getAIService } = await import('../../core/ai/ai.service');
+        const aiService = getAIService(prisma);
+
+        const embedding = await aiService.generateEmbedding(
+          `${node.title}\n\n${node.content}\n\nTags: ${node.tags.join(', ')}`
+        );
+
+        await prisma.embedding.create({
+          data: {
+            companyId: req.companyId!,
+            nodeId: node.id,
+            model: 'text-embedding-ada-002', // or ollama embedding model
+            embedding,
+          },
+        });
+      } catch (embeddingError) {
+        console.error('Failed to create embedding:', embeddingError);
+        // Don't fail the node creation if embedding fails
+      }
 
       res.status(201).json({ success: true, data: node });
     } catch (error) {
@@ -140,6 +204,33 @@ function setupRoutes(app: Express, prisma: PrismaClient) {
         where: { id: req.params.id },
         data: req.body,
       });
+
+      // Update embedding in RAG if content/title/tags changed
+      if (req.body.title || req.body.content || req.body.tags) {
+        try {
+          const { getAIService } = await import('../../core/ai/ai.service');
+          const aiService = getAIService(prisma);
+
+          const embedding = await aiService.generateEmbedding(
+            `${node.title}\n\n${node.content}\n\nTags: ${node.tags.join(', ')}`
+          );
+
+          // Update or create embedding
+          await prisma.embedding.upsert({
+            where: { nodeId: node.id },
+            update: { embedding, model: 'text-embedding-ada-002' },
+            create: {
+              companyId: node.companyId,
+              nodeId: node.id,
+              model: 'text-embedding-ada-002',
+              embedding,
+            },
+          });
+        } catch (embeddingError) {
+          console.error('Failed to update embedding:', embeddingError);
+        }
+      }
+
       res.json({ success: true, data: node });
     } catch (error) {
       next(error);
@@ -199,12 +290,139 @@ function setupRoutes(app: Express, prisma: PrismaClient) {
   });
 
   // ============================================
-  // GRAPH VISUALIZATION
+  // GRAPH VISUALIZATION (Obsidian-style)
   // ============================================
 
+  // Obsidian-style full graph visualization
+  app.get(`${base}/graph/obsidian`, authenticate, tenantIsolation, async (req, res, next) => {
+    try {
+      const { companyId: requestCompanyId, scope = 'accessible', limit = '500' } = req.query;
+
+      const userRole = (req.user as any)?.role;
+      const isDev = userRole === 'dev';
+      const isAdminGeral = userRole === 'admin_geral';
+
+      let nodeWhere: any = { deletedAt: null };
+      let linkWhere: any = {};
+
+      // Special permissions for DEV and ADMIN_GERAL
+      if (isDev || isAdminGeral) {
+        // Can see ALL zettels from ALL companies
+        if (requestCompanyId) {
+          nodeWhere.companyId = requestCompanyId as string;
+          linkWhere.companyId = requestCompanyId as string;
+        }
+        // If no companyId specified, show ALL
+      } else {
+        // Normal users: company zettels + personal zettels
+        nodeWhere.companyId = req.companyId!;
+        linkWhere.companyId = req.companyId!;
+
+        if (scope === 'accessible') {
+          nodeWhere.OR = [
+            { isCompanyWide: true },
+            { ownerId: req.user!.id },
+          ];
+        } else if (scope === 'company') {
+          nodeWhere.isCompanyWide = true;
+        } else if (scope === 'personal') {
+          nodeWhere.ownerId = req.user!.id;
+        }
+      }
+
+      // Get all accessible nodes
+      const nodes = await prisma.knowledgeNode.findMany({
+        where: nodeWhere,
+        take: parseInt(limit as string),
+        select: {
+          id: true,
+          title: true,
+          nodeType: true,
+          tags: true,
+          importanceScore: true,
+          isCompanyWide: true,
+          ownerId: true,
+          createdById: true,
+          companyId: true,
+          createdBy: { select: { name: true } },
+        },
+        orderBy: [
+          { importanceScore: 'desc' },
+          { accessCount: 'desc' },
+        ],
+      });
+
+      const nodeIds = nodes.map(n => n.id);
+
+      // Get all links between these nodes
+      const links = await prisma.knowledgeLink.findMany({
+        where: {
+          ...linkWhere,
+          sourceId: { in: nodeIds },
+          targetId: { in: nodeIds },
+        },
+        select: {
+          id: true,
+          sourceId: true,
+          targetId: true,
+          linkType: true,
+          strength: true,
+        },
+      });
+
+      // Format for Obsidian/D3.js/vis.js
+      const graphData = {
+        nodes: nodes.map(n => ({
+          id: n.id,
+          label: n.title,
+          type: n.nodeType,
+          tags: n.tags,
+          importance: n.importanceScore,
+          isCompanyWide: n.isCompanyWide,
+          owner: n.ownerId,
+          createdBy: n.createdBy.name,
+          companyId: n.companyId,
+          // Color coding for visualization
+          color: n.isCompanyWide ? '#3b82f6' : '#8b5cf6', // blue = company, purple = personal
+          size: 10 + (n.importanceScore * 20), // Size based on importance
+        })),
+        edges: links.map(l => ({
+          id: l.id,
+          from: l.sourceId,
+          to: l.targetId,
+          label: l.linkType,
+          value: l.strength,
+          // Arrow and color based on link type
+          arrows: 'to',
+          color: {
+            related: '#64748b',
+            derives: '#10b981',
+            supports: '#3b82f6',
+            contradicts: '#ef4444',
+          }[l.linkType] || '#64748b',
+        })),
+        metadata: {
+          totalNodes: nodes.length,
+          totalLinks: links.length,
+          viewMode: isDev || isAdminGeral ? 'global' : scope,
+          userRole,
+        },
+      };
+
+      res.json({ success: true, data: graphData });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Original graph endpoint for backward compatibility
   app.get(`${base}/graph`, authenticate, tenantIsolation, async (req, res, next) => {
     try {
       const { nodeId, depth = '2' } = req.query;
+
+      const userRole = (req.user as any)?.role;
+      const isDev = userRole === 'dev';
+      const isAdminGeral = userRole === 'admin_geral';
 
       let nodes: any[];
       let links: any[];
@@ -212,17 +430,21 @@ function setupRoutes(app: Express, prisma: PrismaClient) {
       if (nodeId) {
         // Get subgraph around a specific node
         const centerNode = await prisma.knowledgeNode.findFirst({
-          where: { id: nodeId as string, companyId: req.companyId!, deletedAt: null },
+          where: {
+            id: nodeId as string,
+            ...(isDev || isAdminGeral ? {} : { companyId: req.companyId! }),
+            deletedAt: null
+          },
         });
 
         if (!centerNode) {
           return res.status(404).json({ success: false, error: { message: 'Node not found' } });
         }
 
-        // For simplicity, get all directly connected nodes
+        // Get all directly connected nodes
         const allLinks = await prisma.knowledgeLink.findMany({
           where: {
-            companyId: req.companyId!,
+            ...(isDev || isAdminGeral ? {} : { companyId: req.companyId! }),
             OR: [
               { sourceId: nodeId as string },
               { targetId: nodeId as string },
@@ -295,10 +517,143 @@ function setupRoutes(app: Express, prisma: PrismaClient) {
   });
 
   // ============================================
+  // ENTITY TO ZETTEL CONVERSION
+  // ============================================
+
+  // Convert any entity to zettel
+  app.post(`${base}/convert`, authenticate, tenantIsolation, async (req, res, next) => {
+    try {
+      const { entityType, entityId, title, content, tags, isPersonal } = req.body;
+
+      if (!entityType || !content) {
+        return res.status(400).json({
+          success: false,
+          error: { message: 'entityType and content are required' }
+        });
+      }
+
+      // Create zettel from entity
+      const node = await prisma.knowledgeNode.create({
+        data: {
+          title: title || `${entityType}: ${entityId || 'Auto-generated'}`,
+          content,
+          nodeType: entityType as any,
+          tags: tags || [entityType],
+          companyId: req.companyId!,
+          createdById: req.user!.id,
+          isCompanyWide: !isPersonal,
+          ownerId: isPersonal ? req.user!.id : null,
+          importanceScore: 0.5,
+          metadata: {
+            sourceEntityType: entityType,
+            sourceEntityId: entityId,
+            autoConverted: true,
+          } as any,
+        },
+      });
+
+      // Auto-index in RAG
+      try {
+        const { getAIService } = await import('../../core/ai/ai.service');
+        const aiService = getAIService(prisma);
+
+        const embedding = await aiService.generateEmbedding(
+          `${node.title}\n\n${node.content}\n\nTags: ${node.tags.join(', ')}`
+        );
+
+        await prisma.embedding.create({
+          data: {
+            companyId: req.companyId!,
+            nodeId: node.id,
+            model: 'text-embedding-ada-002',
+            embedding,
+          },
+        });
+      } catch (embeddingError) {
+        console.error('Failed to create embedding:', embeddingError);
+      }
+
+      res.status(201).json({ success: true, data: node });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Batch convert entities to zettels
+  app.post(`${base}/convert/batch`, authenticate, tenantIsolation, async (req, res, next) => {
+    try {
+      const { entities } = req.body;
+
+      if (!Array.isArray(entities) || entities.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: { message: 'entities array is required' }
+        });
+      }
+
+      const createdNodes = [];
+
+      for (const entity of entities) {
+        try {
+          const node = await prisma.knowledgeNode.create({
+            data: {
+              title: entity.title || `${entity.entityType}: ${entity.entityId}`,
+              content: entity.content,
+              nodeType: entity.entityType as any,
+              tags: entity.tags || [entity.entityType],
+              companyId: req.companyId!,
+              createdById: req.user!.id,
+              isCompanyWide: !entity.isPersonal,
+              ownerId: entity.isPersonal ? req.user!.id : null,
+              importanceScore: entity.importanceScore || 0.5,
+              metadata: {
+                sourceEntityType: entity.entityType,
+                sourceEntityId: entity.entityId,
+                autoConverted: true,
+              } as any,
+            },
+          });
+
+          // Auto-index in RAG (background - don't wait)
+          const { getAIService } = await import('../../core/ai/ai.service');
+          const aiService = getAIService(prisma);
+          aiService.generateEmbedding(
+            `${node.title}\n\n${node.content}\n\nTags: ${node.tags.join(', ')}`
+          ).then(embedding => {
+            return prisma.embedding.create({
+              data: {
+                companyId: req.companyId!,
+                nodeId: node.id,
+                model: 'text-embedding-ada-002',
+                embedding,
+              },
+            });
+          }).catch(err => console.error('Embedding error:', err));
+
+          createdNodes.push(node);
+        } catch (err) {
+          console.error('Failed to convert entity:', err);
+        }
+      }
+
+      res.status(201).json({
+        success: true,
+        data: {
+          created: createdNodes.length,
+          total: entities.length,
+          nodes: createdNodes,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // ============================================
   // INTELLIGENT SUGGESTIONS (AI-Powered)
   // ============================================
 
-  // AI-powered node suggestions
+  // AI-powered node suggestions (with access to both company and personal zettels)
   app.get(`${base}/nodes/:id/suggestions`, authenticate, tenantIsolation, async (req, res, next) => {
     try {
       const node = await prisma.knowledgeNode.findUnique({
@@ -309,14 +664,25 @@ function setupRoutes(app: Express, prisma: PrismaClient) {
         return res.status(404).json({ success: false, error: { message: 'Node not found' } });
       }
 
-      // Get all candidate nodes
+      const userRole = (req.user as any)?.role;
+      const isDev = userRole === 'dev';
+      const isAdminGeral = userRole === 'admin_geral';
+
+      // Get all candidate nodes (AI can access both company and user zettels)
       const candidateNodes = await prisma.knowledgeNode.findMany({
         where: {
-          companyId: req.companyId!,
+          ...(isDev || isAdminGeral ? {} : { companyId: req.companyId! }),
           deletedAt: null,
           id: { not: req.params.id },
+          // AI can see company zettels + user's personal zettels for better context
+          ...(isDev || isAdminGeral ? {} : {
+            OR: [
+              { isCompanyWide: true },
+              { ownerId: req.user!.id },
+            ],
+          }),
         },
-        select: { id: true, title: true, content: true, tags: true, nodeType: true },
+        select: { id: true, title: true, content: true, tags: true, nodeType: true, isCompanyWide: true },
         take: 50,
       });
 
