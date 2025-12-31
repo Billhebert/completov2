@@ -37,18 +37,18 @@ export default function DealsPage() {
   };
 
   const getStageColor = (stage: string) => {
-    switch (stage) {
-      case 'PROSPECTING':
+    switch (stage?.toLowerCase()) {
+      case 'lead':
         return 'bg-gray-500/10 text-gray-500';
-      case 'QUALIFICATION':
+      case 'qualification':
         return 'bg-blue-500/10 text-blue-500';
-      case 'PROPOSAL':
+      case 'proposal':
         return 'bg-purple-500/10 text-purple-500';
-      case 'NEGOTIATION':
+      case 'negotiation':
         return 'bg-yellow-500/10 text-yellow-500';
-      case 'CLOSED_WON':
+      case 'closed_won':
         return 'bg-green-500/10 text-green-500';
-      case 'CLOSED_LOST':
+      case 'closed_lost':
         return 'bg-red-500/10 text-red-500';
       default:
         return 'bg-gray-500/10 text-gray-500';
@@ -199,8 +199,9 @@ function CreateDealModal({
   const [formData, setFormData] = useState<Partial<Deal>>({
     title: '',
     contactId: '',
-    value: 0,
-    stage: 'PROSPECTING',
+    value: 1000,
+    currency: 'USD',
+    stage: 'lead',
     expectedCloseDate: '',
   });
 
@@ -214,7 +215,16 @@ function CreateDealModal({
       toast.error('Please select a contact');
       return;
     }
-    onCreate(formData);
+    if (!formData.value || formData.value <= 0) {
+      toast.error('Deal value must be greater than 0');
+      return;
+    }
+    // Remove empty expectedCloseDate
+    const dealData = { ...formData };
+    if (!dealData.expectedCloseDate) {
+      delete dealData.expectedCloseDate;
+    }
+    onCreate(dealData);
   };
 
   return (
@@ -256,21 +266,38 @@ function CreateDealModal({
             </select>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1">
-              Deal Value ($)
-            </label>
-            <input
-              type="number"
-              min="0"
-              step="1000"
-              value={formData.value || 0}
-              onChange={(e) =>
-                setFormData({ ...formData, value: parseFloat(e.target.value) || 0 })
-              }
-              className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground"
-              placeholder="50000"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">
+                Deal Value
+              </label>
+              <input
+                type="number"
+                min="1"
+                step="100"
+                value={formData.value || 1000}
+                onChange={(e) =>
+                  setFormData({ ...formData, value: parseFloat(e.target.value) || 1000 })
+                }
+                className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground"
+                placeholder="1000"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">
+                Currency
+              </label>
+              <select
+                value={formData.currency || 'USD'}
+                onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground"
+              >
+                <option value="USD">USD ($)</option>
+                <option value="BRL">BRL (R$)</option>
+                <option value="EUR">EUR (€)</option>
+                <option value="GBP">GBP (£)</option>
+              </select>
+            </div>
           </div>
 
           <div>
@@ -278,16 +305,16 @@ function CreateDealModal({
               Stage
             </label>
             <select
-              value={formData.stage || 'PROSPECTING'}
+              value={formData.stage || 'lead'}
               onChange={(e) => setFormData({ ...formData, stage: e.target.value as any })}
               className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground"
             >
-              <option value="PROSPECTING">Prospecting</option>
-              <option value="QUALIFICATION">Qualification</option>
-              <option value="PROPOSAL">Proposal</option>
-              <option value="NEGOTIATION">Negotiation</option>
-              <option value="CLOSED_WON">Closed Won</option>
-              <option value="CLOSED_LOST">Closed Lost</option>
+              <option value="lead">Lead</option>
+              <option value="qualification">Qualification</option>
+              <option value="proposal">Proposal</option>
+              <option value="negotiation">Negotiation</option>
+              <option value="closed_won">Closed Won</option>
+              <option value="closed_lost">Closed Lost</option>
             </select>
           </div>
 

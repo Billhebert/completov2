@@ -24,7 +24,7 @@ const dealSchema = z.object({
   currency: z.string().default('USD'),
   stage: z.string().default('lead'),
   expectedCloseDate: z.string().optional(),
-  ownerId: z.string(),
+  ownerId: z.string().optional(),
   products: z.array(z.object({
     productId: z.string(),
     productName: z.string(),
