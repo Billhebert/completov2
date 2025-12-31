@@ -94,6 +94,22 @@ class ApiClient {
     this.client.interceptors.response.use(
       (response) => response,
       (error: AxiosError) => {
+        // Log the error but don't crash for 404s/500s on module endpoints
+        const url = error.config?.url || '';
+        const is404 = error.response?.status === 404;
+        const is500 = error.response?.status === 500;
+        const isModuleEndpoint = url.includes('/webhooks') ||
+                                 url.includes('/fsm') ||
+                                 url.includes('/cmms') ||
+                                 url.includes('/mcp') ||
+                                 url.includes('/workflows');
+
+        if ((is404 || is500) && isModuleEndpoint) {
+          console.warn(`[API] Module not available: ${url} (${error.response?.status})`);
+          // Return empty data instead of rejecting to prevent uncaught promise errors
+          return Promise.resolve({ data: { success: true, data: [] } } as any);
+        }
+
         if (error.response?.status === 401) {
           // Clear token and redirect to login
           localStorage.removeItem('auth_token');
