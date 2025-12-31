@@ -13,7 +13,9 @@ import {
   Cpu,
   LogOut,
   Menu,
-  X
+  X,
+  DollarSign,
+  Network
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
@@ -33,6 +35,9 @@ const navigation = [
   { name: 'Field Service', href: '/fsm', icon: Wrench },
   { name: 'Assets (CMMS)', href: '/cmms', icon: Package },
   { name: 'MCP Servers', href: '/mcp', icon: Cpu },
+  { name: 'Jobs', href: '/jobs', icon: Briefcase },
+  { name: 'Services', href: '/services', icon: DollarSign },
+  { name: 'Partnerships', href: '/partnerships', icon: Network },
 ];
 
 export default function Layout({ children }: LayoutProps) {

@@ -221,6 +221,11 @@ class ApiClient {
     await this.client.post(`/omnichannel/conversations/${conversationId}/messages`, { content });
   }
 
+  async createConversation(data: Partial<Conversation>): Promise<Conversation> {
+    const response = await this.client.post<Conversation>('/omnichannel/conversations', data);
+    return response.data;
+  }
+
   async closeConversation(id: string): Promise<void> {
     await this.client.patch(`/omnichannel/conversations/${id}`, { status: 'closed' });
   }
