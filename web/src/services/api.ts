@@ -107,7 +107,7 @@ class ApiClient {
         if ((is404 || is500) && isModuleEndpoint) {
           console.warn(`[API] Module not available: ${url} (${error.response?.status})`);
           // Return empty data instead of rejecting to prevent uncaught promise errors
-          return Promise.resolve({ data: { success: true, data: [] } } as any);
+          return Promise.resolve({ data: [] } as any);
         }
 
         if (error.response?.status === 401) {
