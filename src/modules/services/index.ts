@@ -3,6 +3,7 @@ import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { logger } from '../../core/logger';
 import { authenticate } from '../../core/middleware/auth';
+import { getPartnerCompanyIds } from '../partnerships';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -14,7 +15,7 @@ const authenticateToken = authenticate;
 // SERVIÇOS (SERVICES)
 // ============================================
 
-// GET /api/v1/services - Listar serviços
+// GET /api/v1/services - Listar serviços (com controle de acesso baseado em parcerias)
 router.get('/', authenticateToken, async (req: Request, res: Response) => {
   try {
     const {
@@ -31,8 +32,33 @@ router.get('/', authenticateToken, async (req: Request, res: Response) => {
     const skip = (Number(page) - 1) * Number(pageSize);
     const take = Number(pageSize);
 
+    // Get partner companies that share services
+    const partnerCompanyIds = await getPartnerCompanyIds(user.companyId);
+
+    // Filter partners that have shareServices = true
+    const partnersWithServiceSharing = await prisma.partnership.findMany({
+      where: {
+        OR: [
+          { companyAId: user.companyId, companyBId: { in: partnerCompanyIds }, shareServices: true },
+          { companyBId: user.companyId, companyAId: { in: partnerCompanyIds }, shareServices: true },
+        ],
+        status: 'active',
+      },
+      select: {
+        companyAId: true,
+        companyBId: true,
+      },
+    });
+
+    const partnerIdsWithAccess = partnersWithServiceSharing.map(p =>
+      p.companyAId === user.companyId ? p.companyBId : p.companyAId
+    );
+
+    // Build where clause: own company + partners with shareServices
+    const accessibleCompanyIds = [user.companyId, ...partnerIdsWithAccess];
+
     const where: any = {
-      companyId: user.companyId,
+      companyId: { in: accessibleCompanyIds },
       isActive: true,
     };
 
@@ -54,6 +80,9 @@ router.get('/', authenticateToken, async (req: Request, res: Response) => {
         take,
         orderBy: { createdAt: 'desc' },
         include: {
+          company: {
+            select: { id: true, name: true, domain: true },
+          },
           _count: {
             select: {
               proposals: true,
@@ -64,7 +93,10 @@ router.get('/', authenticateToken, async (req: Request, res: Response) => {
       prisma.service.count({ where }),
     ]);
 
-    logger.info({ userId: user.id, count: services.length }, 'Services listed');
+    logger.info(
+      { userId: user.id, ownCompany: user.companyId, partnersCount: partnerIdsWithAccess.length, servicesCount: services.length },
+      'Services listed with partnership access'
+    );
 
     res.json({
       data: services,

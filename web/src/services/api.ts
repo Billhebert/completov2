@@ -53,6 +53,12 @@ import type {
   SystemSettings,
   CreateService,
 } from '../types/services';
+import type {
+  Partnership,
+  PartnershipInvite,
+  CreatePartnership,
+  CreatePartnershipInvite,
+} from '../types/partnerships';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
 
@@ -763,6 +769,64 @@ class ApiClient {
     pageSize?: number;
   }): Promise<PaginatedResponse<SystemSettings>> {
     const response = await this.client.get<PaginatedResponse<SystemSettings>>('/settings/history', { params });
+    return response.data;
+  }
+
+  // Partnerships
+  async getPartnerships(params?: {
+    page?: number;
+    pageSize?: number;
+    status?: string;
+  }): Promise<PaginatedResponse<Partnership>> {
+    const response = await this.client.get<PaginatedResponse<Partnership>>('/partnerships', { params });
+    return response.data;
+  }
+
+  async getPartnership(id: string): Promise<Partnership> {
+    const response = await this.client.get<Partnership>(`/partnerships/${id}`);
+    return response.data;
+  }
+
+  async createPartnership(data: CreatePartnership): Promise<Partnership> {
+    const response = await this.client.post<Partnership>('/partnerships', data);
+    return response.data;
+  }
+
+  async updatePartnership(id: string, data: Partial<CreatePartnership> & {
+    status?: string;
+    endDate?: string;
+  }): Promise<Partnership> {
+    const response = await this.client.patch<Partnership>(`/partnerships/${id}`, data);
+    return response.data;
+  }
+
+  async terminatePartnership(id: string): Promise<void> {
+    await this.client.delete(`/partnerships/${id}`);
+  }
+
+  // Partnership Invites
+  async getPartnershipInvites(params?: {
+    page?: number;
+    pageSize?: number;
+    type?: 'sent' | 'received';
+    status?: string;
+  }): Promise<PaginatedResponse<PartnershipInvite>> {
+    const response = await this.client.get<PaginatedResponse<PartnershipInvite>>('/partnerships/invites', { params });
+    return response.data;
+  }
+
+  async sendPartnershipInvite(data: CreatePartnershipInvite): Promise<PartnershipInvite> {
+    const response = await this.client.post<PartnershipInvite>('/partnerships/invites', data);
+    return response.data;
+  }
+
+  async acceptPartnershipInvite(id: string): Promise<Partnership> {
+    const response = await this.client.patch<Partnership>(`/partnerships/invites/${id}/accept`);
+    return response.data;
+  }
+
+  async rejectPartnershipInvite(id: string, reason?: string): Promise<{ message: string }> {
+    const response = await this.client.patch<{ message: string }>(`/partnerships/invites/${id}/reject`, { reason });
     return response.data;
   }
 }
