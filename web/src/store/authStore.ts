@@ -50,7 +50,20 @@ export const useAuthStore = create<AuthState>()(
             error: null,
           });
         } catch (error: any) {
-          const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Login failed';
+          let errorMessage = 'Login failed';
+
+          if (error.response?.data?.error) {
+            errorMessage = error.response.data.error;
+          } else if (error.response?.data?.message) {
+            errorMessage = error.response.data.message;
+          } else if (error.message) {
+            errorMessage = error.message;
+          } else if (error.response?.status === 404) {
+            errorMessage = 'Server not found. Please make sure the backend is running.';
+          } else if (error.code === 'ERR_NETWORK') {
+            errorMessage = 'Network error. Please check if the backend server is running.';
+          }
+
           set({ isLoading: false, error: errorMessage });
           throw error;
         }
@@ -75,7 +88,20 @@ export const useAuthStore = create<AuthState>()(
             error: null,
           });
         } catch (error: any) {
-          const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Registration failed';
+          let errorMessage = 'Registration failed';
+
+          if (error.response?.data?.error) {
+            errorMessage = error.response.data.error;
+          } else if (error.response?.data?.message) {
+            errorMessage = error.response.data.message;
+          } else if (error.message) {
+            errorMessage = error.message;
+          } else if (error.response?.status === 404) {
+            errorMessage = 'Server not found. Please make sure the backend is running.';
+          } else if (error.code === 'ERR_NETWORK') {
+            errorMessage = 'Network error. Please check if the backend server is running.';
+          }
+
           set({ isLoading: false, error: errorMessage });
           throw error;
         }
