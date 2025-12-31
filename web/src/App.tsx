@@ -20,9 +20,10 @@ import PartnershipsPage from './pages/PartnershipsPage';
 import SystemSettingsPage from './pages/SystemSettingsPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, _hasHydrated } = useAuth();
 
-  if (isLoading) {
+  // Wait for the persisted state to be rehydrated
+  if (!_hasHydrated || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
