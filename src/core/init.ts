@@ -20,8 +20,9 @@ export async function initializeSystem() {
     await registerWorkflowEventListeners();
 
     // 3. Iniciar Cron Jobs
-    startRemindersCron();
-    startRemindersCleanupCron();
+    // TODO: Enable reminders CRON after adding Reminder/Notification models to Prisma schema
+    // startRemindersCron();
+    // startRemindersCleanupCron();
     startTruthLayerCron();
 
     logger.info('[INIT] System initialization completed successfully');
