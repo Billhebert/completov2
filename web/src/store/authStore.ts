@@ -41,8 +41,15 @@ export const useAuthStore = create<AuthState>()(
           const token = response.data.accessToken;
           const user = response.data.user;
 
+          console.log('[AuthStore] Login successful:', {
+            hasToken: !!token,
+            tokenPreview: token ? `${token.substring(0, 20)}...` : 'none',
+            user: user.email
+          });
+
           if (token) {
             localStorage.setItem('auth_token', token);
+            console.log('[AuthStore] Token saved to localStorage');
           }
 
           set({
@@ -52,6 +59,8 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
             error: null,
           });
+
+          console.log('[AuthStore] State updated, isAuthenticated:', true);
         } catch (error: any) {
           let errorMessage = 'Login failed';
 

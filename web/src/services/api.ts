@@ -77,6 +77,11 @@ class ApiClient {
     this.client.interceptors.request.use(
       (config) => {
         const token = localStorage.getItem('auth_token');
+        console.log('[API Client] Request interceptor:', {
+          url: config.url,
+          hasToken: !!token,
+          tokenPreview: token ? `${token.substring(0, 20)}...` : 'none'
+        });
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
