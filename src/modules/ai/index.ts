@@ -60,12 +60,71 @@ function setupRoutes(app: Express, prisma: PrismaClient) {
   // Simple AI chat (without RAG)
   app.post(`${base}/chat`, authenticate, tenantIsolation, async (req, res, next) => {
     try {
-      res.json({ 
-        success: true, 
-        data: { 
-          message: 'AI chat endpoint - integrate with OpenAI/Ollama as needed',
-          userMessage: req.body.message,
-        } 
+      const { message, systemMessage, temperature } = req.body;
+
+      if (!message) {
+        return res.status(400).json({ success: false, error: { message: 'Message is required' } });
+      }
+
+      // Import AIService
+      const { getAIService } = await import('../../core/ai/ai.service');
+      const aiService = getAIService(prisma);
+
+      // Generate AI response
+      const result = await aiService.complete({
+        prompt: message,
+        systemMessage: systemMessage || 'You are a helpful AI assistant.',
+        temperature: temperature || 0.7,
+      });
+
+      res.json({
+        success: true,
+        data: {
+          message: result.content,
+          model: result.model,
+          provider: result.provider,
+          tokensUsed: result.tokensUsed,
+          cost: result.cost,
+        },
+      });
+    } catch (error: any) {
+      next(error);
+    }
+  });
+
+  // Get current AI mode
+  app.get(`${base}/mode`, authenticate, tenantIsolation, async (req, res, next) => {
+    try {
+      const { getAIService } = await import('../../core/ai/ai.service');
+      const aiService = getAIService(prisma);
+
+      res.json({
+        success: true,
+        data: {
+          mode: aiService.getMode(),
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Set AI mode
+  app.post(`${base}/mode`, authenticate, tenantIsolation, async (req, res, next) => {
+    try {
+      const { mode } = req.body;
+
+      if (!['full', 'auto', 'economico'].includes(mode)) {
+        return res.status(400).json({ success: false, error: { message: 'Invalid mode. Must be: full, auto, or economico' } });
+      }
+
+      const { getAIService } = await import('../../core/ai/ai.service');
+      const aiService = getAIService(prisma);
+      aiService.setMode(mode);
+
+      res.json({
+        success: true,
+        data: { mode },
       });
     } catch (error) {
       next(error);

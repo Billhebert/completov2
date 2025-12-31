@@ -328,6 +328,263 @@ function setupRoutes(app: Express, prisma: PrismaClient, eventBus: EventBus) {
   });
 
   // ============================================
+  // INTELLIGENT CRM (AI-Powered)
+  // ============================================
+
+  // AI-powered deal probability analysis
+  app.get(`${base}/deals/:id/probability`, authenticate, tenantIsolation, requirePermission(Permission.CONTACT_READ), async (req, res, next) => {
+    try {
+      const deal = await prisma.deal.findFirst({
+        where: { id: req.params.id, companyId: req.companyId! },
+        include: {
+          contact: true,
+          products: true,
+          interactions: {
+            where: { dealId: req.params.id },
+            orderBy: { timestamp: 'desc' },
+            take: 10,
+          },
+        },
+      });
+
+      if (!deal) {
+        return res.status(404).json({ success: false, error: { message: 'Deal not found' } });
+      }
+
+      const { getAIService } = await import('../../core/ai/ai.service');
+      const aiService = getAIService(prisma);
+
+      // Analyze deal probability
+      const context = `
+        Deal Analysis:
+        - Stage: ${deal.stage}
+        - Value: ${deal.value} ${deal.currency}
+        - Age: ${Math.floor((Date.now() - deal.createdAt.getTime()) / (1000 * 60 * 60 * 24))} days
+        - Expected Close Date: ${deal.expectedCloseDate || 'Not set'}
+        - Number of Interactions: ${deal.interactions?.length || 0}
+        - Last Interaction: ${deal.interactions?.[0]?.timestamp ? Math.floor((Date.now() - new Date(deal.interactions[0].timestamp).getTime()) / (1000 * 60 * 60 * 24)) + ' days ago' : 'No interactions'}
+        - Contact Engagement: ${deal.contact?.leadStatus || 'unknown'}
+        - Products: ${deal.products?.length || 0} items
+
+        Based on this information, estimate the probability (0-100%) that this deal will close successfully.
+        Consider: deal stage, engagement frequency, time since last contact, and deal age.
+      `;
+
+      const result = await aiService.complete({
+        prompt: context,
+        systemMessage: 'You are a sales analytics expert. Return only a number between 0 and 100 representing the probability percentage.',
+        temperature: 0.3,
+      });
+
+      const probability = Math.max(0, Math.min(100, parseFloat(result.content.match(/\d+/)?.[0] || '50')));
+
+      // Get AI suggestions for improving probability
+      const suggestionsContext = `
+        Deal at ${probability}% probability.
+        Stage: ${deal.stage}
+        Last contact: ${deal.interactions?.[0]?.timestamp ? Math.floor((Date.now() - new Date(deal.interactions[0].timestamp).getTime()) / (1000 * 60 * 60 * 24)) + ' days ago' : 'Never'}
+
+        Suggest 3 specific actions to increase the probability of closing this deal.
+      `;
+
+      const suggestions = await aiService.generateSuggestions(
+        suggestionsContext,
+        'actions to increase deal probability (in Portuguese)'
+      );
+
+      const actionsList = suggestions
+        .split(/\n/)
+        .filter(s => s.trim().length > 0)
+        .slice(0, 3);
+
+      res.json({
+        success: true,
+        data: {
+          probability,
+          confidence: result.provider === 'openai' ? 'high' : 'medium',
+          riskLevel: probability < 30 ? 'high' : probability < 60 ? 'medium' : 'low',
+          suggestedActions: actionsList,
+          analysis: {
+            dealAge: Math.floor((Date.now() - deal.createdAt.getTime()) / (1000 * 60 * 60 * 24)),
+            interactionCount: deal.interactions?.length || 0,
+            daysSinceLastContact: deal.interactions?.[0]?.timestamp
+              ? Math.floor((Date.now() - new Date(deal.interactions[0].timestamp).getTime()) / (1000 * 60 * 60 * 24))
+              : null,
+          },
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // AI-powered contact enrichment suggestions
+  app.get(`${base}/contacts/:id/enrich`, authenticate, tenantIsolation, requirePermission(Permission.CONTACT_READ), async (req, res, next) => {
+    try {
+      const contact = await prisma.contact.findFirst({
+        where: { id: req.params.id, companyId: req.companyId! },
+        include: {
+          deals: true,
+          interactions: { take: 5, orderBy: { timestamp: 'desc' } },
+        },
+      });
+
+      if (!contact) {
+        return res.status(404).json({ success: false, error: { message: 'Contact not found' } });
+      }
+
+      const { getAIService } = await import('../../core/ai/ai.service');
+      const aiService = getAIService(prisma);
+
+      // Identify missing fields
+      const missingFields = [];
+      if (!contact.email) missingFields.push('email');
+      if (!contact.phone) missingFields.push('phone');
+      if (!contact.companyName) missingFields.push('companyName');
+      if (!contact.position) missingFields.push('position');
+      if (!contact.website) missingFields.push('website');
+
+      if (missingFields.length === 0) {
+        return res.json({
+          success: true,
+          data: {
+            complete: true,
+            message: 'Contato já possui todas as informações principais',
+            suggestions: [],
+          },
+        });
+      }
+
+      // Generate enrichment suggestions
+      const context = `
+        Contact Information:
+        - Name: ${contact.name}
+        - Email: ${contact.email || 'missing'}
+        - Phone: ${contact.phone || 'missing'}
+        - Company: ${contact.companyName || 'missing'}
+        - Position: ${contact.position || 'missing'}
+        - Website: ${contact.website || 'missing'}
+        - Tags: ${contact.tags?.join(', ') || 'none'}
+        - Lead Status: ${contact.leadStatus}
+
+        Missing fields: ${missingFields.join(', ')}
+
+        Suggest where and how to find this missing information. Provide specific, actionable suggestions in Portuguese.
+      `;
+
+      const suggestions = await aiService.generateSuggestions(
+        context,
+        'ways to enrich contact data (in Portuguese)'
+      );
+
+      const enrichmentSuggestions = suggestions
+        .split(/\n/)
+        .filter(s => s.trim().length > 0)
+        .slice(0, 5);
+
+      res.json({
+        success: true,
+        data: {
+          complete: false,
+          completionPercentage: Math.round(((6 - missingFields.length) / 6) * 100),
+          missingFields,
+          suggestions: enrichmentSuggestions,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // AI-powered contact engagement score
+  app.get(`${base}/contacts/:id/engagement`, authenticate, tenantIsolation, requirePermission(Permission.CONTACT_READ), async (req, res, next) => {
+    try {
+      const contact = await prisma.contact.findFirst({
+        where: { id: req.params.id, companyId: req.companyId! },
+        include: {
+          deals: true,
+          interactions: {
+            orderBy: { timestamp: 'desc' },
+            take: 20,
+          },
+        },
+      });
+
+      if (!contact) {
+        return res.status(404).json({ success: false, error: { message: 'Contact not found' } });
+      }
+
+      const { getAIService } = await import('../../core/ai/ai.service');
+      const aiService = getAIService(prisma);
+
+      // Calculate engagement metrics
+      const now = Date.now();
+      const recentInteractions = contact.interactions?.filter(
+        i => (now - new Date(i.timestamp).getTime()) < 30 * 24 * 60 * 60 * 1000 // Last 30 days
+      ).length || 0;
+
+      const lastInteraction = contact.interactions?.[0]?.timestamp
+        ? Math.floor((now - new Date(contact.interactions[0].timestamp).getTime()) / (1000 * 60 * 60 * 24))
+        : null;
+
+      const openDeals = contact.deals?.filter(d => !['won', 'lost'].includes(d.stage)).length || 0;
+      const totalDeals = contact.deals?.length || 0;
+
+      // Get AI analysis
+      const context = `
+        Contact Engagement Analysis:
+        - Total Interactions: ${contact.interactions?.length || 0}
+        - Recent Interactions (30 days): ${recentInteractions}
+        - Days Since Last Contact: ${lastInteraction || 'Never contacted'}
+        - Open Deals: ${openDeals}
+        - Total Deals: ${totalDeals}
+        - Lead Status: ${contact.leadStatus}
+        - Tags: ${contact.tags?.join(', ') || 'none'}
+
+        On a scale of 0-100, rate the engagement level of this contact.
+        Consider interaction frequency, recency, and deal activity.
+      `;
+
+      const result = await aiService.complete({
+        prompt: context,
+        systemMessage: 'You are an engagement analysis expert. Return only a number between 0 and 100.',
+        temperature: 0.3,
+      });
+
+      const engagementScore = Math.max(0, Math.min(100, parseFloat(result.content.match(/\d+/)?.[0] || '50')));
+
+      // Get next action suggestions
+      const nextActionsContext = `
+        Contact with ${engagementScore}% engagement.
+        Last contact: ${lastInteraction ? lastInteraction + ' days ago' : 'Never'}
+        Open deals: ${openDeals}
+
+        Suggest the best next action to maintain or improve engagement (in Portuguese).
+      `;
+
+      const nextAction = await aiService.summarize(nextActionsContext, 150);
+
+      res.json({
+        success: true,
+        data: {
+          engagementScore,
+          level: engagementScore >= 70 ? 'high' : engagementScore >= 40 ? 'medium' : 'low',
+          metrics: {
+            totalInteractions: contact.interactions?.length || 0,
+            recentInteractions,
+            daysSinceLastContact: lastInteraction,
+            openDeals,
+            totalDeals,
+          },
+          nextAction,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // ============================================
   // ANALYTICS/REPORTS
   // ============================================
 

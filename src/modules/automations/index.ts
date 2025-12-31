@@ -367,6 +367,162 @@ router.get('/executions/:id/logs', async (req: Request, res: Response) => {
 });
 
 // ============================================
+// INTELLIGENT AUTOMATIONS (AI-Powered)
+// ============================================
+
+/**
+ * GET /api/v1/automations/suggestions
+ * AI-powered workflow suggestions based on company activity
+ */
+router.get('/suggestions', async (req: Request, res: Response) => {
+  try {
+    const { companyId } = req.user!;
+
+    // Get company activity data
+    const [dealCount, contactCount, messageCount, interactionCount] = await Promise.all([
+      prisma.deal.count({ where: { companyId } }),
+      prisma.contact.count({ where: { companyId } }),
+      prisma.message.count({ where: { companyId } }),
+      prisma.interaction.count({ where: { companyId } })
+    ]);
+
+    // Get existing workflows to avoid duplicates
+    const existingWorkflows = await prisma.workflow.findMany({
+      where: { companyId },
+      select: { name: true, description: true }
+    });
+
+    const { getAIService } = await import('../../core/ai/ai.service');
+    const aiService = getAIService(prisma);
+
+    const context = `
+      Company Activity:
+      - Deals: ${dealCount}
+      - Contacts: ${contactCount}
+      - Messages: ${messageCount}
+      - Interactions: ${interactionCount}
+
+      Existing Workflows:
+      ${existingWorkflows.map(w => `- ${w.name}: ${w.description || 'No description'}`).join('\n')}
+
+      Suggest 3-5 workflow automations that would benefit this company in Portuguese (pt-BR).
+      For each suggestion, include:
+      - Nome do workflow
+      - Descrição (1-2 linhas)
+      - Benefício esperado
+    `;
+
+    const suggestions = await aiService.generateSuggestions(
+      context,
+      'workflow automation ideas'
+    );
+
+    const workflowSuggestions = suggestions
+      .split(/\n\n/)
+      .filter(s => s.trim().length > 0)
+      .slice(0, 5);
+
+    res.json({
+      success: true,
+      data: {
+        suggestions: workflowSuggestions,
+        basedOn: {
+          dealCount,
+          contactCount,
+          messageCount,
+          interactionCount,
+        },
+      },
+    });
+  } catch (error: any) {
+    logger.error({ error }, 'Error generating workflow suggestions');
+    res.status(500).json({ error: 'Failed to generate suggestions' });
+  }
+});
+
+/**
+ * GET /api/v1/automations/workflows/:id/analyze
+ * AI-powered workflow efficiency analysis
+ */
+router.get('/workflows/:id/analyze', async (req: Request, res: Response) => {
+  try {
+    const { companyId } = req.user!;
+    const { id } = req.params;
+
+    const workflow = await prisma.workflow.findFirst({
+      where: { id, companyId },
+      include: {
+        executions: {
+          take: 50,
+          orderBy: { startedAt: 'desc' },
+        },
+      },
+    });
+
+    if (!workflow) {
+      return res.status(404).json({ error: 'Workflow not found' });
+    }
+
+    // Calculate metrics
+    const totalExecutions = workflow.executions.length;
+    const successfulExecutions = workflow.executions.filter(e => e.status === 'COMPLETED').length;
+    const failedExecutions = workflow.executions.filter(e => e.status === 'FAILED').length;
+    const avgDuration = workflow.executions.reduce((sum, e) => {
+      if (e.completedAt && e.startedAt) {
+        return sum + (new Date(e.completedAt).getTime() - new Date(e.startedAt).getTime());
+      }
+      return sum;
+    }, 0) / (workflow.executions.length || 1);
+
+    const { getAIService } = await import('../../core/ai/ai.service');
+    const aiService = getAIService(prisma);
+
+    const context = `
+      Workflow Analysis:
+      - Name: ${workflow.name}
+      - Description: ${workflow.description || 'No description'}
+      - Status: ${workflow.status}
+      - Total Executions: ${totalExecutions}
+      - Successful: ${successfulExecutions}
+      - Failed: ${failedExecutions}
+      - Success Rate: ${totalExecutions > 0 ? Math.round((successfulExecutions / totalExecutions) * 100) : 0}%
+      - Average Duration: ${Math.round(avgDuration / 1000)}s
+      - Nodes: ${(workflow.definition as any)?.nodes?.length || 0}
+
+      Analyze this workflow's efficiency and suggest improvements in Portuguese (pt-BR).
+      Consider: success rate, execution time, complexity, and potential bottlenecks.
+    `;
+
+    const analysis = await aiService.complete({
+      prompt: context,
+      systemMessage: 'You are a workflow optimization expert. Provide a detailed analysis with specific recommendations.',
+      temperature: 0.7,
+    });
+
+    res.json({
+      success: true,
+      data: {
+        metrics: {
+          totalExecutions,
+          successfulExecutions,
+          failedExecutions,
+          successRate: totalExecutions > 0 ? Math.round((successfulExecutions / totalExecutions) * 100) : 0,
+          avgDurationSeconds: Math.round(avgDuration / 1000),
+          nodeCount: (workflow.definition as any)?.nodes?.length || 0,
+        },
+        aiAnalysis: analysis.content,
+        efficiency: successfulExecutions / totalExecutions >= 0.9 ? 'excellent' :
+                    successfulExecutions / totalExecutions >= 0.7 ? 'good' :
+                    successfulExecutions / totalExecutions >= 0.5 ? 'fair' : 'poor',
+      },
+    });
+  } catch (error: any) {
+    logger.error({ error }, 'Error analyzing workflow');
+    res.status(500).json({ error: 'Failed to analyze workflow' });
+  }
+});
+
+// ============================================
 // EVENT HANDLERS (registrar workflows)
 // ============================================
 

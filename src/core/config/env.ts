@@ -37,7 +37,10 @@ const envSchema = z.object({
   // Ollama
   OLLAMA_URL: z.string().default('http://localhost:11434'),
   OLLAMA_MODEL: z.string().default('llama2'),
-  
+
+  // AI Mode
+  AI_MODE: z.enum(['full', 'auto', 'economico']).default('auto'),
+
   // Sentry
   SENTRY_DSN: z.string().optional(),
   
