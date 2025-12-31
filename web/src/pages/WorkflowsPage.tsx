@@ -6,9 +6,18 @@ import type { Workflow as WorkflowType } from '../types';
 export default function WorkflowsPage() {
   const queryClient = useQueryClient();
 
-  const { data: workflows, isLoading } = useQuery<WorkflowType[]>({
+  const { data: workflows = [], isLoading } = useQuery<WorkflowType[]>({
     queryKey: ['workflows'],
-    queryFn: () => api.getWorkflows(),
+    queryFn: async () => {
+      try {
+        const result = await api.getWorkflows();
+        // Ensure we always return an array
+        return Array.isArray(result) ? result : [];
+      } catch (error) {
+        console.error('[WorkflowsPage] Error fetching workflows:', error);
+        return [];
+      }
+    },
   });
 
   const toggleMutation = useMutation({

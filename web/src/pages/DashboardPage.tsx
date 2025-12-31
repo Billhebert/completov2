@@ -1,9 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { LayoutDashboard, MessageSquare, Users, BookOpen, Briefcase, TrendingUp } from 'lucide-react';
 import api from '../services/api';
 import type { DashboardStats } from '../types';
 
 export default function DashboardPage() {
+  const navigate = useNavigate();
+
   const { data: stats, isLoading } = useQuery<DashboardStats>({
     queryKey: ['dashboard-stats'],
     queryFn: () => api.getDashboardStats(),
@@ -97,13 +100,25 @@ export default function DashboardPage() {
         <div className="bg-card border border-border rounded-lg p-6">
           <h3 className="text-lg font-semibold text-foreground mb-4">Quick Actions</h3>
           <div className="space-y-2">
-            <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-accent transition-colors">
+            <button
+              onClick={() => navigate('/conversations')}
+              className="w-full text-left px-4 py-2 rounded-lg hover:bg-accent transition-colors flex items-center gap-2"
+            >
+              <MessageSquare className="h-4 w-4" />
               New Conversation
             </button>
-            <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-accent transition-colors">
+            <button
+              onClick={() => navigate('/contacts')}
+              className="w-full text-left px-4 py-2 rounded-lg hover:bg-accent transition-colors flex items-center gap-2"
+            >
+              <Users className="h-4 w-4" />
               Add Contact
             </button>
-            <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-accent transition-colors">
+            <button
+              onClick={() => navigate('/deals')}
+              className="w-full text-left px-4 py-2 rounded-lg hover:bg-accent transition-colors flex items-center gap-2"
+            >
+              <Briefcase className="h-4 w-4" />
               Create Deal
             </button>
           </div>

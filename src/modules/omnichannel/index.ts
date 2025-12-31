@@ -141,6 +141,157 @@ function setupRoutes(app: Express, prisma: PrismaClient, eventBus: EventBus) {
       next(error);
     }
   });
+
+  // Delete account
+  app.delete(`${base}/whatsapp/accounts/:accountId`, authenticate, tenantIsolation, async (req, res, next) => {
+    try {
+      // First try to disconnect the instance
+      try {
+        await evolutionService.disconnectInstance(req.params.accountId);
+      } catch (error) {
+        // Ignore disconnect errors, account might already be disconnected
+      }
+
+      // Delete from database
+      await prisma.whatsAppAccount.delete({
+        where: {
+          id: req.params.accountId,
+          companyId: req.companyId!, // Ensure user can only delete their own accounts
+        },
+      });
+
+      res.json({ success: true, message: 'Account deleted' });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // ============================================
+  // CONVERSATIONS
+  // ============================================
+
+  // List conversations
+  app.get(`${base}/conversations`, authenticate, tenantIsolation, async (req, res, next) => {
+    try {
+      const { status, channel, contactId, page = '1', pageSize = '20' } = req.query;
+
+      const where: any = { companyId: req.companyId! };
+      if (status) where.status = status;
+      if (channel) where.channel = channel;
+      if (contactId) where.contactId = contactId;
+
+      const skip = (parseInt(page as string) - 1) * parseInt(pageSize as string);
+      const take = parseInt(pageSize as string);
+
+      const [conversations, total] = await Promise.all([
+        prisma.conversation.findMany({
+          where,
+          skip,
+          take,
+          include: {
+            contact: { select: { id: true, name: true, email: true, phone: true } },
+            assignedTo: { select: { id: true, name: true, email: true } },
+            _count: { select: { messages: true } },
+          },
+          orderBy: { updatedAt: 'desc' },
+        }),
+        prisma.conversation.count({ where }),
+      ]);
+
+      res.json({
+        data: conversations,
+        total,
+        page: parseInt(page as string),
+        pageSize: take,
+        totalPages: Math.ceil(total / take),
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Create conversation
+  app.post(`${base}/conversations`, authenticate, tenantIsolation, async (req, res, next) => {
+    try {
+      const { contactId, channel, status, assignedToId } = req.body;
+
+      if (!contactId) {
+        return res.status(400).json({ error: 'contactId is required' });
+      }
+
+      const conversation = await prisma.conversation.create({
+        data: {
+          companyId: req.companyId!,
+          contactId,
+          channel: channel || 'whatsapp',
+          status: status || 'open',
+          assignedToId: assignedToId || req.user!.id,
+        },
+        include: {
+          contact: { select: { id: true, name: true, email: true, phone: true } },
+          assignedTo: { select: { id: true, name: true, email: true } },
+        },
+      });
+
+      res.status(201).json(conversation);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Get conversation by ID
+  app.get(`${base}/conversations/:id`, authenticate, tenantIsolation, async (req, res, next) => {
+    try {
+      const conversation = await prisma.conversation.findFirst({
+        where: {
+          id: req.params.id,
+          companyId: req.companyId!,
+        },
+        include: {
+          contact: true,
+          assignedTo: { select: { id: true, name: true, email: true } },
+          messages: {
+            orderBy: { createdAt: 'asc' },
+            take: 100, // Limit to last 100 messages
+          },
+        },
+      });
+
+      if (!conversation) {
+        return res.status(404).json({ error: 'Conversation not found' });
+      }
+
+      res.json(conversation);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Update conversation
+  app.patch(`${base}/conversations/:id`, authenticate, tenantIsolation, async (req, res, next) => {
+    try {
+      const { status, assignedToId } = req.body;
+
+      const conversation = await prisma.conversation.update({
+        where: {
+          id: req.params.id,
+          companyId: req.companyId!,
+        },
+        data: {
+          ...(status && { status }),
+          ...(assignedToId && { assignedToId }),
+        },
+        include: {
+          contact: true,
+          assignedTo: { select: { id: true, name: true, email: true } },
+        },
+      });
+
+      res.json(conversation);
+    } catch (error) {
+      next(error);
+    }
+  });
 }
 
 export const omnichannelModule: ModuleDefinition = {

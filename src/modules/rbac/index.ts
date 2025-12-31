@@ -793,3 +793,13 @@ export default function registerRBACRoutes(app: Express) {
     }
   );
 }
+
+// Module export
+import { ModuleDefinition } from '../../core/types';
+
+export const rbacModule: ModuleDefinition = {
+  name: 'rbac',
+  version: '1.0.0',
+  provides: ['rbac', 'permissions', 'departments', 'roles'],
+  routes: (ctx) => registerRBACRoutes(ctx.app),
+};

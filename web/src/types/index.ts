@@ -188,3 +188,28 @@ export interface ApiError {
   code?: string;
   details?: any;
 }
+
+// WhatsApp Types
+export interface WhatsAppAccount {
+  id: string;
+  companyId: string;
+  name: string;
+  instanceName: string;
+  apiUrl?: string;
+  apiKey?: string;
+  webhookUrl?: string;
+  status: 'connected' | 'disconnected' | 'connecting' | 'pairing';
+  qrCode?: string | null;
+  phoneNumber?: string | null;
+  lastConnectedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateWhatsAppAccount {
+  name: string;
+  instanceName: string;
+  apiUrl: string;
+  apiKey: string;
+  webhookUrl?: string;
+}

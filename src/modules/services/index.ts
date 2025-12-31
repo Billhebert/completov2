@@ -701,3 +701,18 @@ router.patch('/transactions/:id/payment', authenticateToken, async (req: Request
 });
 
 export default router;
+
+// Module export
+import { ModuleDefinition } from '../../core/types';
+import { EventBus } from '../../core/event-bus';
+
+function setupRoutes(app: Express, prisma: PrismaClient, eventBus: EventBus) {
+  app.use('/api/v1/services', router);
+}
+
+export const servicesModule: ModuleDefinition = {
+  name: 'services',
+  version: '1.0.0',
+  provides: ['services', 'marketplace', 'proposals'],
+  routes: (ctx) => setupRoutes(ctx.app, ctx.prisma, ctx.eventBus),
+};
