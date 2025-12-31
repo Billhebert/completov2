@@ -124,6 +124,12 @@ model Company {
   services            Service[]
   serviceTransactions ServiceTransaction[] @relation("ServiceTransactionClient")
 
+  // Partnerships (NEW)
+  partnershipsAsCompanyA   Partnership[]       @relation("CompanyAPartnerships")
+  partnershipsAsCompanyB   Partnership[]       @relation("CompanyBPartnerships")
+  sentPartnershipInvites   PartnershipInvite[] @relation("SentPartnershipInvites")
+  receivedPartnershipInvites PartnershipInvite[] @relation("ReceivedPartnershipInvites")
+
   @@unique([domain])
   @@map("companies")
 }
@@ -3550,4 +3556,85 @@ model ServiceTransaction {
   @@index([paymentStatus])
   @@index([providerTransactionId])
   @@map("service_transactions")
+}
+
+// Parceria entre empresas
+model Partnership {
+  id          String @id @default(uuid())
+  companyAId  String // Empresa que iniciou a parceria
+  companyBId  String // Empresa parceira
+
+  // Informacoes da parceria
+  name        String? // Nome da parceria (opcional)
+  description String? @db.Text
+  type        String  @default("general") // general, commercial, technical, etc
+
+  // Permissoes compartilhadas
+  shareJobs      Boolean @default(true) // Compartilhar vagas
+  shareServices  Boolean @default(true) // Compartilhar servicos
+  shareResources Boolean @default(false) // Compartilhar recursos (funcionarios, equipamentos)
+
+  // Status
+  status     String    @default("active") // active, paused, terminated
+  startDate  DateTime  @default(now())
+  endDate    DateTime? // Data de termino (opcional)
+
+  // Metadata
+  terms      Json? // Termos da parceria
+  metadata   Json?
+
+  // Quem criou/aprovou
+  createdBy  String
+  approvedBy String?
+  approvedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  companyA Company @relation("CompanyAPartnerships", fields: [companyAId], references: [id], onDelete: Cascade)
+  companyB Company @relation("CompanyBPartnerships", fields: [companyBId], references: [id], onDelete: Cascade)
+
+  @@unique([companyAId, companyBId])
+  @@index([companyAId])
+  @@index([companyBId])
+  @@index([status])
+  @@map("partnerships")
+}
+
+// Convite de parceria
+model PartnershipInvite {
+  id              String @id @default(uuid())
+  fromCompanyId   String // Empresa que envia o convite
+  toCompanyId     String // Empresa que recebe o convite
+
+  // Dados do convite
+  message         String? @db.Text
+  proposedTerms   Json? // Termos propostos
+
+  // Permissoes propostas
+  shareJobs       Boolean @default(true)
+  shareServices   Boolean @default(true)
+  shareResources  Boolean @default(false)
+
+  // Status
+  status          String    @default("pending") // pending, accepted, rejected, expired
+  expiresAt       DateTime? // Data de expiracao do convite
+
+  // Resposta
+  respondedBy     String?
+  respondedAt     DateTime?
+  rejectionReason String?
+
+  createdBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  fromCompany Company @relation("SentPartnershipInvites", fields: [fromCompanyId], references: [id], onDelete: Cascade)
+  toCompany   Company @relation("ReceivedPartnershipInvites", fields: [toCompanyId], references: [id], onDelete: Cascade)
+
+  @@unique([fromCompanyId, toCompanyId, status])
+  @@index([fromCompanyId])
+  @@index([toCompanyId])
+  @@index([status])
+  @@map("partnership_invites")
 }

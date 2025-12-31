@@ -1,8 +1,9 @@
 // src/modules/jobs/index.ts
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { logger } from '../../core/logger';
 import { authenticate } from '../../core/middleware/auth';
+import { getPartnerCompanyIds } from '../partnerships';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -10,12 +11,21 @@ const prisma = new PrismaClient();
 // Alias for consistency
 const authenticateToken = authenticate;
 
+// Optional authentication middleware
+const optionalAuth = (req: any, res: Response, next: NextFunction) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (token) {
+    return authenticate(req, res, next);
+  }
+  next();
+};
+
 // ============================================
 // VAGAS (JOBS)
 // ============================================
 
-// GET /api/v1/jobs - Listar vagas
-router.get('/', authenticateToken, async (req: Request, res: Response) => {
+// GET /api/v1/jobs - Listar vagas (com controle de acesso baseado em tipos)
+router.get('/', optionalAuth, async (req: Request, res: Response) => {
   try {
     const {
       page = 1,
@@ -30,19 +40,58 @@ router.get('/', authenticateToken, async (req: Request, res: Response) => {
     const skip = (Number(page) - 1) * Number(pageSize);
     const take = Number(pageSize);
 
+    // Build base filter
     const where: any = {
-      companyId: user.companyId,
       isActive: true,
     };
 
+    // Access control based on user authentication and job types
+    if (user) {
+      // Authenticated user - can see:
+      // 1. Public jobs (types contains "public")
+      // 2. Internal jobs from their company (types contains "internal" AND companyId matches)
+      // 3. Partner jobs from partner companies (types contains "partners" AND company is partner)
+
+      const partnerCompanyIds = await getPartnerCompanyIds(user.companyId);
+      const accessibleCompanyIds = [user.companyId, ...partnerCompanyIds];
+
+      where.OR = [
+        // Public jobs from any company
+        { types: { has: 'public' } },
+        // Internal jobs from user's company
+        { types: { has: 'internal' }, companyId: user.companyId },
+        // Partner jobs from partner companies
+        { types: { has: 'partners' }, companyId: { in: partnerCompanyIds } },
+      ];
+    } else {
+      // Unauthenticated - can only see public jobs
+      where.types = { has: 'public' };
+    }
+
     if (status) where.status = status;
-    if (type) where.types = { has: type };
+    if (type) {
+      // User is filtering by specific type
+      if (where.OR) {
+        // If we have OR conditions, we need to add type filter to each
+        where.OR = where.OR.map((cond: any) => ({ ...cond, types: { has: type } }));
+      } else {
+        where.types = { has: type };
+      }
+    }
     if (isSpecialized !== undefined) where.isSpecialized = isSpecialized === 'true';
     if (search) {
-      where.OR = [
-        { title: { contains: search as string, mode: 'insensitive' } },
-        { description: { contains: search as string, mode: 'insensitive' } },
-      ];
+      const searchCondition = {
+        OR: [
+          { title: { contains: search as string, mode: 'insensitive' } },
+          { description: { contains: search as string, mode: 'insensitive' } },
+        ],
+      };
+      // Combine with existing conditions
+      if (where.OR || where.AND) {
+        where.AND = [...(where.AND || []), searchCondition];
+      } else {
+        Object.assign(where, searchCondition);
+      }
     }
 
     const [jobs, total] = await Promise.all([
@@ -52,6 +101,9 @@ router.get('/', authenticateToken, async (req: Request, res: Response) => {
         take,
         orderBy: { createdAt: 'desc' },
         include: {
+          company: {
+            select: { id: true, name: true, domain: true },
+          },
           _count: {
             select: {
               applications: true,
@@ -63,7 +115,10 @@ router.get('/', authenticateToken, async (req: Request, res: Response) => {
       prisma.job.count({ where }),
     ]);
 
-    logger.info({ userId: user.id, count: jobs.length }, 'Jobs listed');
+    logger.info(
+      { userId: user?.id, authenticated: !!user, count: jobs.length },
+      'Jobs listed with access control'
+    );
 
     res.json({
       data: jobs,
