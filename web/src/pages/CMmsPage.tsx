@@ -8,33 +8,28 @@ import {
   AlertTriangle,
   Calendar,
   Box,
-  Edit,
   Trash2,
 } from 'lucide-react';
 import { useCmmsStore } from '../store/cmmsStore';
-import type { Asset, CreateAsset, MaintenancePlan } from '../types/cmms';
+import type { CreateAsset } from '../types/cmms';
 import toast from 'react-hot-toast';
 
 export default function CMmsPage() {
   const {
     assets,
     maintenancePlans,
-    maintenanceRecords,
     spareParts,
     isLoading,
     fetchAssets,
     fetchMaintenancePlans,
-    fetchMaintenanceRecords,
     fetchSpareParts,
     createAsset,
     deleteAsset,
     generateAssetQRCode,
-    createMaintenancePlan,
   } = useCmmsStore();
 
   const [selectedTab, setSelectedTab] = useState<'assets' | 'maintenance' | 'parts'>('assets');
   const [showCreateAssetModal, setShowCreateAssetModal] = useState(false);
-  const [showCreatePlanModal, setShowCreatePlanModal] = useState(false);
 
   useEffect(() => {
     fetchAssets();
@@ -64,20 +59,10 @@ export default function CMmsPage() {
 
   const handleGenerateQR = async (id: string) => {
     try {
-      const qrCode = await generateAssetQRCode(id);
+      await generateAssetQRCode(id);
       toast.success('QR code generated successfully');
     } catch (error: any) {
       toast.error(error.message || 'Failed to generate QR code');
-    }
-  };
-
-  const handleCreatePlan = async (data: Partial<MaintenancePlan>) => {
-    try {
-      await createMaintenancePlan(data);
-      toast.success('Maintenance plan created successfully');
-      setShowCreatePlanModal(false);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to create maintenance plan');
     }
   };
 
@@ -115,26 +100,15 @@ export default function CMmsPage() {
             Manage assets, maintenance plans, and spare parts inventory
           </p>
         </div>
-        <div className="flex gap-2">
-          {selectedTab === 'assets' && (
-            <button
-              onClick={() => setShowCreateAssetModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-            >
-              <Plus className="h-4 w-4" />
-              Add Asset
-            </button>
-          )}
-          {selectedTab === 'maintenance' && (
-            <button
-              onClick={() => setShowCreatePlanModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-            >
-              <Plus className="h-4 w-4" />
-              New Plan
-            </button>
-          )}
-        </div>
+        {selectedTab === 'assets' && (
+          <button
+            onClick={() => setShowCreateAssetModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            Add Asset
+          </button>
+        )}
       </div>
 
       {/* Stats Cards */}

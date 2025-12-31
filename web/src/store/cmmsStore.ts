@@ -7,7 +7,6 @@ import type {
   SparePart,
   CreateAsset,
 } from '../types/cmms';
-import type { PaginatedResponse } from '../types';
 import api from '../services/api';
 
 interface CMmsState {
@@ -82,7 +81,7 @@ export const useCmmsStore = create<CMmsState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await api.getAssets(params);
-      set({ assets: response.items, isLoading: false });
+      set({ assets: response.data, isLoading: false });
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
       throw error;
@@ -169,7 +168,7 @@ export const useCmmsStore = create<CMmsState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await api.getMaintenancePlans(params);
-      set({ maintenancePlans: response.items, isLoading: false });
+      set({ maintenancePlans: response.data, isLoading: false });
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
       throw error;
@@ -225,7 +224,7 @@ export const useCmmsStore = create<CMmsState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await api.getMaintenanceRecords(params);
-      set({ maintenanceRecords: response.items, isLoading: false });
+      set({ maintenanceRecords: response.data, isLoading: false });
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
       throw error;
@@ -252,7 +251,7 @@ export const useCmmsStore = create<CMmsState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await api.getSpareParts(params);
-      set({ spareParts: response.items, isLoading: false });
+      set({ spareParts: response.data, isLoading: false });
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
       throw error;

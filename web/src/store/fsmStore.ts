@@ -5,7 +5,6 @@ import type {
   WorkOrder,
   CreateWorkOrder,
 } from '../types/fsm';
-import type { PaginatedResponse } from '../types';
 import api from '../services/api';
 
 interface FSMState {
@@ -61,7 +60,7 @@ export const useFSMStore = create<FSMState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await api.getTechnicians(params);
-      set({ technicians: response.items, isLoading: false });
+      set({ technicians: response.data, isLoading: false });
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
       throw error;
@@ -128,7 +127,7 @@ export const useFSMStore = create<FSMState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await api.getWorkOrders(params);
-      set({ workOrders: response.items, isLoading: false });
+      set({ workOrders: response.data, isLoading: false });
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
       throw error;

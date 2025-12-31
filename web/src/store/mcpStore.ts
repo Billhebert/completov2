@@ -7,7 +7,6 @@ import type {
   MCPServerLog,
   CreateMCPServer,
 } from '../types/mcp';
-import type { PaginatedResponse } from '../types';
 import api from '../services/api';
 
 interface McpState {
@@ -43,7 +42,7 @@ interface McpState {
   clearError: () => void;
 }
 
-export const useMcpStore = create<McpState>((set, get) => ({
+export const useMcpStore = create<McpState>((set) => ({
   // Initial state
   servers: [],
   selectedServer: null,
@@ -58,7 +57,7 @@ export const useMcpStore = create<McpState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await api.getMCPServers(params);
-      set({ servers: response.items, isLoading: false });
+      set({ servers: response.data, isLoading: false });
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
       throw error;

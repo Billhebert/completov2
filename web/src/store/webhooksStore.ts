@@ -7,7 +7,6 @@ import type {
   CreateEventDefinition,
   CreateWebhookEndpoint,
 } from '../types/webhooks';
-import type { PaginatedResponse } from '../types';
 import api from '../services/api';
 
 interface WebhooksState {
@@ -61,7 +60,7 @@ export const useWebhooksStore = create<WebhooksState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await api.getEventDefinitions(params);
-      set({ events: response.items, isLoading: false });
+      set({ events: response.data, isLoading: false });
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
       throw error;
@@ -117,7 +116,7 @@ export const useWebhooksStore = create<WebhooksState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await api.getWebhookEndpoints(params);
-      set({ endpoints: response.items, isLoading: false });
+      set({ endpoints: response.data, isLoading: false });
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
       throw error;
@@ -203,7 +202,7 @@ export const useWebhooksStore = create<WebhooksState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await api.getWebhookDeliveries(params);
-      set({ deliveries: response.items, isLoading: false });
+      set({ deliveries: response.data, isLoading: false });
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
       throw error;

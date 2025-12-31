@@ -1,8 +1,8 @@
 // web/src/pages/WebhooksPage.tsx
 import { useEffect, useState } from 'react';
-import { Plus, Webhook, Activity, Settings, Play, Trash2, Edit } from 'lucide-react';
+import { Plus, Webhook, Activity, Settings, Play, Trash2 } from 'lucide-react';
 import { useWebhooksStore } from '../store/webhooksStore';
-import type { WebhookEndpoint, CreateWebhookEndpoint } from '../types/webhooks';
+import type { CreateWebhookEndpoint } from '../types/webhooks';
 import toast from 'react-hot-toast';
 
 export default function WebhooksPage() {
@@ -13,9 +13,7 @@ export default function WebhooksPage() {
     isLoading,
     fetchEndpoints,
     fetchEvents,
-    fetchDeliveries,
     createEndpoint,
-    updateEndpoint,
     deleteEndpoint,
     toggleEndpoint,
     testEndpoint,

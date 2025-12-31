@@ -13,7 +13,7 @@ import {
   Box,
 } from 'lucide-react';
 import { useMcpStore } from '../store/mcpStore';
-import type { MCPServer, CreateMCPServer } from '../types/mcp';
+import type { CreateMCPServer } from '../types/mcp';
 import toast from 'react-hot-toast';
 
 export default function MCPPage() {
@@ -26,7 +26,6 @@ export default function MCPPage() {
     isLoading,
     fetchServers,
     createServer,
-    updateServer,
     deleteServer,
     toggleServer,
     testServer,

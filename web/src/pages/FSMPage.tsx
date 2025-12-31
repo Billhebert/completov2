@@ -2,12 +2,10 @@
 import { useEffect, useState } from 'react';
 import {
   Plus,
-  Wrench,
   MapPin,
   Clock,
   User,
   CheckCircle,
-  AlertCircle,
   PlayCircle,
 } from 'lucide-react';
 import { useFSMStore } from '../store/fsmStore';
@@ -28,7 +26,6 @@ export default function FSMPage() {
   } = useFSMStore();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState<string>('all');
 
   useEffect(() => {
     fetchWorkOrders();
@@ -78,11 +75,6 @@ export default function FSMPage() {
     { status: 'in_progress', label: 'In Progress', color: 'bg-yellow-500' },
     { status: 'completed', label: 'Completed', color: 'bg-green-500' },
   ];
-
-  const filteredOrders =
-    selectedStatus === 'all'
-      ? workOrders
-      : workOrders.filter((wo) => wo.status === selectedStatus);
 
   if (isLoading) {
     return (
