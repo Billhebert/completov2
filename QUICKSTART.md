@@ -26,6 +26,8 @@ CREATE DATABASE completov2;
 
 ### 2. Configurar Variáveis de Ambiente
 
+#### Backend (.env na raiz do projeto)
+
 Crie o arquivo `.env` na raiz do projeto:
 
 ```bash
@@ -62,6 +64,24 @@ SMTP_PASS=sua_senha_app
 # Frontend URL
 FRONTEND_URL=http://localhost:5173
 ```
+
+#### Frontend (.env no diretório web/)
+
+Crie o arquivo `.env` no diretório `web/`:
+
+```bash
+cd web
+cp .env.example .env
+cd ..
+```
+
+O arquivo `.env` do frontend deve conter:
+
+```env
+VITE_API_URL=http://localhost:3000/api/v1
+```
+
+**IMPORTANTE**: A URL deve incluir `/api/v1` no final. Sem isso, as chamadas à API falharão com erro 404.
 
 ### 3. Instalar Dependências
 
