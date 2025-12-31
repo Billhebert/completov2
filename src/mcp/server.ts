@@ -204,6 +204,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
 
+  if (!args) {
+    throw new Error('Arguments are required');
+  }
+
   try {
     switch (name) {
       // CRM Tools

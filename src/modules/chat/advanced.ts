@@ -134,7 +134,6 @@ export function setupChatAdvancedRoutes(
         const deleted = await prisma.message.update({
           where: { id: message.id },
           data: {
-            deleted: true,
             deletedAt: new Date(),
             content: '[Message deleted]',
           },
@@ -178,7 +177,9 @@ export function setupChatAdvancedRoutes(
         // Create message with file
         const message = await prisma.message.create({
           data: {
+            companyId: req.companyId!,
             channelId: req.params.id,
+            authorId: req.user!.id,
             senderId: req.user!.id,
             content: caption || `Shared file: ${file.filename}`,
             messageType: 'file',
@@ -280,6 +281,7 @@ export function setupChatAdvancedRoutes(
 
         const preview = await prisma.linkPreview.create({
           data: {
+            messageId: req.params.id,
             url,
             title: titleMatch ? titleMatch[1] : url,
             description: descMatch ? descMatch[1] : null,
@@ -310,7 +312,9 @@ export function setupChatAdvancedRoutes(
 
         const message = await prisma.message.create({
           data: {
+            companyId: req.companyId!,
             channelId: req.params.id,
+            authorId: req.user!.id,
             senderId: req.user!.id,
             content: '[Voice message]',
             messageType: 'voice',
@@ -375,10 +379,6 @@ export function setupChatAdvancedRoutes(
 
         const messages = await prisma.scheduledMessage.findMany({
           where,
-          include: {
-            channel: { select: { id: true, name: true } },
-            createdBy: { select: { id: true, name: true } },
-          },
           orderBy: { scheduledFor: 'asc' },
         });
 
@@ -495,7 +495,7 @@ export function setupChatAdvancedRoutes(
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ command: command.command, args, userId: req.user!.id }),
               });
-              const data = await webhookRes.json();
+              const data: any = await webhookRes.json();
               response = data.response || 'Command executed';
             }
         }
@@ -503,7 +503,9 @@ export function setupChatAdvancedRoutes(
         // Send response message
         const message = await prisma.message.create({
           data: {
+            companyId: req.companyId!,
             channelId,
+            authorId: req.user!.id,
             senderId: req.user!.id,
             content: response,
             messageType: 'bot',

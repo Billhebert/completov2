@@ -93,7 +93,13 @@ export abstract class BaseConnector {
       },
     });
 
-    return mapping;
+    if (!mapping) return null;
+
+    return {
+      externalId: mapping.externalId,
+      internalId: mapping.internalId,
+      fingerprint: mapping.fingerprint ?? undefined,
+    };
   }
 
   /**

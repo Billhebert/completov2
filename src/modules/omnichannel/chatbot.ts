@@ -195,7 +195,7 @@ export function setupChatbotRoutes(router: Router, prisma: PrismaClient, eventBu
           where: {
             id: req.params.id,
             companyId: req.companyId!,
-            active: true,
+            isActive: true,
           },
         });
 
@@ -221,6 +221,7 @@ export function setupChatbotRoutes(router: Router, prisma: PrismaClient, eventBu
             data: {
               chatbotId: chatbot.id,
               conversationId,
+              currentState: flow[0].id,
               currentNodeId: flow[0].id,
               variables: JSON.stringify({}),
             },
@@ -317,10 +318,12 @@ export function setupChatbotRoutes(router: Router, prisma: PrismaClient, eventBu
           data: {
             chatbotId: chatbot.id,
             conversationId,
+            currentState: currentNode.id,
             nodeId: currentNode.id,
             userMessage: message,
             botResponse: JSON.stringify(response),
-            variables: JSON.stringify(variables),
+            context: variables,
+            variables: variables,
           },
         });
 
@@ -444,9 +447,6 @@ export function setupChatbotRoutes(router: Router, prisma: PrismaClient, eventBu
 
         const responses = await prisma.cannedResponse.findMany({
           where,
-          include: {
-            createdBy: { select: { id: true, name: true } },
-          },
           orderBy: { createdAt: 'desc' },
         });
 

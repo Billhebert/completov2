@@ -79,6 +79,13 @@ export class EventBus {
   }
 
   /**
+   * Alias for publish (for backwards compatibility)
+   */
+  async emit<T extends BaseEvent>(eventType: string, event: T): Promise<void> {
+    return this.publish(eventType, event);
+  }
+
+  /**
    * Subscribe to an event
    */
   on<T = any>(eventType: string, handler: EventHandler<T>): void {
@@ -157,6 +164,9 @@ export function getEventBus(): EventBus {
   return eventBusInstance;
 }
 
+// Export singleton instance (alias)
+export const eventBus = getEventBus();
+
 // Event type constants
 export const Events = {
   // Chat
@@ -187,6 +197,8 @@ export const Events = {
   DEAL_UPDATED: 'crm.deal.updated.v1',
   DEAL_WON: 'crm.deal.won.v1',
   DEAL_LOST: 'crm.deal.lost.v1',
+  ACTIVITY_CREATED: 'crm.activity.created.v1',
+  ACTIVITY_COMPLETED: 'crm.activity.completed.v1',
 
   // Sync
   SYNC_STARTED: 'sync.started.v1',
@@ -217,6 +229,27 @@ export const Events = {
   // Files
   FILE_UPLOADED: 'file.uploaded.v1',
   FILE_DELETED: 'file.deleted.v1',
+  FILE_COMMENT_MENTION: 'file.comment.mention.v1',
+
+  // CSAT / Customer Satisfaction
+  CSAT_SUBMITTED: 'csat.submitted.v1',
+
+  // Omnichannel - Additional
+  CONVERSATION_ASSIGNED: 'omni.conversation.assigned.v1',  // Alias for compatibility
+  OMNICHANNEL_MESSAGE_RECEIVED: 'omni.message.received.v1', // Alias for compatibility
+
+  // Knowledge - Additional
+  KNOWLEDGE_COMMENT_MENTION: 'knowledge.comment.mention.v1',
+
+  // Payments
+  PAYMENT_COMPLETED: 'payment.completed.v1',
+  PAYMENT_FAILED: 'payment.failed.v1',
+  PAYMENT_REFUNDED: 'payment.refunded.v1',
+
+  // Subscriptions
+  SUBSCRIPTION_CREATED: 'subscription.created.v1',
+  SUBSCRIPTION_UPDATED: 'subscription.updated.v1',
+  SUBSCRIPTION_CANCELLED: 'subscription.cancelled.v1',
 
   // Webhooks
   WEBHOOK_CREATED: 'webhook.created.v1',

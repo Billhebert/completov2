@@ -52,12 +52,10 @@ export function setupAIStreamingRoutes(router: Router, prisma: PrismaClient) {
           });
 
           // Save conversation start
-          const conversation = await prisma.aiConversation.create({
+          const conversation = await prisma.conversation.create({
             data: {
               companyId: req.companyId!,
-              userId: req.user!.id,
-              model,
-              messages: JSON.stringify(messages),
+              channel: 'ai',
               status: 'streaming',
             },
           });
@@ -98,12 +96,11 @@ export function setupAIStreamingRoutes(router: Router, prisma: PrismaClient) {
           }
 
           // Update conversation with final response
-          await prisma.aiConversation.update({
+          await prisma.conversation.update({
             where: { id: conversation.id },
             data: {
-              response: fullResponse,
               status: 'completed',
-              completedAt: new Date(),
+              closedAt: new Date(),
             },
           });
 
@@ -122,16 +119,12 @@ export function setupAIStreamingRoutes(router: Router, prisma: PrismaClient) {
           });
 
           // Save conversation
-          await prisma.aiConversation.create({
+          await prisma.conversation.create({
             data: {
               companyId: req.companyId!,
-              userId: req.user!.id,
-              model,
-              messages: JSON.stringify(messages),
-              response: completion.choices[0].message.content || '',
+              channel: 'ai',
               status: 'completed',
-              completedAt: new Date(),
-              tokensUsed: completion.usage?.total_tokens,
+              closedAt: new Date(),
             },
           });
 
@@ -161,7 +154,7 @@ export function setupAIStreamingRoutes(router: Router, prisma: PrismaClient) {
       try {
         const { context, tone, length } = req.body;
 
-        const lengthGuide = {
+        const lengthGuide: Record<'short' | 'medium' | 'long', string> = {
           short: '2-3 paragraphs',
           medium: '4-5 paragraphs',
           long: '6-8 paragraphs',
@@ -172,7 +165,7 @@ export function setupAIStreamingRoutes(router: Router, prisma: PrismaClient) {
           messages: [
             {
               role: 'system',
-              content: `You are an expert email writer. Write a ${tone} email with ${lengthGuide[length]}.`,
+              content: `You are an expert email writer. Write a ${tone} email with ${lengthGuide[length as 'short' | 'medium' | 'long']}.`,
             },
             {
               role: 'user',
@@ -474,7 +467,7 @@ export function setupAIStreamingRoutes(router: Router, prisma: PrismaClient) {
         const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
 
         const [conversations, total] = await Promise.all([
-          prisma.aiConversation.findMany({
+          prisma.conversation.findMany({
             where: {
               companyId: req.companyId!,
               userId: req.user!.id,
@@ -483,7 +476,7 @@ export function setupAIStreamingRoutes(router: Router, prisma: PrismaClient) {
             take: parseInt(limit as string),
             orderBy: { createdAt: 'desc' },
           }),
-          prisma.aiConversation.count({
+          prisma.conversation.count({
             where: {
               companyId: req.companyId!,
               userId: req.user!.id,
@@ -527,12 +520,12 @@ export function setupAIStreamingRoutes(router: Router, prisma: PrismaClient) {
         }
 
         const [totalConversations, totalTokens, byModel] = await Promise.all([
-          prisma.aiConversation.count({ where }),
-          prisma.aiConversation.aggregate({
+          prisma.conversation.count({ where }),
+          prisma.conversation.aggregate({
             where,
             _sum: { tokensUsed: true },
           }),
-          prisma.aiConversation.groupBy({
+          prisma.conversation.groupBy({
             by: ['model'],
             where,
             _count: true,

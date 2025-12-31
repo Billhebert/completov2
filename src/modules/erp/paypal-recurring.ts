@@ -100,12 +100,12 @@ export function setupPayPalRecurringRoutes(router: Router, prisma: PrismaClient,
                   },
                 },
               },
-              items: invoice.items.map(item => ({
+              items: invoice.items.map((item: any) => ({
                 name: item.description,
                 quantity: item.quantity.toString(),
                 unit_amount: {
                   currency_code: 'USD',
-                  value: item.price.toString(),
+                  value: item.unitPrice.toString(),
                 },
               })),
             },
@@ -133,6 +133,7 @@ export function setupPayPalRecurringRoutes(router: Router, prisma: PrismaClient,
             invoiceId: invoice.id,
             amount: invoice.total,
             currency: 'USD',
+            method: 'paypal',
             status: 'pending',
             provider: 'paypal',
             providerPaymentId: response.data.id,
@@ -194,7 +195,7 @@ export function setupPayPalRecurringRoutes(router: Router, prisma: PrismaClient,
               where: { id: payment.invoiceId },
               data: {
                 status: 'paid',
-                paidAt: new Date(),
+                paidDate: new Date(),
               },
             });
           }
@@ -414,13 +415,14 @@ export function setupPayPalRecurringRoutes(router: Router, prisma: PrismaClient,
           const invoiceNumber = `INV-${String(count + 1).padStart(6, '0')}`;
 
           // Calculate totals
-          const subtotal = products.reduce((sum, p) => sum + p.price, 0);
+          const subtotal = products.reduce((sum: number, p: any) => sum + (p.price || 0), 0);
           const total = subtotal; // Add tax calculation here
 
           // Create invoice
           const invoice = await prisma.invoice.create({
             data: {
               number: invoiceNumber,
+              type: 'sale',
               contactId: recurring.contactId,
               dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
               subtotal,
@@ -428,11 +430,11 @@ export function setupPayPalRecurringRoutes(router: Router, prisma: PrismaClient,
               status: 'draft',
               companyId: req.companyId!,
               items: {
-                create: products.map(p => ({
+                create: products.map((p: any) => ({
                   description: p.name,
                   quantity: 1,
-                  price: p.price,
-                  total: p.price,
+                  unitPrice: p.price || 0,
+                  total: p.price || 0,
                 })),
               },
             },
@@ -449,10 +451,12 @@ export function setupPayPalRecurringRoutes(router: Router, prisma: PrismaClient,
           }
 
           // Update next invoice date
-          const nextDate = calculateNextDate(recurring.nextInvoiceDate, recurring.frequency);
+          const currentDate = recurring.nextInvoiceDate || recurring.nextDate;
+          const nextDate = calculateNextDate(currentDate, recurring.frequency);
           await prisma.recurringInvoice.update({
             where: { id: recurring.id },
             data: {
+              nextDate: nextDate,
               nextInvoiceDate: nextDate,
               lastInvoiceDate: new Date(),
             },

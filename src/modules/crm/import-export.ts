@@ -38,8 +38,8 @@ export function setupImportExportRoutes(router: Router, prisma: PrismaClient) {
             };
 
             for (const [csvField, dbField] of Object.entries(mapping)) {
-              if (record[csvField]) {
-                contactData[dbField] = record[csvField];
+              if ((record as any)[csvField]) {
+                (contactData as any)[dbField as string] = (record as any)[csvField];
               }
             }
 
@@ -108,7 +108,7 @@ export function setupImportExportRoutes(router: Router, prisma: PrismaClient) {
 
             for (const [excelField, dbField] of Object.entries(mapping)) {
               if ((record as any)[excelField]) {
-                contactData[dbField] = (record as any)[excelField];
+                (contactData as any)[dbField as string] = (record as any)[excelField];
               }
             }
 

@@ -5,7 +5,11 @@ import { createSyncWorker } from './sync.worker';
 import { createNotificationWorker } from './notification.worker';
 import { logger } from '../core/logger';
 
-export function startWorkers(prisma: PrismaClient) {
+export function startWorkers(prisma: PrismaClient): {
+  emailWorker: any;
+  syncWorker: any;
+  notificationWorker: any;
+} {
   logger.info('🔄 Starting workers...');
 
   const emailWorker = createEmailWorker(prisma);

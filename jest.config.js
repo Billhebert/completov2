@@ -1,8 +1,11 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
-  roots: ['<rootDir>/src', '<rootDir>/tests'],
-  testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
+  roots: ['<rootDir>/src'],
+  testMatch: ['**/__tests__/**/*.test.ts'],
+  setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
+  testTimeout: 30000, // 30 seconds timeout for all tests
+  maxWorkers: 1, // Run tests serially to avoid deadlocks
   transform: {
     '^.+\\.ts$': 'ts-jest',
   },

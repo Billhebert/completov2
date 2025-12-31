@@ -40,10 +40,12 @@ export interface ModuleDefinition {
 
 export interface AuthenticatedUser {
   id: string;
+  userId: string; // Alias for id (backwards compatibility)
   email: string;
   name: string;
   role: string;
   companyId: string;
+  timezone?: string;
 }
 
 export interface JWTPayload {

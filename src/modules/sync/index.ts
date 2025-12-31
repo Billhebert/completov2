@@ -3,12 +3,13 @@ import { ModuleDefinition } from '../../core/types';
 import { Express } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticate, tenantIsolation, validateBody } from '../../core/middleware';
-import { RDStationConnector } from './connectors/rdstation';
+import { RDStationConnector } from './connectors/rdstation.connector';
+import { ChatwootConnector } from './connectors/chatwoot';
 import { enqueueSyncJob } from '../../core/queues';
 import { z } from 'zod';
 
 const createConnectionSchema = z.object({
-  provider: z.enum(['rdstation', 'confirm8', 'pipefy']),
+  provider: z.enum(['rdstation', 'confirm8', 'pipefy', 'chatwoot']),
   apiKey: z.string(),
   config: z.record(z.any()).optional(),
 });
@@ -135,23 +136,29 @@ function setupRoutes(app: Express, prisma: PrismaClient) {
         return res.status(404).json({ success: false, error: { message: 'Connection not found' } });
       }
 
-      // Create connector
-      let connector;
+      // Create connector and pull contacts
+      let results: any;
+
       if (connection.provider === 'rdstation') {
-        connector = new RDStationConnector(
+        const connector = new RDStationConnector(
           prisma,
           req.companyId!,
           connection.authData as any
         );
+        results = await connector.pullEntities('contacts');
+      } else if (connection.provider === 'chatwoot') {
+        const connector = new ChatwootConnector(
+          prisma,
+          req.companyId!,
+          connection.authData as any
+        );
+        results = await connector.pullEntities('contacts');
       } else {
         return res.status(400).json({
           success: false,
           error: { message: `Provider ${connection.provider} not implemented` },
         });
       }
-
-      // Pull contacts
-      const results = await connector.pull('contact');
 
       // Update last sync
       await prisma.integrationConnection.update({
@@ -162,11 +169,11 @@ function setupRoutes(app: Express, prisma: PrismaClient) {
       res.json({
         success: true,
         data: {
-          synced: results.length,
-          created: results.filter(r => r.action === 'created').length,
-          updated: results.filter(r => r.action === 'updated').length,
-          skipped: results.filter(r => r.action === 'skipped').length,
-          results,
+          synced: results.created + results.updated + results.skipped,
+          created: results.created,
+          updated: results.updated,
+          skipped: results.skipped,
+          errors: results.errors,
         },
       });
     } catch (error) {

@@ -61,6 +61,7 @@ export function setupAdvancedNotificationsRoutes(router: Router, prisma: PrismaC
         // Save to database
         const notification = await prisma.smsNotification.create({
           data: {
+            phone: to,
             to,
             message,
             userId,
@@ -229,6 +230,7 @@ export function setupAdvancedNotificationsRoutes(router: Router, prisma: PrismaC
               email: true,
               push: true,
               sms: false,
+              channels: {},
             },
           });
         }
@@ -295,22 +297,22 @@ export function setupAdvancedNotificationsRoutes(router: Router, prisma: PrismaC
 
         // Create notifications for all users
         const notifications = await Promise.all(
-          userIds.map(userId =>
+          userIds.map((userId: string) =>
             prisma.notification.create({
               data: {
                 userId,
                 companyId: req.companyId!,
                 type,
                 title,
-                content,
-                data: data ? JSON.stringify(data) : null,
+                body: content,
+                data: data || undefined,
               },
             })
           )
         );
 
         // Emit to all users via websocket
-        userIds.forEach(userId => {
+        userIds.forEach((userId: string) => {
           eventBus.publish(Events.NOTIFICATION_CREATED, {
             type: Events.NOTIFICATION_CREATED,
             version: 'v1',

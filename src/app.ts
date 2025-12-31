@@ -28,16 +28,23 @@ import { syncModule } from './modules/sync';
 import { learningModule } from './modules/learning';
 import { analyticsModule } from './modules/analytics';
 import { filesModule } from './modules/files';
-import { webhooksModule } from './modules/webhooks';
+// import { webhooksModule } from './modules/webhooks'; // TODO: Update to new webhook system
 import { apikeysModule } from './modules/apikeys';
 import { emailTemplatesModule } from './modules/email-templates';
 import { searchModule } from './modules/search';
 import { ssoModule } from './modules/sso';
 import { auditModule } from './modules/audit';
+import { gatekeeperModule } from './modules/gatekeeper/module';
+import { automationsModule } from './modules/automations/module';
+import { narrativeModule } from './modules/narrative/module';
+import { simulationModule } from './modules/simulation/module';
+import { peopleGrowthModule } from './modules/people-growth';
 import { startWorkers } from './workers';
 import { i18nMiddleware } from './core/i18n';
 import { timezoneMiddleware } from './core/timezone';
 import { metricsMiddleware } from './core/metrics';
+import { initializeSystem } from './core/init';
+import { setupAdditionalRoutes } from './api/rest-routes';
 
 export interface AppContext {
   app: Express;
@@ -149,12 +156,17 @@ export async function createApp(): Promise<AppContext> {
   moduleLoader.register(learningModule);
   moduleLoader.register(analyticsModule);
   moduleLoader.register(filesModule);
-  moduleLoader.register(webhooksModule);
+  // moduleLoader.register(webhooksModule); // TODO: Update to new webhook system
   moduleLoader.register(apikeysModule);
   moduleLoader.register(emailTemplatesModule);
   moduleLoader.register(searchModule);
   moduleLoader.register(ssoModule);
   moduleLoader.register(auditModule);
+  moduleLoader.register(gatekeeperModule);
+  moduleLoader.register(automationsModule);
+  moduleLoader.register(narrativeModule);
+  moduleLoader.register(simulationModule);
+  moduleLoader.register(peopleGrowthModule);
 
   // Enable modules (could be loaded from database per tenant)
   const enabledModules = [
@@ -176,9 +188,20 @@ export async function createApp(): Promise<AppContext> {
     'search',
     'sso',
     'audit',
+    'gatekeeper',
+    'automations',
+    'narrative',
+    'simulation',
+    'people-growth',
   ];
 
   await moduleLoader.enableModules(enabledModules);
+
+  // Initialize system (event handlers, cron jobs)
+  await initializeSystem();
+
+  // Setup additional REST routes
+  setupAdditionalRoutes(app, prisma);
 
   logger.info(
     { modules: moduleLoader.getEnabledModules() },

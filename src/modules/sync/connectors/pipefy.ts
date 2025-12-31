@@ -27,9 +27,14 @@ export class PipefyConnector extends BaseConnector {
     }
 
     try {
+      const pipeId = this.config.customFields?.pipeId;
+      if (!pipeId) {
+        throw new Error('Pipefy pipeId not configured in customFields');
+      }
+
       const query = `
         query {
-          pipe(id: ${this.config.pipeId}) {
+          pipe(id: ${pipeId}) {
             cards(first: 100) {
               edges {
                 node {
@@ -88,10 +93,15 @@ export class PipefyConnector extends BaseConnector {
 
       if (!deal) throw new Error('Deal not found');
 
+      const pipeId = this.config.customFields?.pipeId;
+      if (!pipeId) {
+        throw new Error('Pipefy pipeId not configured in customFields');
+      }
+
       const mutation = `
         mutation {
           createCard(input: {
-            pipe_id: ${this.config.pipeId}
+            pipe_id: ${pipeId}
             title: "${deal.title}"
             fields_attributes: [
               { field_id: "email", field_value: "${deal.contact.email}" }

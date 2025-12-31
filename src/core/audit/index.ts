@@ -179,12 +179,12 @@ export function Audit(action: string, entityType: string) {
   return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
     const originalMethod = descriptor.value;
 
-    descriptor.value = async function (...args: any[]) {
+    descriptor.value = async function (this: any, ...args: any[]) {
       const result = await originalMethod.apply(this, args);
 
       // Try to extract audit info from context
       const ctx = args[0];
-      if (ctx?.companyId && ctx?.userId) {
+      if (ctx?.companyId && ctx?.userId && this.prisma) {
         const audit = getAuditService(this.prisma);
         await audit.log(
           ctx.companyId,
