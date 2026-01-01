@@ -1,47 +1,64 @@
-/**
- * API Keys Service
- * Usa somente endpoints existentes no backend:
- * - GET    /apikeys
- * - POST   /apikeys
- * - DELETE /apikeys/:id
- * - GET    /apikeys/:id/usage
- */
-
-import api, { extractData } from '../../../core/utils/api';
-import type { ApiKey, ApiKeyUsage, CreateApiKeyPayload, CreateApiKeyResponse } from '../types';
+import api from '@/core/utils/api';
 
 /**
- * LISTAR
+ * Service for managing API keys. These keys allow machine‑to‑machine access
+ * to the API and should be handled carefully. The service exposes methods
+ * corresponding to the backend routes defined in the `apikeys` module【20537008925849†L14-L154】.
  */
-export const getApiKeys = async (): Promise<ApiKey[]> => {
-  const response = await api.get('/apikeys');
-  return extractData(response);
-};
+class ApiKeysService {
+  /**
+   * List all API keys for the current company【20537008925849†L17-L35】.
+   */
+  async listApiKeys() {
+    const { data } = await api.get('/apikeys');
+    return data?.data;
+  }
 
-/**
- * Alias para compatibilidade (se algum lugar chamar getAll)
- */
-export const getAll = getApiKeys;
+  /**
+   * Create a new API key. Only admins or devs may call this. The backend
+   * returns the plain text `key` only once; clients must store it safely【20537008925849†L42-L75】.
+   *
+   * @param payload Object with name, scopes and optional expiration date
+   */
+  async createApiKey(payload: {
+    name: string;
+    scopes: string[];
+    expiresAt?: string;
+  }) {
+    const { data } = await api.post('/apikeys', payload);
+    return data?.data;
+  }
 
-/**
- * CRIAR (schema: name + scopes + expiresAt)
- */
-export const createApiKey = async (payload: CreateApiKeyPayload): Promise<CreateApiKeyResponse> => {
-  const response = await api.post('/apikeys', payload);
-  return extractData(response);
-};
+  /**
+   * Revoke an API key so it can no longer be used【20537008925849†L82-L93】.
+   *
+   * @param id Identifier of the API key
+   */
+  async revokeApiKey(id: string) {
+    const { data } = await api.post(`/apikeys/${id}/revoke`);
+    return data?.message;
+  }
 
-/**
- * REVOGAR / DELETAR
- */
-export const revokeApiKey = async (id: string): Promise<void> => {
-  await api.delete(`/apikeys/${id}`);
-};
+  /**
+   * Delete an API key permanently【20537008925849†L99-L109】.
+   *
+   * @param id Identifier of the API key
+   */
+  async deleteApiKey(id: string) {
+    const { data } = await api.delete(`/apikeys/${id}`);
+    return data?.message;
+  }
 
-/**
- * USO / AUDITORIA
- */
-export const getKeyUsage = async (keyId: string): Promise<ApiKeyUsage[]> => {
-  const response = await api.get(`/apikeys/${keyId}/usage`);
-  return extractData(response);
-};
+  /**
+   * Get usage statistics for an API key【20537008925849†L115-L151】.
+   *
+   * @param id API key ID
+   */
+  async getApiKeyUsage(id: string) {
+    const { data } = await api.get(`/apikeys/${id}/usage`);
+    return data?.data;
+  }
+}
+
+export const apiKeysService = new ApiKeysService();
+export default apiKeysService;

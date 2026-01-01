@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+
+dotenv.config();
 // src/core/config/env.ts
 import { z } from 'zod';
 

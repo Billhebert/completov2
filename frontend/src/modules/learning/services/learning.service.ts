@@ -1,93 +1,154 @@
 /**
- * Learning Platform Service
- * Plataforma de cursos, trilhas de aprendizagem e certificações
+ * Learning Service
+ *
+ * Este serviço oferece métodos para interagir com o módulo de aprendizagem
+ * do backend. As funções incluem listagem e criação de trilhas de
+ * aprendizagem, matrículas, progresso de itens, gestão de habilidades e
+ * planos de desenvolvimento【342141902301556†L27-L285】.
  */
 
 import api, { extractData } from '../../../core/utils/api';
-import { Course, Enrollment, Lesson, Certificate } from '../types';
-import { PaginatedResult, PaginationParams } from '../../../core/types';
+
+// ----------------------------
+// LEARNING PATHS
+// ----------------------------
 
 /**
- * Lista cursos disponíveis
- * TODO: Implementar catálogo de cursos
- * - Cursos internos e externos
- * - Categorias e tags
- * - Níveis (beginner, intermediate, advanced)
- * - Rating e reviews
- * - Pré-requisitos
- * - Certificação ao final
+ * Lista trilhas de aprendizagem (learning paths) disponíveis para a empresa
+ * atual com filtros opcionais de categoria e dificuldade【342141902301556†L27-L45】.
+ *
+ * @param params Filtros opcionais: categoria e dificuldade.
+ * @returns Lista de trilhas com contagem de itens e matrículas.
  */
-export const getCourses = async (params?: PaginationParams): Promise<PaginatedResult<Course>> => {
-  const response = await api.get('/learning/courses', { params });
+export const getLearningPaths = async (params: {
+  category?: string;
+  difficulty?: 'beginner' | 'intermediate' | 'advanced';
+} = {}): Promise<any[]> => {
+  const response = await api.get('/learning/paths', { params });
   return extractData(response);
 };
 
 /**
- * Inscrever em curso
- * TODO: Implementar enrollment
- * - Verificar pré-requisitos
- * - Aprovação do gestor se necessário
- * - Agendar início
- * - Criar trilha de progresso
- * - Notificações de início
+ * Cria uma nova trilha de aprendizagem. Requer permissão de leitura de usuários no
+ * backend【342141902301556†L51-L61】.
+ *
+ * @param path Dados da trilha (título, descrição, categoria, dificuldade, horas e skills). 
+ * @returns Trilha de aprendizagem criada.
  */
-export const enrollInCourse = async (courseId: string): Promise<Enrollment> => {
-  const response = await api.post(\`/learning/courses/\${courseId}/enroll\`);
+export const createLearningPath = async (path: {
+  title: string;
+  description?: string;
+  category: string;
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  estimatedHours: number;
+  targetSkills?: string[];
+}): Promise<any> => {
+  const response = await api.post('/learning/paths', path);
   return extractData(response);
 };
 
 /**
- * Buscar progresso no curso
- * TODO: Implementar tracking de progresso
- * - Lições completadas
- * - Tempo dedicado
- * - Quizzes e scores
- * - Progresso % por módulo
- * - Próxima lição sugerida
+ * Recupera uma trilha de aprendizagem específica, incluindo seus itens e
+ * matrícula do usuário logado【342141902301556†L66-L86】.
+ *
+ * @param id ID da trilha.
+ * @returns Trilha completa com itens ordenados e estado de matrícula.
  */
-export const getCourseProgress = async (enrollmentId: string): Promise<unknown> => {
-  const response = await api.get(\`/learning/enrollments/\${enrollmentId}/progress\`);
+export const getLearningPath = async (id: string): Promise<any> => {
+  const response = await api.get(`/learning/paths/${id}`);
+  return extractData(response);
+};
+
+// ----------------------------
+// ENROLLMENTS
+// ----------------------------
+
+/**
+ * Inscreve o usuário logado em uma trilha de aprendizagem【342141902301556†L95-L106】.
+ *
+ * @param pathId ID da trilha.
+ * @returns Registro de matrícula criado.
+ */
+export const enrollInPath = async (pathId: string): Promise<any> => {
+  const response = await api.post(`/learning/paths/${pathId}/enroll`);
   return extractData(response);
 };
 
 /**
- * Completar lição
- * TODO: Implementar tracking de lições
- * - Marcar lição como completa
- * - Salvar anotações do usuário
- * - Atualizar progresso geral
- * - Desbloquear próxima lição
- * - Gamification (pontos, badges)
+ * Lista as matrículas do usuário logado【342141902301556†L111-L124】.
+ *
+ * @returns Lista de matrículas com contagem de itens por trilha.
  */
-export const completeLesson = async (enrollmentId: string, lessonId: string): Promise<void> => {
-  await api.post(\`/learning/enrollments/\${enrollmentId}/lessons/\${lessonId}/complete\`);
+export const getEnrollments = async (): Promise<any[]> => {
+  const response = await api.get('/learning/enrollments');
+  return extractData(response);
 };
 
+// ----------------------------
+// PROGRESS
+// ----------------------------
+
 /**
- * Realizar quiz/avaliação
- * TODO: Implementar sistema de avaliação
- * - Questões múltipla escolha
- * - Questões dissertativas
- * - Limite de tempo
- * - Cálculo de score
- * - Feedback imediato
- * - Certificado se aprovado
+ * Marca um item da trilha como concluído e atualiza o progresso na matrícula
+ * correspondente【342141902301556†L135-L197】.
+ *
+ * @param itemId ID do item dentro da trilha.
+ * @returns Registro de progresso atualizado.
  */
-export const submitQuiz = async (lessonId: string, answers: Record<string, unknown>): Promise<{ score: number; passed: boolean }> => {
-  const response = await api.post(\`/learning/lessons/\${lessonId}/quiz/submit\`, { answers });
+export const completeLearningItem = async (itemId: string): Promise<any> => {
+  const response = await api.post(`/learning/items/${itemId}/complete`);
+  return extractData(response);
+};
+
+// ----------------------------
+// SKILLS
+// ----------------------------
+
+/**
+ * Lista habilidades disponíveis e indica se o usuário já possui cada uma【342141902301556†L207-L223】.
+ *
+ * @param category Filtra por categoria de habilidade opcionalmente.
+ * @returns Lista de habilidades com dados de proficiência do usuário, se houver.
+ */
+export const getSkills = async (category?: string): Promise<any[]> => {
+  const params: any = {};
+  if (category) params.category = category;
+  const response = await api.get('/learning/skills', { params });
   return extractData(response);
 };
 
 /**
- * Buscar certificados
- * TODO: Implementar gestão de certificados
- * - Certificados obtidos
- * - Download em PDF
- * - Compartilhar em LinkedIn
- * - Verificação de autenticidade
- * - Data de expiração (se aplicável)
+ * Lista apenas as habilidades atribuídas ao usuário logado【342141902301556†L229-L236】.
+ *
+ * @returns Array de habilidades do usuário com proficiência e data de avaliação.
  */
-export const getCertificates = async (): Promise<Certificate[]> => {
-  const response = await api.get('/learning/certificates');
+export const getMySkills = async (): Promise<any[]> => {
+  const response = await api.get('/learning/skills/my');
+  return extractData(response);
+};
+
+/**
+ * Avalia ou atualiza a proficiência do usuário em uma habilidade específica【342141902301556†L242-L266】.
+ *
+ * @param skillId ID da habilidade.
+ * @param proficiency Grau de proficiência (por exemplo, 1–5 ou percentual).
+ * @returns Registro de employeeSkill atualizado.
+ */
+export const assessSkill = async (skillId: string, proficiency: number): Promise<any> => {
+  const response = await api.post(`/learning/skills/${skillId}/assess`, { proficiency });
+  return extractData(response);
+};
+
+// ----------------------------
+// DEVELOPMENT PLANS
+// ----------------------------
+
+/**
+ * Recupera os planos de desenvolvimento de habilidades para o usuário【342141902301556†L275-L285】.
+ *
+ * @returns Lista de planos de desenvolvimento com metas e status.
+ */
+export const getDevelopmentPlans = async (): Promise<any[]> => {
+  const response = await api.get('/learning/development-plans');
   return extractData(response);
 };

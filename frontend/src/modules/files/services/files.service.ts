@@ -1,39 +1,32 @@
 /**
  * Files Service
- * TODO: Implementar serviço de gestão de arquivos
+ *
+ * Este serviço fornece métodos para interagir com o módulo de arquivos do
+ * backend. As rotas contemplam upload de arquivos genéricos ou avatars,
+ * listagem de arquivos associados a entidades, geração de URLs assinadas
+ * para visualização, download e exclusão de arquivos【455765087530948†L39-L223】.
  */
 
 import api, { extractData } from '../../../core/utils/api';
-import { FileItem, Folder, UploadFileRequest, FileFilters } from '../types';
-import { PaginatedResult, PaginationParams } from '../../../core/types';
 
 /**
- * TODO: Implementar listagem de arquivos
- * - Filtrar por pasta, tipo, tags, usuário
- * - Suportar busca por nome
- * - Ordenar por data, nome, tamanho
+ * Faz upload de um arquivo para o servidor. O backend aceita arquivos
+ * de imagem, PDF e documentos Office de até 10MB【455765087530948†L8-L25】.
+ *
+ * @param file Objeto `File` ou `Blob` a ser enviado.
+ * @param entityType Tipo de entidade associada (ex.: 'contact', 'deal'); opcional.
+ * @param entityId ID da entidade associada; opcional.
+ * @returns Metadados do arquivo armazenado.
  */
-export const getFiles = async (
-  params?: PaginationParams & FileFilters
-): Promise<PaginatedResult<FileItem>> => {
-  const response = await api.get('/files', { params });
-  return extractData(response);
-};
-
-/**
- * TODO: Implementar upload de arquivo
- * - Validar tipo e tamanho máximo
- * - Gerar thumbnail para imagens
- * - Escanear por vírus
- * - Salvar em storage (S3/local)
- */
-export const uploadFile = async (data: UploadFileRequest): Promise<FileItem> => {
+export const uploadFile = async (
+  file: File | Blob,
+  entityType?: string,
+  entityId?: string
+): Promise<any> => {
   const formData = new FormData();
-  formData.append('file', data.file);
-  if (data.folderId) formData.append('folderId', data.folderId);
-  if (data.isPublic !== undefined) formData.append('isPublic', String(data.isPublic));
-  if (data.tags) formData.append('tags', JSON.stringify(data.tags));
-  
+  formData.append('file', file);
+  if (entityType) formData.append('entityType', entityType);
+  if (entityId) formData.append('entityId', entityId);
   const response = await api.post('/files/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
@@ -41,44 +34,68 @@ export const uploadFile = async (data: UploadFileRequest): Promise<FileItem> => 
 };
 
 /**
- * TODO: Implementar download de arquivo
- * - Incrementar contador de downloads
- * - Validar permissões (se não for público)
- * - Gerar URL assinada temporária
+ * Lista arquivos conforme filtros de tipo e entidade【455765087530948†L85-L104】.
+ *
+ * @param entityType Tipo de entidade (caso especificado, filtra por este tipo).
+ * @param entityId ID da entidade para filtrar arquivos específicos.
+ * @returns Lista de arquivos com informações de quem enviou, tamanho e
+ *          data de upload.
+ */
+export const listFiles = async (
+  entityType?: string,
+  entityId?: string
+): Promise<any[]> => {
+  const params: any = {};
+  if (entityType) params.entityType = entityType;
+  if (entityId) params.entityId = entityId;
+  const response = await api.get('/files', { params });
+  return extractData(response);
+};
+
+/**
+ * Recupera uma URL assinada para acessar o arquivo. A URL expira em 1 hora【455765087530948†L110-L129】.
+ *
+ * @param id Identificador do arquivo.
+ * @returns Objeto contendo URL e tempo de expiração em segundos.
+ */
+export const getFileUrl = async (id: string): Promise<{ url: string; expiresIn: number }> => {
+  const response = await api.get(`/files/${id}/url`);
+  return extractData(response);
+};
+
+/**
+ * Faz download de um arquivo binário. O chamador é responsável por
+ * criar um blob e salvar via `URL.createObjectURL` ou outra técnica【455765087530948†L136-L156】.
+ *
+ * @param id Identificador do arquivo.
+ * @returns `Blob` com o conteúdo do arquivo.
  */
 export const downloadFile = async (id: string): Promise<Blob> => {
-  const response = await api.get(`/files/${id}/download`, {
-    responseType: 'blob',
-  });
+  const response = await api.get(`/files/${id}/download`, { responseType: 'blob' });
   return response.data;
 };
 
 /**
- * TODO: Implementar exclusão de arquivo
- * - Remover do storage
- * - Remover registros do DB
- * - Validar permissões
+ * Exclui definitivamente um arquivo tanto do armazenamento quanto do banco de dados【455765087530948†L162-L185】.
+ *
+ * @param id Identificador do arquivo.
  */
 export const deleteFile = async (id: string): Promise<void> => {
   await api.delete(`/files/${id}`);
 };
 
 /**
- * TODO: Implementar criação de pasta
- * - Validar nome único no mesmo nível
- * - Criar estrutura de path
+ * Envia um avatar para o perfil do usuário logado. O backend salva o
+ * objeto no bucket `avatars` e atualiza o usuário【455765087530948†L191-L223】.
+ *
+ * @param avatar Objeto `File` ou `Blob` representando o avatar.
+ * @returns Objeto contendo o nome do objeto e a URL assinada.
  */
-export const createFolder = async (name: string, parentId?: string): Promise<Folder> => {
-  const response = await api.post('/files/folders', { name, parentId });
-  return extractData(response);
-};
-
-/**
- * TODO: Implementar listagem de pastas
- * - Estrutura em árvore
- * - Incluir contagem de arquivos
- */
-export const getFolders = async (parentId?: string): Promise<Folder[]> => {
-  const response = await api.get('/files/folders', { params: { parentId } });
+export const uploadAvatar = async (avatar: File | Blob): Promise<{ avatar: string; url: string }> => {
+  const formData = new FormData();
+  formData.append('avatar', avatar);
+  const response = await api.post('/files/avatar', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
   return extractData(response);
 };

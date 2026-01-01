@@ -1,65 +1,42 @@
 /**
- * ERP Integration Service
- * Integração completa com sistemas ERP (SAP, Oracle, TOTVS)
+ * ERP Service
+ *
+ * Este serviço oferece funções para interagir com os recursos de ERP
+ * expostos pelo backend. Atualmente, o módulo ERP possui um conjunto
+ * enxuto de rotas para listar e criar produtos, conforme definido no
+ * `backend/src/modules/erp/index.ts`【358319779755761†L5-L20】. À medida que
+ * novas funcionalidades (como pagamentos, relatórios financeiros e ordens
+ * de compra) forem expostas, este serviço poderá ser estendido com
+ * métodos adicionais.
  */
 
 import api, { extractData } from '../../../core/utils/api';
-import { ERPIntegration, ERPSyncJob, ERPMapping } from '../types';
-import { PaginatedResult } from '../../../core/types';
 
 /**
- * Lista integrações ERP configuradas
- * TODO: Implementar gestão de integrações ERP
- * - Suportar SAP, Oracle NetSuite, TOTVS Protheus
- * - Status de conexão em tempo real
- * - Sincronização bidire
-
-cional de dados
- * - Mapeamento de campos customizável
- * - Logs de sincronização
+ * Obtém a lista de produtos cadastrados no ERP. O backend retorna até 100
+ * produtos por vez e aplica o filtro por empresa do usuário autenticado【358319779755761†L5-L11】.
+ *
+ * @returns Array de produtos com seus campos completos (nome, preço, estoque, etc.).
  */
-export const getIntegrations = async (): Promise<ERPIntegration[]> => {
-  const response = await api.get('/erp/integrations');
+export const getProducts = async (): Promise<any[]> => {
+  const response = await api.get('/erp/products');
   return extractData(response);
 };
 
 /**
- * Criar nova integração ERP
- * TODO: Implementar configuração e teste de conexão
- * - Wizard de configuração passo-a-passo
- * - Testar credenciais e conectividade
- * - Mapear entidades (produtos, clientes, pedidos)
- * - Configurar regras de sincronização
- * - Validar compatibilidade de versão
+ * Cria um novo produto no ERP. Os campos aceitos são definidos pela API
+ * Prisma do backend; apenas os campos básicos são documentados aqui【358319779755761†L13-L18】.
+ *
+ * @param product Dados do produto a ser criado.
+ * @returns Produto criado.
  */
-export const createIntegration = async (data: Partial<ERPIntegration>): Promise<ERPIntegration> => {
-  const response = await api.post('/erp/integrations', data);
+export const createProduct = async (product: Record<string, any>): Promise<any> => {
+  const response = await api.post('/erp/products', product);
   return extractData(response);
 };
 
-/**
- * Sincronizar dados com ERP
- * TODO: Implementar sincronização assíncrona
- * - Queue de sync (evitar sobrecarga)
- * - Sincronização incremental (apenas mudanças)
- * - Tratamento de conflitos
- * - Rollback em caso de erro
- * - Notificar conclusão
- */
-export const syncData = async (integrationId: string): Promise<ERPSyncJob> => {
-  const response = await api.post(\`/erp/integrations/\${integrationId}/sync\`);
-  return extractData(response);
-};
-
-/**
- * Buscar mapeamentos de campos
- * TODO: Implementar sistema de mapeamento flexível
- * - Mapear campos do sistema → campos ERP
- * - Transformações customizadas (scripts)
- * - Validação de tipos
- * - Preview de dados mapeados
- */
-export const getMappings = async (integrationId: string): Promise<ERPMapping[]> => {
-  const response = await api.get(\`/erp/integrations/\${integrationId}/mappings\`);
-  return extractData(response);
-};
+// Nota: Outros recursos do ERP, como processamento de pagamentos, faturas
+// multimoeda, ordens de compra e relatórios financeiros, ainda não foram
+// integrados ao `erpModule` no backend. Quando essas rotas forem
+// disponibilizadas sob o prefixo `/api/v1/erp`, adicione aqui métodos
+// equivalentes para consumir esses endpoints.

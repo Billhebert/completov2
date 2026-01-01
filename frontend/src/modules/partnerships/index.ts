@@ -1,8 +1,4 @@
-/**
- * Parcerias Module Barrel Export
- */
+// Barrel file for Partnerships module
 
-export * from './types';
-export * as partnershipsService from './services/partnerships.service';
-export { default as partnershipsRoutes } from './routes';
-export { default as partnershipsModuleConfig } from './module.config';
+export * from './module.config';
+export * from './services/partnerships.service';

@@ -1,19 +1,20 @@
-/**
- * Configurações Module Configuration
- */
+// System Settings module configuration
+// Exposes the ability to view and update system‑wide configuration. Only DEV and
+// admin roles are allowed to interact with this module according to the
+// backend【240892291532403†L16-L25】.
 
-import { ModuleConfig } from '../../core/types';
+import type { ModuleConfig } from '@/types/module-config';
 
-export const settingsModuleConfig: ModuleConfig = {
+export const settingsModule: ModuleConfig = {
   id: 'settings',
   name: 'Configurações',
-  description: 'Configurações gerais',
+  description:
+    'Gerencie as configurações globais do sistema, incluindo taxas de serviço e moeda. Apenas usuários DEV ou administradores podem acessar.',
   version: '1.0.0',
-  enabled: true,
-  category: 'core',
-  showInMenu: true,
-  dependencies: ['auth'],
-  requiredPermissions: [],
+  icon: 'MdSettings',
+  category: 'administration',
+  requiresAuth: true,
+  permissions: ['settings.read', 'settings.update'],
 };
 
-export default settingsModuleConfig;
+export default settingsModule;

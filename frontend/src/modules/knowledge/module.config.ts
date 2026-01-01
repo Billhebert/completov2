@@ -1,19 +1,19 @@
 /**
- * Base de Conhecimento Module Configuration
+ * Knowledge Module Configuration
  */
-
 import { ModuleConfig } from '../../core/types';
 
 export const knowledgeModuleConfig: ModuleConfig = {
   id: 'knowledge',
-  name: 'Base de Conhecimento',
-  description: 'Zettelkasten com RAG e busca semântica',
+  name: 'Knowledge',
+  description: 'Base de Conhecimento (Zettelkasten)',
   version: '1.0.0',
   enabled: true,
-  category: 'business',
+  category: 'knowledge',
   showInMenu: true,
+  // Este módulo depende de autenticação para restringir acesso aos zettels
   dependencies: ['auth'],
-  requiredPermissions: ["knowledge.read"],
+  requiredPermissions: ['knowledge.read'],
 };
 
 export default knowledgeModuleConfig;

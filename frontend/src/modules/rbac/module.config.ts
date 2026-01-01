@@ -1,19 +1,20 @@
-/**
- * RBAC Module Configuration
- */
+// RBAC module configuration
+// Provides UI and API interactions for managing departments, roles and
+// permissions within a company. Only company admins and system admins are
+// allowed to modify these resources.
 
-import { ModuleConfig } from '../../core/types';
+import type { ModuleConfig } from '@/types/module-config';
 
-export const rbacModuleConfig: ModuleConfig = {
+export const rbacModule: ModuleConfig = {
   id: 'rbac',
-  name: 'RBAC',
-  description: 'Controle de acesso',
+  name: 'Controle de Acesso',
+  description:
+    'Gerencie departamentos, cargos personalizados e permissões de usuários com base em funções.',
   version: '1.0.0',
-  enabled: true,
-  category: 'operations',
-  showInMenu: true,
-  dependencies: ['auth'],
-  requiredPermissions: ["rbac.read"],
+  icon: 'MdSecurity',
+  category: 'administration',
+  requiresAuth: true,
+  permissions: ['rbac.read', 'rbac.write'],
 };
 
-export default rbacModuleConfig;
+export default rbacModule;

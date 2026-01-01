@@ -1,8 +1,6 @@
-/**
- * RBAC Module Barrel Export
- */
+// Barrel file for RBAC (Role-Based Access Control) module
+// Export the module configuration and service for managing departments,
+// roles, permissions and user assignments.
 
-export * from './types';
-export * as rbacService from './services/rbac.service';
-export { default as rbacRoutes } from './routes';
-export { default as rbacModuleConfig } from './module.config';
+export * from './module.config';
+export * from './services/rbac.service';

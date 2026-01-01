@@ -1,8 +1,9 @@
 /**
- * Sincronização Module Barrel Export
+ * Barrel export do módulo de Sincronização
+ *
+ * Este arquivo reexporta as funções de serviço e o objeto de configuração,
+ * simplificando as importações no resto do aplicativo.
  */
 
-export * from './types';
-export * as syncService from './services/sync.service';
-export { default as syncRoutes } from './routes';
+export * from './services/sync.service';
 export { default as syncModuleConfig } from './module.config';

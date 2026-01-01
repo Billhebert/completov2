@@ -1,8 +1,10 @@
 /**
- * Templates de Email Module Barrel Export
+ * Barrel export do módulo de Templates de Email
+ *
+ * Este módulo fornece acesso às rotas de templates de email do backend,
+ * permitindo listar modelos disponíveis, visualizar o conteúdo renderizado
+ * com variáveis e enviar emails utilizando esses modelos【533419220309048†L11-L66】.
  */
 
-export * from './types';
-export * as emailtemplatesService from './services/email-templates.service';
-export { default as emailtemplatesRoutes } from './routes';
-export { default as emailtemplatesModuleConfig } from './module.config';
+export * from './services/email-templates.service';
+export { default as emailTemplatesModuleConfig } from './module.config';

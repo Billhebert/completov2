@@ -1,8 +1,8 @@
 /**
- * Crescimento Pessoal Module Barrel Export
+ * Barrel export do módulo People Growth
+ *
+ * Reexporta o serviço e a configuração para facilitar o consumo do módulo.
  */
 
-export * from './types';
-export * as peoplegrowthService from './services/people-growth.service';
-export { default as peoplegrowthRoutes } from './routes';
-export { default as peoplegrowthModuleConfig } from './module.config';
+export * from './services/people-growth.service';
+export { default as peopleGrowthModuleConfig } from './module.config';

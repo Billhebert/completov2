@@ -1,10 +1,10 @@
 /**
- * CRM Module Barrel Export
+ * Barrel export do módulo de CRM
+ *
+ * Este arquivo reexporta o serviço de CRM e o objeto de configuração do módulo.
+ * Sempre que novas páginas ou componentes forem adicionados ao módulo, elas devem
+ * ser exportadas aqui para que possam ser consumidas pelo restante da aplicação.
  */
 
-export * from './types';
-export * as contactService from './services/contact.service';
-export * as dealService from './services/deal.service';
-export * as companyService from './services/company.service';
-export { default as crmRoutes } from './routes';
+export * from './services/crm.service';
 export { default as crmModuleConfig } from './module.config';

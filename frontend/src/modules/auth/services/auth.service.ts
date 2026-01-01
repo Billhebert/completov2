@@ -1,113 +1,100 @@
-/**
- * Auth Service
- * Serviço para autenticação
- */
-
-import api, { extractData } from '../../../core/utils/api';
-import {
-  LoginRequest,
-  LoginResponse,
-  RegisterRequest,
-  TwoFactorSetupResponse,
-  TwoFactorVerifyRequest,
-  ForgotPasswordRequest,
-  ResetPasswordRequest,
-  RefreshTokenRequest,
-} from '../types';
+import api from '../../../core/utils/api';
 
 /**
- * Login
+ * Authentication service
+ *
+ * Wraps the authentication endpoints exposed by the backend. These
+ * endpoints allow new companies to register, users to log in and out,
+ * refresh their access tokens, manage two-factor authentication (2FA)
+ * and retrieve the currently authenticated user. See the backend auth
+ * routes for details【230118662508263†L21-L91】.
  */
-export const login = async (data: LoginRequest): Promise<LoginResponse> => {
-  const response = await api.post('/auth/login', data);
-  return extractData(response);
-};
 
-/**
- * Registro
- */
-export const register = async (data: RegisterRequest): Promise<LoginResponse> => {
-  const response = await api.post('/auth/register', data);
-  return extractData(response);
-};
+export interface LoginPayload {
+  email: string;
+  password: string;
+  code2FA?: string;
+}
 
-/**
- * Setup 2FA
- */
-export const setup2FA = async (): Promise<TwoFactorSetupResponse> => {
-  const response = await api.post('/auth/2fa/setup');
-  return extractData(response);
-};
+export interface RegisterPayload {
+  email: string;
+  password: string;
+  companyName: string;
+  userName: string;
+  // Additional fields can be included depending on requirements
+  [key: string]: any;
+}
 
-/**
- * Verificar 2FA
- */
-export const verify2FA = async (
-  data: TwoFactorVerifyRequest
-): Promise<{ verified: boolean }> => {
-  const response = await api.post('/auth/2fa/verify', data);
-  return extractData(response);
-};
+class AuthService {
+  private baseUrl = '/auth';
 
-/**
- * Habilitar 2FA
- */
-export const enable2FA = async (
-  data: TwoFactorVerifyRequest
-): Promise<{ enabled: boolean }> => {
-  const response = await api.post('/auth/2fa/enable', data);
-  return extractData(response);
-};
+  /**
+   * Perform login with email and password. Optionally pass a 2FA code if
+   * the account has 2FA enabled【230118662508263†L21-L37】.
+   */
+  async login(payload: LoginPayload) {
+    const response = await api.post(`${this.baseUrl}/login`, payload);
+    return response.data.data;
+  }
 
-/**
- * Desabilitar 2FA
- */
-export const disable2FA = async (): Promise<{ disabled: boolean }> => {
-  const response = await api.post('/auth/2fa/disable');
-  return extractData(response);
-};
+  /**
+   * Register a new company and its admin user【230118662508263†L40-L50】.
+   */
+  async register(payload: RegisterPayload) {
+    const response = await api.post(`${this.baseUrl}/register`, payload);
+    return response.data.data;
+  }
 
-/**
- * Esqueci minha senha
- */
-export const forgotPassword = async (
-  data: ForgotPasswordRequest
-): Promise<{ message: string }> => {
-  const response = await api.post('/auth/forgot-password', data);
-  return extractData(response);
-};
+  /**
+   * Refresh the access token using a valid refresh token【230118662508263†L58-L69】.
+   */
+  async refreshToken(refreshToken: string) {
+    const response = await api.post(`${this.baseUrl}/refresh`, { refreshToken });
+    return response.data.data;
+  }
 
-/**
- * Resetar senha
- */
-export const resetPassword = async (
-  data: ResetPasswordRequest
-): Promise<{ message: string }> => {
-  const response = await api.post('/auth/reset-password', data);
-  return extractData(response);
-};
+  /**
+   * Get current user info. Requires authentication【230118662508263†L76-L90】.
+   */
+  async getMe() {
+    const response = await api.get(`${this.baseUrl}/me`);
+    return response.data.data;
+  }
 
-/**
- * Refresh token
- */
-export const refreshToken = async (
-  data: RefreshTokenRequest
-): Promise<LoginResponse> => {
-  const response = await api.post('/auth/refresh', data);
-  return extractData(response);
-};
+  /**
+   * Setup two-factor authentication. Pass the current password to
+   * generate a secret and QR code【230118662508263†L96-L107】.
+   */
+  async setup2FA(password: string) {
+    const response = await api.post(`${this.baseUrl}/2fa/setup`, { password });
+    return response.data.data;
+  }
 
-/**
- * Obter perfil do usuário autenticado
- */
-export const getMe = async (): Promise<LoginResponse['user']> => {
-  const response = await api.get('/auth/me');
-  return extractData(response);
-};
+  /**
+   * Verify a 2FA token and enable it on the account【230118662508263†L111-L124】.
+   */
+  async verify2FA(token: string) {
+    const response = await api.post(`${this.baseUrl}/2fa/verify`, { token });
+    return response.data.data;
+  }
 
-/**
- * Logout
- */
-export const logout = async (): Promise<void> => {
-  await api.post('/auth/logout');
-};
+  /**
+   * Disable 2FA by providing the current password and a valid 2FA token【230118662508263†L131-L146】.
+   */
+  async disable2FA(payload: { password: string; token: string }) {
+    const response = await api.post(`${this.baseUrl}/2fa/disable`, payload);
+    return response.data.data;
+  }
+
+  /**
+   * Logout the current user. This simply returns success; token
+   * invalidation is handled client-side or via a token blacklist【230118662508263†L149-L160】.
+   */
+  async logout() {
+    const response = await api.post(`${this.baseUrl}/logout`);
+    return response.data;
+  }
+}
+
+export const authService = new AuthService();
+export default authService;

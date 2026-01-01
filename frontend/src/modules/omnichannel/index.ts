@@ -1,8 +1,9 @@
 /**
- * Omnichannel Module Barrel Export
+ * Barrel export do módulo de Omnichannel
+ *
+ * Este módulo centraliza as exportações de serviços e a configuração
+ * para integração com canais como WhatsApp e gerenciamento de conversas.
  */
 
-export * from './types';
-export * as omnichannelService from './services/omnichannel.service';
-export { default as omnichannelRoutes } from './routes';
+export * from './services/omnichannel.service';
 export { default as omnichannelModuleConfig } from './module.config';

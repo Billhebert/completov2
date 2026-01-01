@@ -1,88 +1,133 @@
 /**
- * Workflow Automations Service
- * Sistema completo de automação com triggers, condições e ações
+ * Automations Service
+ *
+ * Fornece métodos de alto nível para interagir com o módulo de automações do backend. O
+ * backend implementa a lógica de workflows (criação, ativação, pausa, execução, listagem)
+ * no arquivo `backend/src/modules/automations/index.ts`, incluindo endpoints para listar e
+ * gerenciar execuções, testar workflows e obter sugestões alimentadas por IA【577705282484866†L27-L63】.
  */
 
 import api, { extractData } from '../../../core/utils/api';
-import { Automation, AutomationExecution, AutomationTemplate } from '../types';
-import { PaginatedResult, PaginationParams } from '../../../core/types';
 
 /**
- * Lista automações configuradas
- * TODO: Implementar gestão de automações
- * - Listar todas automações ativas/inativas
- * - Filtrar por tipo de trigger
- * - Estatísticas de execução
- * - Templates de automação comuns
+ * Lista workflows existentes com filtros opcionais por status e paginação.
+ *
+ * @param params Objeto de consulta (por exemplo, `{ status: 'ACTIVE' }`).
  */
-export const getAutomations = async (params?: PaginationParams): Promise<PaginatedResult<Automation>> => {
-  const response = await api.get('/automations', { params });
+export const getWorkflows = async (
+  params?: Record<string, string | number | boolean>
+): Promise<any[]> => {
+  const response = await api.get('/automations/workflows', { params });
   return extractData(response);
 };
 
 /**
- * Criar nova automação
- * TODO: Implementar workflow builder
- * - Visual workflow editor (drag-and-drop)
- * - Triggers: webhook, schedule, event, manual
- * - Conditions: if/else logic com operadores
- * - Actions: criar registro, enviar email, chamar API, etc
- * - Testar automação antes de ativar
- * - Validar fluxo completo
+ * Recupera detalhes de um workflow específico, incluindo últimas execuções【577705282484866†L62-L88】.
+ *
+ * @param id ID do workflow a ser buscado.
  */
-export const createAutomation = async (data: Partial<Automation>): Promise<Automation> => {
-  const response = await api.post('/automations', data);
+export const getWorkflow = async (id: string): Promise<any> => {
+  const response = await api.get(`/automations/workflows/${id}`);
   return extractData(response);
 };
 
 /**
- * Executar automação manualmente
- * TODO: Implementar execução com contexto
- * - Permitir execução manual para teste
- * - Fornecer contexto/payload customizado
- * - Dry-run mode (simular sem executar)
- * - Retornar resultado detalhado
+ * Cria um novo workflow. É necessário que o usuário tenha as permissões adequadas (admin ou supervisor)【577705282484866†L94-L115】.
+ *
+ * @param data Objeto contendo `name`, `description` e `definition` (nodes e edges).
  */
-export const executeAutomation = async (id: string, payload?: Record<string, unknown>): Promise<AutomationExecution> => {
-  const response = await api.post(\`/automations/\${id}/execute\`, { payload });
+export const createWorkflow = async (data: any): Promise<any> => {
+  const response = await api.post('/automations/workflows', data);
   return extractData(response);
 };
 
 /**
- * Buscar histórico de execuções
- * TODO: Implementar logging e analytics
- * - Histórico de todas execuções
- * - Status: success, failed, skipped
- * - Tempo de execução
- * - Logs detalhados de cada step
- * - Erros e stack traces
+ * Atualiza um workflow existente. Somente admins/supervisores podem atualizar workflows【577705282484866†L134-L161】.
+ *
+ * @param id ID do workflow.
+ * @param data Dados parciais com `name`, `description` ou `definition` para atualização.
  */
-export const getExecutions = async (automationId: string, params?: PaginationParams): Promise<PaginatedResult<AutomationExecution>> => {
-  const response = await api.get(\`/automations/\${automationId}/executions\`, { params });
+export const updateWorkflow = async (id: string, data: any): Promise<any> => {
+  const response = await api.patch(`/automations/workflows/${id}`, data);
   return extractData(response);
 };
 
 /**
- * Listar templates de automação
- * TODO: Implementar marketplace de templates
- * - Templates pré-configurados
- * - Categorias (sales, support, marketing)
- * - Importar e customizar template
- * - Compartilhar templates personalizados
+ * Remove um workflow permanentemente【577705282484866†L171-L196】.
+ *
+ * @param id ID do workflow a ser removido.
  */
-export const getTemplates = async (): Promise<AutomationTemplate[]> => {
-  const response = await api.get('/automations/templates');
+export const deleteWorkflow = async (id: string): Promise<void> => {
+  await api.delete(`/automations/workflows/${id}`);
+};
+
+/**
+ * Ativa um workflow para que ele responda a eventos e seja executado automaticamente【577705282484866†L204-L223】.
+ *
+ * @param id ID do workflow.
+ */
+export const activateWorkflow = async (id: string): Promise<any> => {
+  const response = await api.post(`/automations/workflows/${id}/activate`);
   return extractData(response);
 };
 
 /**
- * Ativar/desativar automação
- * TODO: Implementar toggle com validação
- * - Validar automação antes de ativar
- * - Não permitir ativar se incompleta
- * - Pausar execuções pendentes ao desativar
+ * Pausa a execução de um workflow. O workflow permanece salvo mas não será executado até ser reativado【577705282484866†L230-L249】.
+ *
+ * @param id ID do workflow.
  */
-export const toggleAutomation = async (id: string, enabled: boolean): Promise<Automation> => {
-  const response = await api.patch(\`/automations/\${id}\`, { enabled });
+export const pauseWorkflow = async (id: string): Promise<any> => {
+  const response = await api.post(`/automations/workflows/${id}/pause`);
+  return extractData(response);
+};
+
+/**
+ * Executa um workflow manualmente para testes【577705282484866†L258-L289】.
+ *
+ * @param id ID do workflow.
+ * @param testData Objeto com dados de contexto para a execução de teste.
+ */
+export const testWorkflow = async (id: string, testData?: any): Promise<any> => {
+  const response = await api.post(`/automations/workflows/${id}/test`, { testData });
+  return extractData(response);
+};
+
+/**
+ * Lista execuções de workflows com filtro opcional por workflowId, status, limite e offset【577705282484866†L298-L329】.
+ *
+ * @param params Objeto de consulta (`workflowId`, `status`, `limit`, `offset`).
+ */
+export const getExecutions = async (
+  params?: Record<string, string | number>
+): Promise<{ data: any[]; pagination: { total: number; limit: number; offset: number } }> => {
+  const response = await api.get('/automations/executions', { params });
+  return extractData(response);
+};
+
+/**
+ * Recupera os logs de execução de um workflow específico【577705282484866†L338-L366】.
+ *
+ * @param executionId ID da execução.
+ */
+export const getExecutionLogs = async (executionId: string): Promise<any> => {
+  const response = await api.get(`/automations/executions/${executionId}/logs`);
+  return extractData(response);
+};
+
+/**
+ * Obtém sugestões de automações geradas por IA com base na atividade da empresa【577705282484866†L372-L424】.
+ */
+export const getSuggestions = async (): Promise<any> => {
+  const response = await api.get('/automations/suggestions');
+  return extractData(response);
+};
+
+/**
+ * Analisa um workflow específico e retorna métricas e recomendações de otimização【577705282484866†L444-L516】.
+ *
+ * @param id ID do workflow a ser analisado.
+ */
+export const analyzeWorkflow = async (id: string): Promise<any> => {
+  const response = await api.get(`/automations/workflows/${id}/analyze`);
   return extractData(response);
 };

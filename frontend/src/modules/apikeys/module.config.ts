@@ -1,19 +1,19 @@
-/**
- * API Keys Module Configuration
- */
+// API Keys module configuration
+// Provides machine‑to‑machine API key management for the platform.
 
-import { ModuleConfig } from '../../core/types';
+import type { ModuleConfig } from '@/types/module-config';
 
-export const apikeysModuleConfig: ModuleConfig = {
+export const apikeysModule: ModuleConfig = {
   id: 'apikeys',
-  name: 'API Keys',
-  description: 'Gerenciamento de API keys',
+  name: 'Chaves API',
+  description:
+    'Gerencie chaves de API para integrações e automação. É possível listar, criar, revogar e excluir chaves e acompanhar seu uso.',
   version: '1.0.0',
-  enabled: true,
-  category: 'infrastructure',
-  showInMenu: true,
-  dependencies: ['auth'],
-  requiredPermissions: ["apikeys.read"],
+  icon: 'MdVpnKey',
+  category: 'administration',
+  requiresAuth: true,
+  // Restrito a administradores e desenvolvedores
+  permissions: ['apikeys.read', 'apikeys.write'],
 };
 
-export default apikeysModuleConfig;
+export default apikeysModule;

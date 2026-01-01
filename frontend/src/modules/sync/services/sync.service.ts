@@ -1,76 +1,79 @@
 /**
- * Data Synchronization Service
- * Sincronização de dados entre sistemas e fontes externas
+ * Sync Service
+ *
+ * Este serviço oferece funções para gerenciar conexões de integrações e iniciar
+ * processos de sincronização. O backend permite listar e criar conexões, enfileirar
+ * sincronizações assíncronas, consultar execuções e realizar sincronizações
+ * manuais imediatas【643399667495487†L25-L79】【643399667495487†L124-L181】.
  */
 
 import api, { extractData } from '../../../core/utils/api';
-import { SyncJob, SyncConfig, SyncLog } from '../types';
-import { PaginatedResult, PaginationParams } from '../../../core/types';
 
 /**
- * Lista jobs de sincronização
- * TODO: Implementar gestão de jobs de sync
- * - Jobs manuais e automatizados
- * - Status em tempo real (running, completed, failed)
- * - Histórico de execuções
- * - Filtros e busca
- * - Cancelar jobs em andamento
+ * Lista as conexões de integração cadastradas para a empresa do usuário【643399667495487†L25-L37】.
  */
-export const getSyncJobs = async (params?: PaginationParams): Promise<PaginatedResult<SyncJob>> => {
-  const response = await api.get('/sync/jobs', { params });
+export const listConnections = async (): Promise<any[]> => {
+  const response = await api.get('/sync/connections');
   return extractData(response);
 };
 
 /**
- * Criar job de sincronização
- * TODO: Implementar criação de jobs configuráveis
- * - Selecionar fonte e destino
- * - Configurar mapeamento de campos
- * - Definir filtros e transformações
- * - Agendar execução (cron)
- * - Validar configuração antes de salvar
+ * Cria uma nova conexão de integração.
+ *
+ * @param data Objeto contendo `provider` (ex.: 'rdstation', 'chatwoot'), `apiKey` e opcional `config`【643399667495487†L44-L54】.
  */
-export const createSyncJob = async (config: SyncConfig): Promise<SyncJob> => {
-  const response = await api.post('/sync/jobs', config);
+export const createConnection = async (data: {
+  provider: 'rdstation' | 'confirm8' | 'pipefy' | 'chatwoot' | string;
+  apiKey: string;
+  config?: Record<string, any>;
+}): Promise<any> => {
+  const response = await api.post('/sync/connections', data);
   return extractData(response);
 };
 
 /**
- * Executar sincronização
- * TODO: Implementar execução assíncrona
- * - Adicionar à queue de processamento
- * - Processamento em background
- * - Progress tracking (0-100%)
- * - Notificar conclusão
- * - Gerar relatório de sincronização
+ * Enfileira um job de sincronização para um provedor e tipo de entidade【643399667495487†L62-L79】.
+ *
+ * O backend processa a sincronização em segundo plano; o resultado pode ser consultado em `/sync/runs`.
+ *
+ * @param data Objeto contendo `provider`, `entityType` (ex.: 'contacts') e `direction` ('pull' ou 'push').
  */
-export const runSync = async (jobId: string): Promise<SyncJob> => {
-  const response = await api.post(\`/sync/jobs/\${jobId}/run\`);
+export const triggerSync = async (data: {
+  provider: string;
+  entityType: string;
+  direction: 'pull' | 'push';
+}): Promise<{ jobId: string; message: string }> => {
+  const response = await api.post('/sync/run', data);
   return extractData(response);
 };
 
 /**
- * Buscar logs de sincronização
- * TODO: Implementar logging detalhado
- * - Logs por job e execução
- * - Registros processados
- * - Erros e warnings
- * - Tempo de processamento
- * - Dados modificados (audit trail)
+ * Lista as execuções de sincronização, ordenadas por data de início【643399667495487†L85-L92】.
  */
-export const getSyncLogs = async (jobId: string, params?: PaginationParams): Promise<PaginatedResult<SyncLog>> => {
-  const response = await api.get(\`/sync/jobs/\${jobId}/logs\`, { params });
+export const listRuns = async (): Promise<any[]> => {
+  const response = await api.get('/sync/runs');
   return extractData(response);
 };
 
 /**
- * Resolver conflitos de sincronização
- * TODO: Implementar resolução de conflitos
- * - Detectar conflitos (mesmo registro modificado)
- * - Estratégias: newest wins, manual, custom
- * - UI para resolver manualmente
- * - Merge inteligente de dados
+ * Recupera detalhes de uma execução de sincronização específica, incluindo logs【643399667495487†L99-L118】.
+ *
+ * @param runId ID da execução de sincronização.
  */
-export const resolveConflict = async (jobId: string, conflictId: string, resolution: 'source' | 'dest' | 'merge'): Promise<void> => {
-  await api.post(\`/sync/jobs/\${jobId}/conflicts/\${conflictId}/resolve\`, { resolution });
+export const getRun = async (runId: string): Promise<any> => {
+  const response = await api.get(`/sync/runs/${runId}`);
+  return extractData(response);
+};
+
+/**
+ * Executa a sincronização manualmente em uma conexão específica, sem enfileirar job【643399667495487†L124-L177】.
+ *
+ * O backend cria um conector para o provedor e retorna contagem de registros criados, atualizados, ignorados
+ * e erros. Também atualiza a data de última sincronização da conexão.
+ *
+ * @param connectionId ID da conexão de integração.
+ */
+export const manualSync = async (connectionId: string): Promise<any> => {
+  const response = await api.post(`/sync/connections/${connectionId}/sync`);
+  return extractData(response);
 };

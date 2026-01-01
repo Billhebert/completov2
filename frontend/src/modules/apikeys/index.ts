@@ -1,4 +1,4 @@
-export * from './types';
-export * as apikeysService from './services/apikeys.service';
-export { default as apikeysRoutes } from './routes';
-export { default as apikeysModuleConfig } from './module.config';
+// Barrel file for API Keys module
+
+export * from './module.config';
+export * from './services/apikeys.service';

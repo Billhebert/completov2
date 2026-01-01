@@ -7,6 +7,8 @@ import React from 'react';
 import { AppProviders } from './core/providers';
 import { ModularRouter } from './core/router';
 
+
+
 /**
  * Componente raiz da aplicação
  */

@@ -1,4 +1,7 @@
 // src/app.ts
+import dotenv from 'dotenv';
+
+dotenv.config();
 import express, { Express } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';

@@ -1,8 +1,2 @@
-/**
- * Auth Module Barrel Export
- */
-
-export * from './types';
-export * from './services/auth.service';
-export { default as authRoutes } from './routes';
-export { default as authModuleConfig } from './module.config';
+export { default as config } from './module.config';
+export { authService } from './services/auth.service';

@@ -1,127 +1,83 @@
-import type {
-  ActivityItem,
-  AnalyticsDashboard,
-  CLVResult,
-  CohortResult,
-  ChurnResult,
-  CustomReport,
-  Funnel,
-  FunnelAnalysis,
-  PipelineMetric,
-  ReportExecutionResult,
-  TimeSeriesPoint,
-  TopContact,
-} from '../types/analytics.types';
+/**
+ * Analytics Service
+ *
+ * Este serviço encapsula as chamadas ao módulo de analytics do backend. Ele
+ * fornece métodos para obter métricas de dashboard, séries temporais,
+ * contatos de maior valor, métricas de pipeline e atividade de usuários,
+ * além de permitir a exportação de contatos ou deals em formato CSV.
+ */
+
+import api, { extractData } from '../../../core/utils/api';
 
 /**
- * IMPORTANTE:
- * - Por padrão, seguimos o backend em /analytics/...
- * - Se seu core estiver em /api/v1/analytics, troque o BASE_URL aqui.
+ * Obtém métricas agregadas para o dashboard【690747466847502†L12-L16】.
+ *
+ * @returns Objeto com contadores e indicadores (por exemplo, total de contatos, negócios, etc.).
  */
-const BASE_URL = '/analytics';
+export const getDashboardMetrics = async (): Promise<any> => {
+  const response = await api.get('/analytics/dashboard');
+  return extractData(response);
+};
 
-type ApiEnvelope<T> = { success: true; data: T } | { success: false; error?: { message?: string } };
+/**
+ * Obtém dados de série temporal para uma métrica específica【690747466847502†L21-L34】.
+ *
+ * @param metric Nome da métrica (por exemplo 'revenue', 'expenses', 'deals').
+ * @param startDate Data de início (ISO) para a série; padrão: 30 dias atrás.
+ * @param endDate Data de término (ISO) para a série; padrão: hoje.
+ * @returns Array de pontos de dados agrupados por data.
+ */
+export const getTimeSeries = async (
+  metric: string,
+  startDate?: string,
+  endDate?: string
+): Promise<any> => {
+  const params: any = { metric };
+  if (startDate) params.startDate = startDate;
+  if (endDate) params.endDate = endDate;
+  const response = await api.get('/analytics/timeseries', { params });
+  return extractData(response);
+};
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE_URL}${path}`, {
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) },
-    ...init,
-  });
+/**
+ * Recupera os contatos com maior valor ou atividade, limitando o número de resultados【690747466847502†L41-L46】.
+ *
+ * @param limit Número máximo de contatos a retornar (default: 10).
+ * @returns Array de contatos ordenados pela métrica de ranking definida no backend.
+ */
+export const getTopContacts = async (limit: number = 10): Promise<any[]> => {
+  const response = await api.get('/analytics/top-contacts', { params: { limit } });
+  return extractData(response);
+};
 
-  const json = (await res.json().catch(() => ({}))) as ApiEnvelope<T> | any;
+/**
+ * Obtém métricas do funil (pipeline) de vendas ou serviço【690747466847502†L52-L56】.
+ *
+ * @returns Dados agregados do pipeline, como contagem de etapas e valores.
+ */
+export const getPipelineMetrics = async (): Promise<any> => {
+  const response = await api.get('/analytics/pipeline');
+  return extractData(response);
+};
 
-  if (!res.ok || json?.success === false) {
-    const msg = json?.error?.message || `Erro HTTP ${res.status}`;
-    throw new Error(msg);
-  }
+/**
+ * Consulta atividade de usuários em determinado período【690747466847502†L61-L67】.
+ *
+ * @param days Quantidade de dias a considerar (default: 30).
+ * @returns Lista de usuários com contagem de ações realizadas no período.
+ */
+export const getUserActivity = async (days: number = 30): Promise<any[]> => {
+  const response = await api.get('/analytics/activity', { params: { days } });
+  return extractData(response);
+};
 
-  // Se seu backend não envelopa (sem {success,data}), cai no raw:
-  return (json?.data ?? json) as T;
-}
-
-/* =========================
-   CORE
-========================= */
-export async function getDashboard(): Promise<AnalyticsDashboard> {
-  return request<AnalyticsDashboard>('/dashboard');
-}
-
-export async function getTimeSeries(metric: string, params?: { startDate?: string; endDate?: string }) {
-  const qs = new URLSearchParams({ metric });
-  if (params?.startDate) qs.set('startDate', params.startDate);
-  if (params?.endDate) qs.set('endDate', params.endDate);
-  return request<TimeSeriesPoint[]>(`/timeseries?${qs.toString()}`);
-}
-
-export async function getPipeline(): Promise<PipelineMetric[]> {
-  return request<PipelineMetric[]>('/pipeline');
-}
-
-export async function getTopContacts(limit = 10): Promise<TopContact[]> {
-  return request<TopContact[]>(`/top-contacts?limit=${encodeURIComponent(limit)}`);
-}
-
-export async function getActivity(days = 30): Promise<ActivityItem[]> {
-  return request<ActivityItem[]>(`/activity?days=${encodeURIComponent(days)}`);
-}
-
-export function exportCsvUrl(type: 'contacts' | 'deals') {
-  return `${BASE_URL}/export/${type}`;
-}
-
-/* =========================
-   ADVANCED (rotas do seu advanced.ts)
-========================= */
-export async function listReports(): Promise<CustomReport[]> {
-  return request<CustomReport[]>('/reports');
-}
-
-export async function createReport(payload: Partial<CustomReport>): Promise<CustomReport> {
-  return request<CustomReport>('/reports', { method: 'POST', body: JSON.stringify(payload) });
-}
-
-export async function executeReport(id: string): Promise<ReportExecutionResult> {
-  return request<ReportExecutionResult>(`/reports/${encodeURIComponent(id)}/execute`);
-}
-
-export function exportReportPdfUrl(id: string) {
-  return `${BASE_URL}/reports/${encodeURIComponent(id)}/export/pdf`;
-}
-
-export function exportReportExcelUrl(id: string) {
-  return `${BASE_URL}/reports/${encodeURIComponent(id)}/export/excel`;
-}
-
-export async function scheduleReport(id: string, payload: any): Promise<{ ok: true } | any> {
-  return request(`/reports/${encodeURIComponent(id)}/schedule`, {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
-}
-
-export async function createFunnel(payload: any): Promise<Funnel> {
-  return request<Funnel>('/funnels', { method: 'POST', body: JSON.stringify(payload) });
-}
-
-export async function analyzeFunnel(id: string): Promise<FunnelAnalysis> {
-  return request<FunnelAnalysis>(`/funnels/${encodeURIComponent(id)}/analyze`);
-}
-
-export async function getCohorts(params?: Record<string, string>): Promise<CohortResult> {
-  const qs = new URLSearchParams(params || {});
-  const suffix = qs.toString() ? `?${qs.toString()}` : '';
-  return request<CohortResult>(`/cohorts${suffix}`);
-}
-
-export async function getChurn(params?: Record<string, string>): Promise<ChurnResult> {
-  const qs = new URLSearchParams(params || {});
-  const suffix = qs.toString() ? `?${qs.toString()}` : '';
-  return request<ChurnResult>(`/churn${suffix}`);
-}
-
-export async function getCLV(params?: Record<string, string>): Promise<CLVResult> {
-  const qs = new URLSearchParams(params || {});
-  const suffix = qs.toString() ? `?${qs.toString()}` : '';
-  return request<CLVResult>(`/clv${suffix}`);
-}
+/**
+ * Exporta dados (contatos ou deals) em formato CSV【690747466847502†L72-L116】.
+ *
+ * @param type Tipo de dado a exportar ('contacts' ou 'deals').
+ * @returns Conteúdo CSV em string. Cabe ao chamador tratar o download ou salvar em arquivo.
+ */
+export const exportData = async (type: 'contacts' | 'deals'): Promise<string> => {
+  const response = await api.get(`/analytics/export/${type}`, { responseType: 'text' });
+  return response.data;
+};

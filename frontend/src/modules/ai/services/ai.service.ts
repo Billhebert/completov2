@@ -1,104 +1,96 @@
 /**
- * AI Frontend Service
- * Client direto das rotas reais do backend
+ * AI Service
+ *
+ * Fornece métodos para interagir com as rotas de inteligência artificial
+ * (RAG e chat) do backend. Os endpoints permitem realizar consultas
+ * semanticamente enriquecidas em uma base de conhecimento, ingerir novos
+ * nodes para indexação, gerar respostas de chat com IA genérica e
+ * consultar/definir o modo de funcionamento da IA【282032691130219†L16-L124】.
  */
 
-import api from '../../../core/utils/api';
-import {
-  ChatCompletionRequest,
-  GenerateEmailPayload,
-  AnalyzePayload,
-  ClassifyPayload,
-  AgentExecutePayload,
-} from '../types';
+import api, { extractData } from '../../../core/utils/api';
 
-/* ---------- CHAT ---------- */
+// ----------------------------
+// RAG (Retrieve-Augmented Generation)
+// ----------------------------
 
-export const chatCompletion = async (payload: ChatCompletionRequest) => {
-  const response = await api.post('/ai/chat/completions', payload);
-  return response.data;
+/**
+ * Executa uma consulta RAG sobre a base de conhecimento da empresa【282032691130219†L20-L26】.
+ *
+ * @param question Pergunta em linguagem natural.
+ * @returns Resposta da IA contendo texto e possivelmente fontes utilizadas.
+ */
+export const ragQuery = async (question: string): Promise<any> => {
+  const response = await api.post('/ai/rag/query', { question });
+  return extractData(response);
 };
 
-export const chatCompletionStream = async (
-  payload: ChatCompletionRequest,
-  onChunk: (text: string) => void,
-  onDone?: () => void
-) => {
-  const response = await fetch('/api/v1/ai/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...payload, stream: true }),
-  });
-
-  if (!response.body) return;
-
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-
-    const chunk = decoder.decode(value, { stream: true });
-    chunk.split('\n').forEach((line) => {
-      if (line.startsWith('data:')) {
-        const data = JSON.parse(line.replace('data:', '').trim());
-        if (data.done) {
-          onDone?.();
-        } else if (data.content) {
-          onChunk(data.content);
-        }
-      }
-    });
-  }
+/**
+ * Ingesta (indexa) um node de conhecimento para torná-lo disponível na busca RAG【282032691130219†L31-L37】.
+ *
+ * @param nodeId ID do zettel a ser ingerido.
+ */
+export const ingestNode = async (nodeId: string): Promise<void> => {
+  await api.post('/ai/rag/ingest', { nodeId });
 };
 
-/* ---------- TOOLS ---------- */
+/**
+ * Realiza uma busca na base de conhecimento utilizando vetores de similaridade【282032691130219†L42-L53】.
+ *
+ * @param query Texto a pesquisar.
+ * @param limit Número máximo de resultados a retornar (padrão: 5).
+ * @returns Array de resultados com trechos de contexto e pontuação.
+ */
+export const searchRAG = async (query: string, limit: number = 5): Promise<any[]> => {
+  const response = await api.get('/ai/rag/search', { params: { q: query, limit } });
+  return extractData(response);
+};
 
-export const generateEmail = (payload: GenerateEmailPayload) =>
-  api.post('/ai/generate/email', payload).then((r) => r.data);
+// ----------------------------
+// AI Chat
+// ----------------------------
 
-export const summarize = (payload: AnalyzePayload) =>
-  api.post('/ai/summarize', payload).then((r) => r.data);
+/**
+ * Gera uma resposta da IA para uma mensagem simples (sem RAG)【282032691130219†L59-L88】.
+ *
+ * @param message Mensagem do usuário.
+ * @param systemMessage Mensagem de sistema opcional para orientar o comportamento da IA.
+ * @param temperature Aleatoriedade da geração (0–1). Padrão: 0.7.
+ * @returns Objeto contendo a mensagem de resposta, modelo, provedor, tokens usados e custo.
+ */
+export const aiChat = async (
+  message: string,
+  systemMessage?: string,
+  temperature?: number
+): Promise<any> => {
+  const payload: any = { message };
+  if (systemMessage) payload.systemMessage = systemMessage;
+  if (temperature !== undefined) payload.temperature = temperature;
+  const response = await api.post('/ai/chat', payload);
+  return extractData(response);
+};
 
-export const sentiment = (payload: AnalyzePayload) =>
-  api.post('/ai/sentiment', payload).then((r) => r.data);
+// ----------------------------
+// AI Mode
+// ----------------------------
 
-export const extract = (payload: AnalyzePayload) =>
-  api.post('/ai/extract', payload).then((r) => r.data);
+/**
+ * Obtém o modo atual de operação da IA (full, auto ou economico)【282032691130219†L94-L106】.
+ *
+ * @returns Objeto contendo a propriedade `mode`.
+ */
+export const getAIMode = async (): Promise<{ mode: string }> => {
+  const response = await api.get('/ai/mode');
+  return extractData(response);
+};
 
-export const classify = (payload: ClassifyPayload) =>
-  api.post('/ai/classify', payload).then((r) => r.data);
-
-/* ---------- AGENT ---------- */
-
-export const executeAgent = (payload: AgentExecutePayload) =>
-  api.post('/ai/agent/execute', payload).then((r) => r.data);
-
-/* ---------- HISTORY & USAGE ---------- */
-
-export const getConversations = () =>
-  api.get('/ai/conversations').then((r) => r.data);
-
-export const getUsageStats = () =>
-  api.get('/ai/usage/stats').then((r) => r.data);
-
-/* ---------- RAG ---------- */
-
-export const uploadDocument = (formData: FormData) =>
-  api.post('/knowledge/rag/upload', formData).then((r) => r.data);
-
-export const uploadBatch = (formData: FormData) =>
-  api.post('/knowledge/rag/upload-batch', formData).then((r) => r.data);
-
-export const getDocuments = () =>
-  api.get('/knowledge/rag/documents').then((r) => r.data);
-
-export const reprocessDocument = (id: string) =>
-  api.post(`/knowledge/rag/documents/${id}/reprocess`).then((r) => r.data);
-
-export const deleteDocument = (id: string) =>
-  api.delete(`/knowledge/rag/documents/${id}`).then((r) => r.data);
-
-export const getRagStats = () =>
-  api.get('/knowledge/rag/stats').then((r) => r.data);
+/**
+ * Define o modo de operação da IA. Valores permitidos: 'full', 'auto' e 'economico'【282032691130219†L111-L124】.
+ *
+ * @param mode Modo a ser configurado.
+ * @returns Novo modo configurado.
+ */
+export const setAIMode = async (mode: 'full' | 'auto' | 'economico'): Promise<{ mode: string }> => {
+  const response = await api.post('/ai/mode', { mode });
+  return extractData(response);
+};

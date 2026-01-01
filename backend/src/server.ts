@@ -2,7 +2,9 @@
 import { createApp } from './app';
 import { env } from './core/config/env';
 import { logger } from './core/logger';
+import dotenv from 'dotenv';
 
+dotenv.config();
 async function startServer() {
   try {
     logger.info('🚀 Starting OMNI Platform...');
