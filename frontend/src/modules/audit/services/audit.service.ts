@@ -1,31 +1,70 @@
 /**
- * Auditoria Service
+ * Audit Service
+ * TODO: Implementar serviço de auditoria e logs
  */
 
 import api, { extractData } from '../../../core/utils/api';
-import { Audit, CreateAuditRequest, UpdateAuditRequest } from '../types';
+import { AuditLog, AuditFilters, AuditStats } from '../types';
 import { PaginatedResult, PaginationParams } from '../../../core/types';
 
-export const getAll = async (params?: PaginationParams): Promise<PaginatedResult<Audit>> => {
-  const response = await api.get('/audit', { params });
+/**
+ * TODO: Implementar busca de logs de auditoria
+ * - Suportar filtros por ação, entidade, usuário, data
+ * - Ordenar por data (mais recentes primeiro)
+ * - Suportar busca textual no conteúdo
+ */
+export const getAuditLogs = async (
+  params?: PaginationParams & AuditFilters
+): Promise<PaginatedResult<AuditLog>> => {
+  const response = await api.get('/audit/logs', { params });
   return extractData(response);
 };
 
-export const getById = async (id: string): Promise<Audit> => {
-  const response = await api.get(`/audit/${id}`);
+/**
+ * TODO: Implementar busca de log específico por ID
+ * - Incluir detalhes completos das mudanças
+ * - Incluir contexto adicional se disponível
+ */
+export const getAuditLogById = async (id: string): Promise<AuditLog> => {
+  const response = await api.get(`/audit/logs/${id}`);
   return extractData(response);
 };
 
-export const create = async (data: CreateAuditRequest): Promise<Audit> => {
-  const response = await api.post('/audit', data);
+/**
+ * TODO: Implementar busca de estatísticas de auditoria
+ * - Total de logs
+ * - Ações mais comuns
+ * - Usuários mais ativos
+ * - Atividade recente
+ */
+export const getAuditStats = async (filters?: AuditFilters): Promise<AuditStats> => {
+  const response = await api.get('/audit/stats', { params: filters });
   return extractData(response);
 };
 
-export const update = async (id: string, data: UpdateAuditRequest): Promise<Audit> => {
-  const response = await api.put(`/audit/${id}`, data);
-  return extractData(response);
+/**
+ * TODO: Implementar exportação de logs
+ * - Suportar formatos CSV e JSON
+ * - Aplicar mesmos filtros da listagem
+ * - Limitar tamanho da exportação
+ */
+export const exportAuditLogs = async (filters?: AuditFilters): Promise<Blob> => {
+  const response = await api.get('/audit/export', {
+    params: filters,
+    responseType: 'blob',
+  });
+  return response.data;
 };
 
-export const remove = async (id: string): Promise<void> => {
-  await api.delete(`/audit/${id}`);
+/**
+ * TODO: Implementar busca de histórico de uma entidade específica
+ * - Mostrar todas as mudanças em uma entidade ao longo do tempo
+ * - Incluir quem fez cada mudança
+ */
+export const getEntityHistory = async (
+  entityType: string,
+  entityId: string
+): Promise<AuditLog[]> => {
+  const response = await api.get(`/audit/entity/${entityType}/${entityId}`);
+  return extractData(response);
 };
