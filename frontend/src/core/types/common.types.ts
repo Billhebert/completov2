@@ -98,18 +98,6 @@ export type UserRole =
   | 'viewer';
 
 /**
- * Hierarquia de roles (do maior para o menor)
- */
-export const ROLE_HIERARCHY: UserRole[] = [
-  'DEV',
-  'ADMIN_GERAL',
-  'admin',
-  'manager',
-  'agent',
-  'viewer'
-];
-
-/**
  * Permissão
  */
 export interface Permission {

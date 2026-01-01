@@ -3,7 +3,6 @@
  * Componente de tabela de dados reutilizável
  */
 
-import React from 'react';
 import { TableColumn, TableAction } from '../../../../core/types';
 import clsx from 'clsx';
 

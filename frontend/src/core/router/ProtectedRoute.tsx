@@ -19,7 +19,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   config,
   children,
 }) => {
-  const { isAuthenticated, user, hasPermission, hasRole } = useAuth();
+  const { isAuthenticated, hasPermission, hasRole } = useAuth();
 
   // Se requer autenticação e não está autenticado
   if (config?.requiresAuth !== false && !isAuthenticated) {

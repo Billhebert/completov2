@@ -5,24 +5,25 @@
 
 import { ReactNode } from 'react';
 import { RouteObject } from 'react-router-dom';
+import { UserRole } from './common.types';
 
 /**
  * Rota protegida com permissões
  */
-export interface ProtectedRouteConfig extends RouteObject {
+export type ProtectedRouteConfig = RouteObject & {
   /** Permissões necessárias para acessar a rota */
   requiredPermissions?: string[];
   /** Se requer autenticação */
   requiresAuth?: boolean;
   /** Roles necessários */
-  requiredRoles?: string[];
+  requiredRoles?: UserRole[];
   /** Se é uma rota pública */
   isPublic?: boolean;
   /** Componente de fallback durante carregamento */
   fallback?: ReactNode;
   /** Metadata da rota */
   meta?: RouteMeta;
-}
+};
 
 /**
  * Metadata da rota

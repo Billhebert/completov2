@@ -4,7 +4,7 @@
  */
 
 import { routeRegistry } from './RouteRegistry';
-import React, { lazy, createElement } from 'react';
+import { lazy, createElement } from 'react';
 
 // Import routes from all modules
 import authRoutes from '../../modules/auth/routes';

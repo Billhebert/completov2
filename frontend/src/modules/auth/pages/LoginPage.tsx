@@ -9,7 +9,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '../../../core/providers/AuthProvider';
-import { Button, Input, Card } from '../../shared';
+import { Button, Card } from '../../shared';
 import { handleApiError } from '../../../core/utils/api';
 
 // Schema de validação

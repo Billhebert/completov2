@@ -4,9 +4,9 @@
  */
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User, UserRole, ROLE_HIERARCHY, ROLE_PERMISSIONS } from '../types';
+import { User, UserRole } from '../types';
 import api, { setAuthToken, clearAuth } from '../utils/api';
-import { STORAGE_KEYS } from '../utils/constants';
+import { STORAGE_KEYS, ROLE_HIERARCHY, ROLE_PERMISSIONS } from '../utils/constants';
 
 interface AuthContextData {
   user: User | null;
