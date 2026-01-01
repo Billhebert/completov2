@@ -40,8 +40,10 @@ import simulationRoutes from '../../modules/simulation/routes';
 import emailtemplatesRoutes from '../../modules/email-templates/routes';
 import settingsRoutes from '../../modules/settings/routes';
 
-// Dashboard
+// Main Pages
 const DashboardPage = lazy(() => import('../../pages/Dashboard'));
+const ProfilePage = lazy(() => import('../../pages/Profile'));
+const SettingsPage = lazy(() => import('../../pages/Settings'));
 
 const dashboardRoutes = [
   {
@@ -54,6 +56,28 @@ const dashboardRoutes = [
   },
 ];
 
+const profileRoutes = [
+  {
+    path: '/profile',
+    element: createElement(ProfilePage),
+    requiresAuth: true,
+    meta: {
+      title: 'Meu Perfil',
+    },
+  },
+];
+
+const settingsPageRoutes = [
+  {
+    path: '/settings',
+    element: createElement(SettingsPage),
+    requiresAuth: true,
+    meta: {
+      title: 'Configurações',
+    },
+  },
+];
+
 /**
  * Registrar todas as rotas de todos os módulos
  */
@@ -61,8 +85,10 @@ export const registerAllRoutes = () => {
   // Register auth routes (public)
   routeRegistry.registerModuleRoutes('auth', authRoutes);
 
-  // Register dashboard
+  // Register main pages
   routeRegistry.registerModuleRoutes('dashboard', dashboardRoutes);
+  routeRegistry.registerModuleRoutes('profile', profileRoutes);
+  routeRegistry.registerModuleRoutes('settings-page', settingsPageRoutes);
 
   // Register business modules
   routeRegistry.registerModuleRoutes('crm', crmRoutes);
