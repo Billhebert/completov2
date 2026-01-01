@@ -1,31 +1,21 @@
-/**
- * Gatekeeper Service
- */
-
+/** Gatekeeper Service - TODO: Feature flags e controle de acesso */
 import api, { extractData } from '../../../core/utils/api';
-import { Gatekeeper, CreateGatekeeperRequest, UpdateGatekeeperRequest } from '../types';
-import { PaginatedResult, PaginationParams } from '../../../core/types';
+import { Feature, FeatureUsage } from '../types';
 
-export const getAll = async (params?: PaginationParams): Promise<PaginatedResult<Gatekeeper>> => {
-  const response = await api.get('/gatekeeper', { params });
+/** TODO: Listar feature flags */
+export const getFeatures = async (): Promise<Feature[]> => {
+  const response = await api.get('/gatekeeper/features');
   return extractData(response);
 };
 
-export const getById = async (id: string): Promise<Gatekeeper> => {
-  const response = await api.get(`/gatekeeper/${id}`);
+/** TODO: Verificar se feature está habilitada para usuário */
+export const isFeatureEnabled = async (featureKey: string): Promise<boolean> => {
+  const response = await api.get(`/gatekeeper/features/${featureKey}/check`);
   return extractData(response);
 };
 
-export const create = async (data: CreateGatekeeperRequest): Promise<Gatekeeper> => {
-  const response = await api.post('/gatekeeper', data);
+/** TODO: Atualizar feature flag */
+export const updateFeature = async (id: string, data: Partial<Feature>): Promise<Feature> => {
+  const response = await api.put(`/gatekeeper/features/${id}`, data);
   return extractData(response);
-};
-
-export const update = async (id: string, data: UpdateGatekeeperRequest): Promise<Gatekeeper> => {
-  const response = await api.put(`/gatekeeper/${id}`, data);
-  return extractData(response);
-};
-
-export const remove = async (id: string): Promise<void> => {
-  await api.delete(`/gatekeeper/${id}`);
 };

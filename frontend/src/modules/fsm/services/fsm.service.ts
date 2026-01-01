@@ -1,31 +1,27 @@
-/**
- * Field Service Service
- */
-
+/** FSM Service - TODO: Gestão de serviços em campo */
 import api, { extractData } from '../../../core/utils/api';
-import { Fsm, CreateFsmRequest, UpdateFsmRequest } from '../types';
-import { PaginatedResult, PaginationParams } from '../../../core/types';
+import { ServiceOrder, Technician } from '../types';
 
-export const getAll = async (params?: PaginationParams): Promise<PaginatedResult<Fsm>> => {
-  const response = await api.get('/fsm', { params });
+/** TODO: Listar ordens de serviço */
+export const getServiceOrders = async (): Promise<ServiceOrder[]> => {
+  const response = await api.get('/fsm/orders');
   return extractData(response);
 };
 
-export const getById = async (id: string): Promise<Fsm> => {
-  const response = await api.get(`/fsm/${id}`);
+/** TODO: Atribuir técnico a ordem */
+export const assignTechnician = async (orderId: string, technicianId: string): Promise<ServiceOrder> => {
+  const response = await api.post(`/fsm/orders/${orderId}/assign`, { technicianId });
   return extractData(response);
 };
 
-export const create = async (data: CreateFsmRequest): Promise<Fsm> => {
-  const response = await api.post('/fsm', data);
+/** TODO: Buscar técnicos disponíveis */
+export const getAvailableTechnicians = async (): Promise<Technician[]> => {
+  const response = await api.get('/fsm/technicians', { params: { availability: 'available' } });
   return extractData(response);
 };
 
-export const update = async (id: string, data: UpdateFsmRequest): Promise<Fsm> => {
-  const response = await api.put(`/fsm/${id}`, data);
+/** TODO: Otimizar rotas */
+export const optimizeRoutes = async (technicianId: string): Promise<ServiceOrder[]> => {
+  const response = await api.post(`/fsm/technicians/${technicianId}/optimize-routes`);
   return extractData(response);
-};
-
-export const remove = async (id: string): Promise<void> => {
-  await api.delete(`/fsm/${id}`);
 };

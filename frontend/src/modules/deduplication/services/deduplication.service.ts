@@ -1,31 +1,19 @@
-/**
- * Deduplicação IA Service
- */
-
+/** Deduplication Service - TODO: Detecção e merge de duplicatas */
 import api, { extractData } from '../../../core/utils/api';
-import { Deduplication, CreateDeduplicationRequest, UpdateDeduplicationRequest } from '../types';
-import { PaginatedResult, PaginationParams } from '../../../core/types';
+import { Duplicate } from '../types';
 
-export const getAll = async (params?: PaginationParams): Promise<PaginatedResult<Deduplication>> => {
-  const response = await api.get('/deduplication', { params });
+/** TODO: Detectar duplicatas */
+export const findDuplicates = async (entity: string): Promise<Duplicate[]> => {
+  const response = await api.post('/deduplication/find', { entity });
   return extractData(response);
 };
 
-export const getById = async (id: string): Promise<Deduplication> => {
-  const response = await api.get(`/deduplication/${id}`);
-  return extractData(response);
+/** TODO: Mesclar registros */
+export const mergeDuplicates = async (duplicateId: string, masterId: string): Promise<void> => {
+  await api.post(`/deduplication/${duplicateId}/merge`, { masterId });
 };
 
-export const create = async (data: CreateDeduplicationRequest): Promise<Deduplication> => {
-  const response = await api.post('/deduplication', data);
-  return extractData(response);
-};
-
-export const update = async (id: string, data: UpdateDeduplicationRequest): Promise<Deduplication> => {
-  const response = await api.put(`/deduplication/${id}`, data);
-  return extractData(response);
-};
-
-export const remove = async (id: string): Promise<void> => {
-  await api.delete(`/deduplication/${id}`);
+/** TODO: Descartar como falso positivo */
+export const dismissDuplicate = async (duplicateId: string): Promise<void> => {
+  await api.post(`/deduplication/${duplicateId}/dismiss`);
 };

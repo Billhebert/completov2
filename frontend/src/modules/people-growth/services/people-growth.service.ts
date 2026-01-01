@@ -1,31 +1,27 @@
-/**
- * Crescimento Pessoal Service
- */
-
+/** People & Growth Service - TODO: Gestão de pessoas e desenvolvimento */
 import api, { extractData } from '../../../core/utils/api';
-import { PeopleGrowth, CreatePeopleGrowthRequest, UpdatePeopleGrowthRequest } from '../types';
-import { PaginatedResult, PaginationParams } from '../../../core/types';
+import { Employee, Goal, Review } from '../types';
 
-export const getAll = async (params?: PaginationParams): Promise<PaginatedResult<PeopleGrowth>> => {
-  const response = await api.get('/people-growth', { params });
+/** TODO: Listar funcionários */
+export const getEmployees = async (): Promise<Employee[]> => {
+  const response = await api.get('/people/employees');
   return extractData(response);
 };
 
-export const getById = async (id: string): Promise<PeopleGrowth> => {
-  const response = await api.get(`/people-growth/${id}`);
+/** TODO: Criar meta */
+export const createGoal = async (data: Partial<Goal>): Promise<Goal> => {
+  const response = await api.post('/people/goals', data);
   return extractData(response);
 };
 
-export const create = async (data: CreatePeopleGrowthRequest): Promise<PeopleGrowth> => {
-  const response = await api.post('/people-growth', data);
+/** TODO: Atualizar progresso de meta */
+export const updateGoalProgress = async (id: string, progress: number): Promise<Goal> => {
+  const response = await api.patch(`/people/goals/${id}`, { progress });
   return extractData(response);
 };
 
-export const update = async (id: string, data: UpdatePeopleGrowthRequest): Promise<PeopleGrowth> => {
-  const response = await api.put(`/people-growth/${id}`, data);
+/** TODO: Criar avaliação */
+export const createReview = async (data: Partial<Review>): Promise<Review> => {
+  const response = await api.post('/people/reviews', data);
   return extractData(response);
-};
-
-export const remove = async (id: string): Promise<void> => {
-  await api.delete(`/people-growth/${id}`);
 };

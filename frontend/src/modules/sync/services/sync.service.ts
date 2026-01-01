@@ -1,31 +1,21 @@
-/**
- * Sincronização Service
- */
-
+/** Sync Service - TODO: Sincronização entre sistemas */
 import api, { extractData } from '../../../core/utils/api';
-import { Sync, CreateSyncRequest, UpdateSyncRequest } from '../types';
-import { PaginatedResult, PaginationParams } from '../../../core/types';
+import { SyncConfig, SyncExecution } from '../types';
 
-export const getAll = async (params?: PaginationParams): Promise<PaginatedResult<Sync>> => {
-  const response = await api.get('/sync', { params });
+/** TODO: Listar configurações de sync */
+export const getConfigs = async (): Promise<SyncConfig[]> => {
+  const response = await api.get('/sync/configs');
   return extractData(response);
 };
 
-export const getById = async (id: string): Promise<Sync> => {
-  const response = await api.get(`/sync/${id}`);
+/** TODO: Executar sync manualmente */
+export const executeSync = async (configId: string): Promise<SyncExecution> => {
+  const response = await api.post(`/sync/configs/${configId}/execute`);
   return extractData(response);
 };
 
-export const create = async (data: CreateSyncRequest): Promise<Sync> => {
-  const response = await api.post('/sync', data);
+/** TODO: Buscar histórico de execuções */
+export const getExecutions = async (configId: string): Promise<SyncExecution[]> => {
+  const response = await api.get(`/sync/configs/${configId}/executions`);
   return extractData(response);
-};
-
-export const update = async (id: string, data: UpdateSyncRequest): Promise<Sync> => {
-  const response = await api.put(`/sync/${id}`, data);
-  return extractData(response);
-};
-
-export const remove = async (id: string): Promise<void> => {
-  await api.delete(`/sync/${id}`);
 };

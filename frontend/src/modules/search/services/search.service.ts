@@ -1,31 +1,43 @@
 /**
- * Busca Global Service
+ * Search Service
+ * TODO: Implementar serviço de busca global
  */
 
 import api, { extractData } from '../../../core/utils/api';
-import { Search, CreateSearchRequest, UpdateSearchRequest } from '../types';
-import { PaginatedResult, PaginationParams } from '../../../core/types';
+import { SearchResult, SearchFilters } from '../types';
 
-export const getAll = async (params?: PaginationParams): Promise<PaginatedResult<Search>> => {
-  const response = await api.get('/search', { params });
+/**
+ * TODO: Implementar busca global
+ * - Buscar em múltiplas entidades (contacts, deals, companies, etc)
+ * - Suportar filtros por tipo, data, autor
+ * - Retornar resultados ordenados por relevância
+ * - Destacar termos encontrados (highlights)
+ */
+export const search = async (
+  query: string,
+  filters?: SearchFilters
+): Promise<SearchResult[]> => {
+  const response = await api.get('/search', {
+    params: { q: query, ...filters },
+  });
   return extractData(response);
 };
 
-export const getById = async (id: string): Promise<Search> => {
-  const response = await api.get(`/search/${id}`);
+/**
+ * TODO: Buscar sugestões enquanto digita
+ * - Retornar rapidamente (autocomplete)
+ * - Limitar resultados (5-10)
+ */
+export const getSuggestions = async (query: string): Promise<SearchResult[]> => {
+  const response = await api.get('/search/suggestions', {
+    params: { q: query },
+  });
   return extractData(response);
 };
 
-export const create = async (data: CreateSearchRequest): Promise<Search> => {
-  const response = await api.post('/search', data);
-  return extractData(response);
-};
-
-export const update = async (id: string, data: UpdateSearchRequest): Promise<Search> => {
-  const response = await api.put(`/search/${id}`, data);
-  return extractData(response);
-};
-
-export const remove = async (id: string): Promise<void> => {
-  await api.delete(`/search/${id}`);
+/**
+ * TODO: Registrar busca para analytics
+ */
+export const logSearch = async (query: string, resultsCount: number): Promise<void> => {
+  await api.post('/search/log', { query, resultsCount });
 };

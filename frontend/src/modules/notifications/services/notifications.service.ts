@@ -1,31 +1,47 @@
 /**
- * Notificações Service
+ * Notifications Service
+ * TODO: Implementar serviço de notificações
  */
 
 import api, { extractData } from '../../../core/utils/api';
-import { Notifications, CreateNotificationsRequest, UpdateNotificationsRequest } from '../types';
-import { PaginatedResult, PaginationParams } from '../../../core/types';
+import { Notification, NotificationPreferences } from '../types';
 
-export const getAll = async (params?: PaginationParams): Promise<PaginatedResult<Notifications>> => {
-  const response = await api.get('/notifications', { params });
+/**
+ * TODO: Implementar listagem de notificações do usuário
+ * - Ordenar por data (mais recentes primeiro)
+ * - Marcar automaticamente como visualizadas após X segundos
+ */
+export const getNotifications = async (): Promise<Notification[]> => {
+  const response = await api.get('/notifications');
   return extractData(response);
 };
 
-export const getById = async (id: string): Promise<Notifications> => {
-  const response = await api.get(`/notifications/${id}`);
+/**
+ * TODO: Marcar notificação como lida
+ */
+export const markAsRead = async (id: string): Promise<void> => {
+  await api.post(`/notifications/${id}/read`);
+};
+
+/**
+ * TODO: Marcar todas como lidas
+ */
+export const markAllAsRead = async (): Promise<void> => {
+  await api.post('/notifications/read-all');
+};
+
+/**
+ * TODO: Buscar preferências de notificações
+ */
+export const getPreferences = async (): Promise<NotificationPreferences> => {
+  const response = await api.get('/notifications/preferences');
   return extractData(response);
 };
 
-export const create = async (data: CreateNotificationsRequest): Promise<Notifications> => {
-  const response = await api.post('/notifications', data);
+/**
+ * TODO: Atualizar preferências
+ */
+export const updatePreferences = async (prefs: Partial<NotificationPreferences>): Promise<NotificationPreferences> => {
+  const response = await api.put('/notifications/preferences', prefs);
   return extractData(response);
-};
-
-export const update = async (id: string, data: UpdateNotificationsRequest): Promise<Notifications> => {
-  const response = await api.put(`/notifications/${id}`, data);
-  return extractData(response);
-};
-
-export const remove = async (id: string): Promise<void> => {
-  await api.delete(`/notifications/${id}`);
 };

@@ -1,31 +1,21 @@
-/**
- * ERP Service
- */
-
+/** ERP Service - TODO: Implementar integração com ERP (SAP, Oracle, TOTVS) */
 import api, { extractData } from '../../../core/utils/api';
-import { Erp, CreateErpRequest, UpdateErpRequest } from '../types';
-import { PaginatedResult, PaginationParams } from '../../../core/types';
+import { ERPIntegration, ERPSync } from '../types';
 
-export const getAll = async (params?: PaginationParams): Promise<PaginatedResult<Erp>> => {
-  const response = await api.get('/erp', { params });
+/** TODO: Listar integrações ERP configuradas */
+export const getIntegrations = async (): Promise<ERPIntegration[]> => {
+  const response = await api.get('/erp/integrations');
   return extractData(response);
 };
 
-export const getById = async (id: string): Promise<Erp> => {
-  const response = await api.get(`/erp/${id}`);
+/** TODO: Iniciar sincronização manual - importar/exportar dados */
+export const startSync = async (entity: string, action: 'import' | 'export'): Promise<ERPSync> => {
+  const response = await api.post('/erp/sync', { entity, action });
   return extractData(response);
 };
 
-export const create = async (data: CreateErpRequest): Promise<Erp> => {
-  const response = await api.post('/erp', data);
+/** TODO: Buscar histórico de sincronizações */
+export const getSyncHistory = async (): Promise<ERPSync[]> => {
+  const response = await api.get('/erp/sync/history');
   return extractData(response);
-};
-
-export const update = async (id: string, data: UpdateErpRequest): Promise<Erp> => {
-  const response = await api.put(`/erp/${id}`, data);
-  return extractData(response);
-};
-
-export const remove = async (id: string): Promise<void> => {
-  await api.delete(`/erp/${id}`);
 };

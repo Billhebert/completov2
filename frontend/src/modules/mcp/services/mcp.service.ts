@@ -1,31 +1,48 @@
 /**
  * MCP Service
+ * TODO: Implementar Model Context Protocol
  */
 
 import api, { extractData } from '../../../core/utils/api';
-import { Mcp, CreateMcpRequest, UpdateMcpRequest } from '../types';
-import { PaginatedResult, PaginationParams } from '../../../core/types';
+import { MCPServer, MCPResource } from '../types';
 
-export const getAll = async (params?: PaginationParams): Promise<PaginatedResult<Mcp>> => {
-  const response = await api.get('/mcp', { params });
+/**
+ * TODO: Listar servidores MCP
+ */
+export const getServers = async (): Promise<MCPServer[]> => {
+  const response = await api.get('/mcp/servers');
   return extractData(response);
 };
 
-export const getById = async (id: string): Promise<Mcp> => {
-  const response = await api.get(`/mcp/${id}`);
+/**
+ * TODO: Registrar servidor MCP
+ * - Validar URL e capabilities
+ * - Testar conexão
+ */
+export const registerServer = async (data: Partial<MCPServer>): Promise<MCPServer> => {
+  const response = await api.post('/mcp/servers', data);
   return extractData(response);
 };
 
-export const create = async (data: CreateMcpRequest): Promise<Mcp> => {
-  const response = await api.post('/mcp', data);
+/**
+ * TODO: Buscar recursos de um servidor
+ */
+export const getServerResources = async (serverId: string): Promise<MCPResource[]> => {
+  const response = await api.get(`/mcp/servers/${serverId}/resources`);
   return extractData(response);
 };
 
-export const update = async (id: string, data: UpdateMcpRequest): Promise<Mcp> => {
-  const response = await api.put(`/mcp/${id}`, data);
+/**
+ * TODO: Executar ação em recurso MCP
+ */
+export const executeAction = async (
+  resourceId: string,
+  action: string,
+  params?: Record<string, unknown>
+): Promise<unknown> => {
+  const response = await api.post(`/mcp/resources/${resourceId}/execute`, {
+    action,
+    params,
+  });
   return extractData(response);
-};
-
-export const remove = async (id: string): Promise<void> => {
-  await api.delete(`/mcp/${id}`);
 };

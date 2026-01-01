@@ -1,31 +1,27 @@
-/**
- * Automações Service
- */
-
+/** Automations Service - TODO: Workflow automation */
 import api, { extractData } from '../../../core/utils/api';
-import { Automations, CreateAutomationsRequest, UpdateAutomationsRequest } from '../types';
-import { PaginatedResult, PaginationParams } from '../../../core/types';
+import { Automation, AutomationExecution } from '../types';
 
-export const getAll = async (params?: PaginationParams): Promise<PaginatedResult<Automations>> => {
-  const response = await api.get('/automations', { params });
+/** TODO: Listar automações */
+export const getAutomations = async (): Promise<Automation[]> => {
+  const response = await api.get('/automations');
   return extractData(response);
 };
 
-export const getById = async (id: string): Promise<Automations> => {
-  const response = await api.get(`/automations/${id}`);
-  return extractData(response);
-};
-
-export const create = async (data: CreateAutomationsRequest): Promise<Automations> => {
+/** TODO: Criar automação */
+export const createAutomation = async (data: Partial<Automation>): Promise<Automation> => {
   const response = await api.post('/automations', data);
   return extractData(response);
 };
 
-export const update = async (id: string, data: UpdateAutomationsRequest): Promise<Automations> => {
-  const response = await api.put(`/automations/${id}`, data);
+/** TODO: Testar automação */
+export const testAutomation = async (id: string, testData?: Record<string, unknown>): Promise<AutomationExecution> => {
+  const response = await api.post(`/automations/${id}/test`, testData);
   return extractData(response);
 };
 
-export const remove = async (id: string): Promise<void> => {
-  await api.delete(`/automations/${id}`);
+/** TODO: Buscar execuções */
+export const getExecutions = async (automationId: string): Promise<AutomationExecution[]> => {
+  const response = await api.get(`/automations/${automationId}/executions`);
+  return extractData(response);
 };

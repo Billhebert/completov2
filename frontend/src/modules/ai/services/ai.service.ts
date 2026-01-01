@@ -1,31 +1,21 @@
-/**
- * IA Service
- */
-
+/** AI Service - TODO: Modelos de IA e predições */
 import api, { extractData } from '../../../core/utils/api';
-import { Ai, CreateAiRequest, UpdateAiRequest } from '../types';
-import { PaginatedResult, PaginationParams } from '../../../core/types';
+import { AIModel, Prediction } from '../types';
 
-export const getAll = async (params?: PaginationParams): Promise<PaginatedResult<Ai>> => {
-  const response = await api.get('/ai', { params });
+/** TODO: Listar modelos */
+export const getModels = async (): Promise<AIModel[]> => {
+  const response = await api.get('/ai/models');
   return extractData(response);
 };
 
-export const getById = async (id: string): Promise<Ai> => {
-  const response = await api.get(`/ai/${id}`);
+/** TODO: Fazer predição */
+export const predict = async (modelId: string, input: Record<string, unknown>): Promise<Prediction> => {
+  const response = await api.post(`/ai/models/${modelId}/predict`, { input });
   return extractData(response);
 };
 
-export const create = async (data: CreateAiRequest): Promise<Ai> => {
-  const response = await api.post('/ai', data);
+/** TODO: Treinar modelo */
+export const trainModel = async (modelId: string, trainingData: unknown[]): Promise<AIModel> => {
+  const response = await api.post(`/ai/models/${modelId}/train`, { trainingData });
   return extractData(response);
-};
-
-export const update = async (id: string, data: UpdateAiRequest): Promise<Ai> => {
-  const response = await api.put(`/ai/${id}`, data);
-  return extractData(response);
-};
-
-export const remove = async (id: string): Promise<void> => {
-  await api.delete(`/ai/${id}`);
 };

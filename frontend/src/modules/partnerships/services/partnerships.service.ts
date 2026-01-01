@@ -1,31 +1,21 @@
-/**
- * Parcerias Service
- */
-
+/** Partnerships Service - TODO: Gestão de parcerias */
 import api, { extractData } from '../../../core/utils/api';
-import { Partnerships, CreatePartnershipsRequest, UpdatePartnershipsRequest } from '../types';
-import { PaginatedResult, PaginationParams } from '../../../core/types';
+import { Partner, PartnerProgram } from '../types';
 
-export const getAll = async (params?: PaginationParams): Promise<PaginatedResult<Partnerships>> => {
-  const response = await api.get('/partnerships', { params });
+/** TODO: Listar parceiros */
+export const getPartners = async (): Promise<Partner[]> => {
+  const response = await api.get('/partnerships/partners');
   return extractData(response);
 };
 
-export const getById = async (id: string): Promise<Partnerships> => {
-  const response = await api.get(`/partnerships/${id}`);
+/** TODO: Criar parceiro */
+export const createPartner = async (data: Partial<Partner>): Promise<Partner> => {
+  const response = await api.post('/partnerships/partners', data);
   return extractData(response);
 };
 
-export const create = async (data: CreatePartnershipsRequest): Promise<Partnerships> => {
-  const response = await api.post('/partnerships', data);
+/** TODO: Buscar programas de parceria */
+export const getPrograms = async (): Promise<PartnerProgram[]> => {
+  const response = await api.get('/partnerships/programs');
   return extractData(response);
-};
-
-export const update = async (id: string, data: UpdatePartnershipsRequest): Promise<Partnerships> => {
-  const response = await api.put(`/partnerships/${id}`, data);
-  return extractData(response);
-};
-
-export const remove = async (id: string): Promise<void> => {
-  await api.delete(`/partnerships/${id}`);
 };

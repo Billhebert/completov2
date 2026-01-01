@@ -1,31 +1,21 @@
-/**
- * CMMS Service
- */
-
+/** CMMS Service - TODO: Gestão de manutenção */
 import api, { extractData } from '../../../core/utils/api';
-import { Cmms, CreateCmmsRequest, UpdateCmmsRequest } from '../types';
-import { PaginatedResult, PaginationParams } from '../../../core/types';
+import { Asset, MaintenanceOrder } from '../types';
 
-export const getAll = async (params?: PaginationParams): Promise<PaginatedResult<Cmms>> => {
-  const response = await api.get('/cmms', { params });
+/** TODO: Listar ativos */
+export const getAssets = async (): Promise<Asset[]> => {
+  const response = await api.get('/cmms/assets');
   return extractData(response);
 };
 
-export const getById = async (id: string): Promise<Cmms> => {
-  const response = await api.get(`/cmms/${id}`);
+/** TODO: Criar ordem de manutenção */
+export const createOrder = async (data: Partial<MaintenanceOrder>): Promise<MaintenanceOrder> => {
+  const response = await api.post('/cmms/orders', data);
   return extractData(response);
 };
 
-export const create = async (data: CreateCmmsRequest): Promise<Cmms> => {
-  const response = await api.post('/cmms', data);
+/** TODO: Buscar ordens pendentes */
+export const getPendingOrders = async (): Promise<MaintenanceOrder[]> => {
+  const response = await api.get('/cmms/orders', { params: { status: 'open,in_progress' } });
   return extractData(response);
-};
-
-export const update = async (id: string, data: UpdateCmmsRequest): Promise<Cmms> => {
-  const response = await api.put(`/cmms/${id}`, data);
-  return extractData(response);
-};
-
-export const remove = async (id: string): Promise<void> => {
-  await api.delete(`/cmms/${id}`);
 };

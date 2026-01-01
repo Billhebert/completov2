@@ -1,31 +1,27 @@
-/**
- * Aprendizado Service
- */
-
+/** Learning Service - TODO: Plataforma de aprendizagem */
 import api, { extractData } from '../../../core/utils/api';
-import { Learning, CreateLearningRequest, UpdateLearningRequest } from '../types';
-import { PaginatedResult, PaginationParams } from '../../../core/types';
+import { Course, Enrollment, Lesson } from '../types';
 
-export const getAll = async (params?: PaginationParams): Promise<PaginatedResult<Learning>> => {
-  const response = await api.get('/learning', { params });
+/** TODO: Listar cursos */
+export const getCourses = async (): Promise<Course[]> => {
+  const response = await api.get('/learning/courses');
   return extractData(response);
 };
 
-export const getById = async (id: string): Promise<Learning> => {
-  const response = await api.get(`/learning/${id}`);
+/** TODO: Inscrever em curso */
+export const enrollCourse = async (courseId: string): Promise<Enrollment> => {
+  const response = await api.post('/learning/enrollments', { courseId });
   return extractData(response);
 };
 
-export const create = async (data: CreateLearningRequest): Promise<Learning> => {
-  const response = await api.post('/learning', data);
+/** TODO: Buscar lições do curso */
+export const getCourseLessons = async (courseId: string): Promise<Lesson[]> => {
+  const response = await api.get(`/learning/courses/${courseId}/lessons`);
   return extractData(response);
 };
 
-export const update = async (id: string, data: UpdateLearningRequest): Promise<Learning> => {
-  const response = await api.put(`/learning/${id}`, data);
+/** TODO: Marcar lição como completa */
+export const completeLesson = async (enrollmentId: string, lessonId: string): Promise<Enrollment> => {
+  const response = await api.post(`/learning/enrollments/${enrollmentId}/complete`, { lessonId });
   return extractData(response);
-};
-
-export const remove = async (id: string): Promise<void> => {
-  await api.delete(`/learning/${id}`);
 };

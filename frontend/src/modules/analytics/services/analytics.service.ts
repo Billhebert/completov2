@@ -1,31 +1,49 @@
 /**
  * Analytics Service
+ * TODO: Implementar serviço de analytics e relatórios
  */
 
 import api, { extractData } from '../../../core/utils/api';
-import { Analytics, CreateAnalyticsRequest, UpdateAnalyticsRequest } from '../types';
-import { PaginatedResult, PaginationParams } from '../../../core/types';
+import { Metric, ChartData, Report } from '../types';
 
-export const getAll = async (params?: PaginationParams): Promise<PaginatedResult<Analytics>> => {
-  const response = await api.get('/analytics', { params });
+/**
+ * TODO: Buscar métricas principais
+ * - Filtrar por período (hoje, semana, mês, ano)
+ * - Calcular variação vs período anterior
+ */
+export const getMetrics = async (period?: string): Promise<Metric[]> => {
+  const response = await api.get('/analytics/metrics', { params: { period } });
   return extractData(response);
 };
 
-export const getById = async (id: string): Promise<Analytics> => {
-  const response = await api.get(`/analytics/${id}`);
+/**
+ * TODO: Buscar dados para gráficos
+ * - Suportar diferentes tipos (linha, barra, pizza)
+ * - Agrupar por período (dia, semana, mês)
+ */
+export const getChartData = async (
+  type: string,
+  period: string
+): Promise<ChartData> => {
+  const response = await api.get('/analytics/charts', {
+    params: { type, period },
+  });
   return extractData(response);
 };
 
-export const create = async (data: CreateAnalyticsRequest): Promise<Analytics> => {
-  const response = await api.post('/analytics', data);
+/**
+ * TODO: Gerar relatório
+ * - Suportar diferentes tipos
+ * - Exportar em PDF/Excel
+ */
+export const generateReport = async (type: string, filters?: Record<string, unknown>): Promise<Report> => {
+  const response = await api.post('/analytics/reports', { type, filters });
   return extractData(response);
 };
 
-export const update = async (id: string, data: UpdateAnalyticsRequest): Promise<Analytics> => {
-  const response = await api.put(`/analytics/${id}`, data);
-  return extractData(response);
-};
-
-export const remove = async (id: string): Promise<void> => {
-  await api.delete(`/analytics/${id}`);
+/**
+ * TODO: Registrar evento customizado
+ */
+export const trackEvent = async (event: string, properties?: Record<string, unknown>): Promise<void> => {
+  await api.post('/analytics/events', { event, properties });
 };

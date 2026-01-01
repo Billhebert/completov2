@@ -1,31 +1,21 @@
-/**
- * Serviços Service
- */
-
+/** Services Service - TODO: Monitorar serviços externos */
 import api, { extractData } from '../../../core/utils/api';
-import { Services, CreateServicesRequest, UpdateServicesRequest } from '../types';
-import { PaginatedResult, PaginationParams } from '../../../core/types';
+import { ExternalService, ServiceCall } from '../types';
 
-export const getAll = async (params?: PaginationParams): Promise<PaginatedResult<Services>> => {
-  const response = await api.get('/services', { params });
+/** TODO: Listar serviços externos */
+export const getServices = async (): Promise<ExternalService[]> => {
+  const response = await api.get('/services');
   return extractData(response);
 };
 
-export const getById = async (id: string): Promise<Services> => {
-  const response = await api.get(`/services/${id}`);
+/** TODO: Verificar saúde de todos os serviços */
+export const checkHealth = async (): Promise<Record<string, boolean>> => {
+  const response = await api.get('/services/health');
   return extractData(response);
 };
 
-export const create = async (data: CreateServicesRequest): Promise<Services> => {
-  const response = await api.post('/services', data);
+/** TODO: Buscar histórico de chamadas a serviços */
+export const getServiceCalls = async (serviceId: string): Promise<ServiceCall[]> => {
+  const response = await api.get(`/services/${serviceId}/calls`);
   return extractData(response);
-};
-
-export const update = async (id: string, data: UpdateServicesRequest): Promise<Services> => {
-  const response = await api.put(`/services/${id}`, data);
-  return extractData(response);
-};
-
-export const remove = async (id: string): Promise<void> => {
-  await api.delete(`/services/${id}`);
 };
