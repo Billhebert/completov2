@@ -25,7 +25,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onMenuClick, sidebarOpen }) => {
   };
 
   const handleProfile = () => {
-    navigate('/settings/profile');
+    navigate('/profile');
     setShowUserMenu(false);
   };
 

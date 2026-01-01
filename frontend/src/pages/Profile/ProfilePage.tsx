@@ -8,7 +8,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '../../core/providers/AuthProvider';
-import { AppLayout, Card, Button } from '../../modules/shared';
+import { AppLayout, Card, Button, Breadcrumbs } from '../../modules/shared';
 import { handleApiError } from '../../core/utils/api';
 import api from '../../core/utils/api';
 
@@ -133,6 +133,9 @@ export const ProfilePage = () => {
   return (
     <AppLayout>
       <div className="page-container max-w-4xl mx-auto">
+        {/* Breadcrumbs */}
+        <Breadcrumbs className="mb-4" />
+
         {/* Header */}
         <div className="page-header">
           <div>

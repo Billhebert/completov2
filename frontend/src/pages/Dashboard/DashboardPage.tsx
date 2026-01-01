@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../core/providers/AuthProvider';
-import { AppLayout, Card } from '../../modules/shared';
+import { AppLayout, Card, Breadcrumbs } from '../../modules/shared';
 import {
   getDashboardData,
   updateTaskStatus,
@@ -155,6 +155,9 @@ export const DashboardPage: React.FC = () => {
   return (
     <AppLayout>
       <div className="page-container">
+        {/* Breadcrumbs */}
+        <Breadcrumbs className="mb-4" />
+
         {/* Header */}
         <div className="page-header">
           <div>
