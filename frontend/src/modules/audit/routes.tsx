@@ -1,7 +1,6 @@
 /**
  * Auditoria Module Routes
  */
-
 import { lazy } from 'react';
 import { ProtectedRouteConfig } from '../../core/types';
 

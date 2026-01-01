@@ -2,7 +2,7 @@
  * IA Module Barrel Export
  */
 
+export { aiModuleConfig } from './module.config';
+export * from './routes';
+export * from './services/ai.service';
 export * from './types';
-export * as aiService from './services/ai.service';
-export { default as aiRoutes } from './routes';
-export { default as aiModuleConfig } from './module.config';

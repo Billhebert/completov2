@@ -1,8 +1,7 @@
 /**
  * Analytics Module Routes
  */
-
-import { lazy } from 'react';
+import React, { lazy } from 'react';
 import { ProtectedRouteConfig } from '../../core/types';
 
 const AnalyticsListPage = lazy(() => import('./pages/AnalyticsListPage'));

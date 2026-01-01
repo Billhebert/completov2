@@ -5,17 +5,22 @@
 
 export interface AuditLog {
   id: string;
+
   action: string; // 'create', 'update', 'delete', 'login', 'logout', etc
   entityType: string; // 'contact', 'deal', 'user', etc
   entityId: string;
   entityName?: string;
+
   userId: string;
   userName: string;
   userEmail: string;
+
   changes?: Record<string, { old: unknown; new: unknown }>;
   metadata?: Record<string, unknown>;
+
   ipAddress?: string;
   userAgent?: string;
+
   timestamp: string;
 }
 

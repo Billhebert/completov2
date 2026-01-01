@@ -1,79 +1,104 @@
 /**
- * AI Models Service
- * Gerenciamento de modelos de IA, predições e ML ops
+ * AI Frontend Service
+ * Client direto das rotas reais do backend
  */
 
-import api, { extractData } from '../../../core/utils/api';
-import { AIModel, Prediction, TrainingJob } from '../types';
-import { PaginatedResult, PaginationParams } from '../../../core/types';
+import api from '../../../core/utils/api';
+import {
+  ChatCompletionRequest,
+  GenerateEmailPayload,
+  AnalyzePayload,
+  ClassifyPayload,
+  AgentExecutePayload,
+} from '../types';
 
-/**
- * Lista modelos de IA
- * TODO: Implementar model registry
- * - Catálogo de modelos treinados
- * - Versioning de modelos
- * - Métricas de performance (accuracy, F1, etc)
- * - Status (training, ready, deprecated)
- * - Metadata e lineage
- */
-export const getModels = async (params?: PaginationParams): Promise<PaginatedResult<AIModel>> => {
-  const response = await api.get('/ai/models', { params });
-  return extractData(response);
+/* ---------- CHAT ---------- */
+
+export const chatCompletion = async (payload: ChatCompletionRequest) => {
+  const response = await api.post('/ai/chat/completions', payload);
+  return response.data;
 };
 
-/**
- * Treinar novo modelo
- * TODO: Implementar training pipeline
- * - Selecionar algoritmo (classificação, regressão, clustering)
- * - Preparar dataset
- * - Configurar hyperparameters
- * - Treinar em background (GPU/TPU)
- * - Validação cruzada
- * - Salvar melhor modelo
- */
-export const trainModel = async (data: Partial<TrainingJob>): Promise<TrainingJob> => {
-  const response = await api.post('/ai/models/train', data);
-  return extractData(response);
+export const chatCompletionStream = async (
+  payload: ChatCompletionRequest,
+  onChunk: (text: string) => void,
+  onDone?: () => void
+) => {
+  const response = await fetch('/api/v1/ai/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...payload, stream: true }),
+  });
+
+  if (!response.body) return;
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    const chunk = decoder.decode(value, { stream: true });
+    chunk.split('\n').forEach((line) => {
+      if (line.startsWith('data:')) {
+        const data = JSON.parse(line.replace('data:', '').trim());
+        if (data.done) {
+          onDone?.();
+        } else if (data.content) {
+          onChunk(data.content);
+        }
+      }
+    });
+  }
 };
 
-/**
- * Fazer predição
- * TODO: Implementar inference engine
- * - Carregar modelo em memória (cache)
- * - Preprocessar input
- * - Executar predição
- * - Postprocessar output
- * - Retornar resultado + confiança
- * - Logging para monitoramento
- */
-export const predict = async (modelId: string, input: Record<string, unknown>): Promise<Prediction> => {
-  const response = await api.post(\`/ai/models/\${modelId}/predict\`, { input });
-  return extractData(response);
-};
+/* ---------- TOOLS ---------- */
 
-/**
- * Fazer predições em batch
- * TODO: Implementar batch inference
- * - Processar múltiplos inputs de uma vez
- * - Otimizar throughput
- * - Resultados assíncronos
- * - Export para CSV/JSON
- */
-export const batchPredict = async (modelId: string, inputs: Record<string, unknown>[]): Promise<{ jobId: string }> => {
-  const response = await api.post(\`/ai/models/\${modelId}/batch-predict\`, { inputs });
-  return extractData(response);
-};
+export const generateEmail = (payload: GenerateEmailPayload) =>
+  api.post('/ai/generate/email', payload).then((r) => r.data);
 
-/**
- * Monitorar modelo em produção
- * TODO: Implementar model monitoring
- * - Data drift detection
- * - Concept drift detection
- * - Performance degradation alerts
- * - Predictions distribution
- * - Retrain triggers
- */
-export const getModelMetrics = async (modelId: string, period: string): Promise<unknown> => {
-  const response = await api.get(\`/ai/models/\${modelId}/metrics\`, { params: { period } });
-  return extractData(response);
-};
+export const summarize = (payload: AnalyzePayload) =>
+  api.post('/ai/summarize', payload).then((r) => r.data);
+
+export const sentiment = (payload: AnalyzePayload) =>
+  api.post('/ai/sentiment', payload).then((r) => r.data);
+
+export const extract = (payload: AnalyzePayload) =>
+  api.post('/ai/extract', payload).then((r) => r.data);
+
+export const classify = (payload: ClassifyPayload) =>
+  api.post('/ai/classify', payload).then((r) => r.data);
+
+/* ---------- AGENT ---------- */
+
+export const executeAgent = (payload: AgentExecutePayload) =>
+  api.post('/ai/agent/execute', payload).then((r) => r.data);
+
+/* ---------- HISTORY & USAGE ---------- */
+
+export const getConversations = () =>
+  api.get('/ai/conversations').then((r) => r.data);
+
+export const getUsageStats = () =>
+  api.get('/ai/usage/stats').then((r) => r.data);
+
+/* ---------- RAG ---------- */
+
+export const uploadDocument = (formData: FormData) =>
+  api.post('/knowledge/rag/upload', formData).then((r) => r.data);
+
+export const uploadBatch = (formData: FormData) =>
+  api.post('/knowledge/rag/upload-batch', formData).then((r) => r.data);
+
+export const getDocuments = () =>
+  api.get('/knowledge/rag/documents').then((r) => r.data);
+
+export const reprocessDocument = (id: string) =>
+  api.post(`/knowledge/rag/documents/${id}/reprocess`).then((r) => r.data);
+
+export const deleteDocument = (id: string) =>
+  api.delete(`/knowledge/rag/documents/${id}`).then((r) => r.data);
+
+export const getRagStats = () =>
+  api.get('/knowledge/rag/stats').then((r) => r.data);

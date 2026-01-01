@@ -1,7 +1,3 @@
-/**
- * API Keys Module Barrel Export
- */
-
 export * from './types';
 export * as apikeysService from './services/apikeys.service';
 export { default as apikeysRoutes } from './routes';

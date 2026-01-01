@@ -5,12 +5,12 @@
 import { lazy } from 'react';
 import { ProtectedRouteConfig } from '../../core/types';
 
-const AiListPage = lazy(() => import('./pages/AiListPage'));
+const AiHubPage = lazy(() => import('./pages/AiHubPage'));
 
 export const aiRoutes: ProtectedRouteConfig[] = [
   {
     path: '/ai',
-    element: <AiListPage />,
+    element: <AiHubPage />,
     requiredPermissions: ['ai.read'],
     meta: {
       title: 'IA',
