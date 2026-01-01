@@ -80,6 +80,9 @@ export interface User {
   role: UserRole;
   permissions: string[];
   companyId: string;
+  phone?: string;
+  company?: string;
+  position?: string;
   createdAt: string;
   updatedAt: string;
   lastLogin?: string;

@@ -40,7 +40,6 @@ export const SettingsPage = () => {
   const {
     register,
     handleSubmit,
-    formState: { errors },
     watch,
   } = useForm<SettingsFormData>({
     resolver: zodResolver(settingsSchema),
