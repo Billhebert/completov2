@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 import { AppLayout, Card, Button, Breadcrumbs } from '../../shared';
 import { Deal, DealStage } from '../types';
 import * as dealService from '../services/deal.service';
+import { DealModal } from '../components';
 import { handleApiError } from '../../../core/utils/api';
 
 const STAGES: { key: DealStage; label: string; color: string }[] = [
@@ -30,6 +31,9 @@ export const DealsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [totalValue, setTotalValue] = useState(0);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
+  const [defaultStage, setDefaultStage] = useState<DealStage | undefined>(undefined);
 
   useEffect(() => {
     loadDeals();
@@ -82,6 +86,50 @@ export const DealsPage = () => {
     }).format(value);
   };
 
+  const handleCreateDeal = (stage?: DealStage) => {
+    setEditingDeal(null);
+    setDefaultStage(stage);
+    setIsModalOpen(true);
+  };
+
+  const handleEditDeal = (deal: Deal) => {
+    setEditingDeal(deal);
+    setDefaultStage(undefined);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingDeal(null);
+    setDefaultStage(undefined);
+  };
+
+  const handleSaveDeal = async (data: any) => {
+    try {
+      if (editingDeal) {
+        await dealService.updateDeal(editingDeal.id, data);
+      } else {
+        await dealService.createDeal(data);
+      }
+      await loadDeals();
+    } catch (err) {
+      throw new Error(handleApiError(err));
+    }
+  };
+
+  const handleDeleteDeal = async (id: string) => {
+    if (!window.confirm('Tem certeza que deseja excluir esta negociação?')) {
+      return;
+    }
+
+    try {
+      await dealService.deleteDeal(id);
+      await loadDeals();
+    } catch (err) {
+      setError(handleApiError(err));
+    }
+  };
+
   return (
     <AppLayout>
       <div className="page-container">
@@ -103,7 +151,7 @@ export const DealsPage = () => {
             </p>
           </div>
           <div>
-            <Button variant="primary">
+            <Button variant="primary" onClick={() => handleCreateDeal()}>
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
@@ -170,12 +218,23 @@ export const DealsPage = () => {
                   <div className={`rounded-lg border-2 ${stage.color} p-4`}>
                     {/* Stage Header */}
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-semibold text-gray-900">
-                        {stage.label}
-                      </h3>
-                      <span className="bg-white px-2 py-1 rounded-full text-sm font-medium">
-                        {dealsByStage[stage.key].length}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-gray-900">
+                          {stage.label}
+                        </h3>
+                        <span className="bg-white px-2 py-1 rounded-full text-sm font-medium">
+                          {dealsByStage[stage.key].length}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => handleCreateDeal(stage.key)}
+                        className="text-gray-600 hover:text-blue-600 transition"
+                        title="Adicionar deal"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                      </button>
                     </div>
 
                     {/* Deals Cards */}
@@ -186,10 +245,38 @@ export const DealsPage = () => {
                         </div>
                       ) : (
                         dealsByStage[stage.key].map((deal) => (
-                          <Card key={deal.id} className="bg-white hover:shadow-md transition cursor-pointer">
+                          <Card key={deal.id} className="bg-white hover:shadow-md transition group relative">
+                            {/* Action Buttons */}
+                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition flex gap-1">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditDeal(deal);
+                                }}
+                                className="p-1 bg-white rounded shadow-sm text-gray-600 hover:text-blue-600 transition"
+                                title="Editar"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteDeal(deal.id);
+                                }}
+                                className="p-1 bg-white rounded shadow-sm text-gray-600 hover:text-red-600 transition"
+                                title="Excluir"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            </div>
+
                             <div className="space-y-2">
                               {/* Title */}
-                              <h4 className="font-medium text-gray-900 line-clamp-2">
+                              <h4 className="font-medium text-gray-900 line-clamp-2 pr-16">
                                 {deal.title}
                               </h4>
 
@@ -236,6 +323,15 @@ export const DealsPage = () => {
             </div>
           </div>
         )}
+
+        {/* Deal Modal */}
+        <DealModal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          onSave={handleSaveDeal}
+          deal={editingDeal}
+          defaultStage={defaultStage}
+        />
       </div>
     </AppLayout>
   );

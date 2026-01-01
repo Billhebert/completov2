@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 import { AppLayout, Card, Button, Breadcrumbs } from '../../shared';
 import { Contact, ContactStatus, ContactSource } from '../types';
 import * as contactService from '../services/contact.service';
+import { ContactModal } from '../components';
 import { handleApiError } from '../../../core/utils/api';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -18,6 +19,8 @@ export const ContactsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<ContactStatus | ''>('');
   const [sourceFilter, setSourceFilter] = useState<ContactSource | ''>('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingContact, setEditingContact] = useState<Contact | null>(null);
 
   useEffect(() => {
     loadContacts();
@@ -78,6 +81,47 @@ export const ContactsPage = () => {
     return labels[source];
   };
 
+  const handleCreateContact = () => {
+    setEditingContact(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEditContact = (contact: Contact) => {
+    setEditingContact(contact);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingContact(null);
+  };
+
+  const handleSaveContact = async (data: any) => {
+    try {
+      if (editingContact) {
+        await contactService.updateContact(editingContact.id, data);
+      } else {
+        await contactService.createContact(data);
+      }
+      await loadContacts();
+    } catch (err) {
+      throw new Error(handleApiError(err));
+    }
+  };
+
+  const handleDeleteContact = async (id: string) => {
+    if (!window.confirm('Tem certeza que deseja excluir este contato?')) {
+      return;
+    }
+
+    try {
+      await contactService.deleteContact(id);
+      await loadContacts();
+    } catch (err) {
+      setError(handleApiError(err));
+    }
+  };
+
   return (
     <AppLayout>
       <div className="page-container">
@@ -99,7 +143,7 @@ export const ContactsPage = () => {
             </p>
           </div>
           <div>
-            <Button variant="primary">
+            <Button variant="primary" onClick={handleCreateContact}>
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
@@ -208,7 +252,7 @@ export const ContactsPage = () => {
                 Comece criando um novo contato.
               </p>
               <div className="mt-6">
-                <Button variant="primary">
+                <Button variant="primary" onClick={handleCreateContact}>
                   Criar primeiro contato
                 </Button>
               </div>
@@ -268,6 +312,7 @@ export const ContactsPage = () => {
                           <button
                             className="p-1 text-gray-400 hover:text-blue-600 transition"
                             title="Editar"
+                            onClick={() => handleEditContact(contact)}
                           >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -276,6 +321,7 @@ export const ContactsPage = () => {
                           <button
                             className="p-1 text-gray-400 hover:text-red-600 transition"
                             title="Excluir"
+                            onClick={() => handleDeleteContact(contact.id)}
                           >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -326,6 +372,14 @@ export const ContactsPage = () => {
             </Card>
           </div>
         )}
+
+        {/* Contact Modal */}
+        <ContactModal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          onSave={handleSaveContact}
+          contact={editingContact}
+        />
       </div>
     </AppLayout>
   );
