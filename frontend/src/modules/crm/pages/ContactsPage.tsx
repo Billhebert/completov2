@@ -145,8 +145,21 @@ export const ContactsPage = () => {
     try {
       await contactService.deleteContact(id);
       await loadContacts();
-    } catch (err) {
-      setError(handleApiError(err));
+      setError(""); // Limpa erro em caso de sucesso
+    } catch (err: any) {
+      // Verifica se é erro de contato com deals associados
+      const errorCode = err?.response?.data?.code;
+      const errorMessage = err?.response?.data?.message;
+      const dealCount = err?.response?.data?.details?.dealCount;
+
+      if (errorCode === "CONTACT_HAS_DEALS") {
+        setError(
+          errorMessage ||
+          `Não é possível excluir este contato porque ele possui ${dealCount || 'uma ou mais'} negociação(ões) associada(s). Exclua ou reassocie as negociações primeiro.`
+        );
+      } else {
+        setError(handleApiError(err));
+      }
     }
   };
 

@@ -272,7 +272,42 @@ function setupRoutes(app: Express, prisma: PrismaClient, eventBus: EventBus) {
     requirePermission(Permission.CONTACT_CREATE),
     async (req, res, next) => {
       try {
+        // Verifica se o contato existe e pertence ao tenant
+        const contact = await prisma.contact.findFirst({
+          where: { id: req.params.id, companyId: req.companyId! },
+          include: {
+            _count: {
+              select: {
+                deals: true,
+                interactions: true,
+              },
+            },
+          },
+        });
+
+        if (!contact) {
+          return res.status(404).json({
+            success: false,
+            message: "Contato não encontrado",
+          });
+        }
+
+        // Se houver deals associados, impede a exclusão
+        if (contact._count.deals > 0) {
+          return res.status(400).json({
+            success: false,
+            code: "CONTACT_HAS_DEALS",
+            message: `Não é possível excluir este contato porque ele possui ${contact._count.deals} negociação(ões) associada(s). Exclua ou reassocie as negociações primeiro.`,
+            details: {
+              dealCount: contact._count.deals,
+              interactionCount: contact._count.interactions,
+            },
+          });
+        }
+
+        // Se houver apenas interações, deleta tudo em cascata
         await prisma.contact.delete({ where: { id: req.params.id } });
+
         res.json({ success: true, message: "Contact deleted" });
       } catch (error) {
         next(error);
