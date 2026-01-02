@@ -46,9 +46,8 @@ export const createCompany = async (payload: Partial<Company>) => {
 };
 
 export const updateCompany = async (id: string, payload: Partial<Company>) => {
-  // ✅ FIX: seu backend não tem PUT /companies/:id (por isso 404).
-  // Use PATCH (update parcial) que é o padrão mais comum nesses módulos.
-  const response = await api.patch(`/crm/companies/${id}`, payload);
+  // Backend usa PUT para atualizar companies
+  const response = await api.put(`/crm/companies/${id}`, payload);
   return extractData(response);
 };
 
