@@ -3,18 +3,13 @@
  * Modal para criar e editar atividades
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { Button, Input } from "../../shared";
 import * as activityService from "../services/activity.service";
-import * as contactService from "../services/contact.service";
-import * as dealService from "../services/deal.service";
 import { handleApiError } from "../../../core/utils/api";
 import type {
   Activity,
-  ActivityType,
-  ActivityPriority,
-  ActivityStatus,
   CreateActivityRequest,
 } from "../services/activity.service";
 
@@ -33,6 +28,7 @@ export function ActivityModal({
 }: ActivityModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const prevActivityIdRef = useRef<string | null>(null);
 
   const {
     register,
@@ -42,7 +38,14 @@ export function ActivityModal({
   } = useForm<CreateActivityRequest>();
 
   useEffect(() => {
-    if (isOpen) {
+    if (!isOpen) return;
+
+    const activityId = activity?.id || null;
+
+    // Only reset if activity actually changed
+    if (prevActivityIdRef.current !== activityId) {
+      prevActivityIdRef.current = activityId;
+
       if (activity) {
         reset({
           type: activity.type,

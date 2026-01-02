@@ -1,5 +1,5 @@
 // src/modules/crm/components/PipelineManagerModal.tsx
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import {
   DndContext,
   DragEndEvent,
@@ -102,6 +102,8 @@ export function PipelineManagerModal({
   const [newStageIsWon, setNewStageIsWon] = useState(false);
   const [newStageIsLost, setNewStageIsLost] = useState(false);
 
+  const loadedRef = useRef(false);
+
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
   const selectedPipeline = useMemo(
@@ -132,7 +134,15 @@ export function PipelineManagerModal({
   }
 
   useEffect(() => {
-    if (isOpen) load();
+    if (!isOpen) {
+      loadedRef.current = false;
+      return;
+    }
+
+    if (!loadedRef.current) {
+      loadedRef.current = true;
+      load();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 

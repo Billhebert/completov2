@@ -22,7 +22,23 @@ export const getCompanies = async (
 ): Promise<PaginatedResponse<Company>> => {
   try {
     const response = await api.get('/crm/companies', { params });
-    return extractData(response);
+    const data = extractData(response);
+
+    // extractData retorna o array direto, precisamos envolver em PaginatedResponse
+    if (Array.isArray(data)) {
+      return {
+        data,
+        pagination: {
+          page: params?.page ?? 1,
+          limit: params?.limit ?? 50,
+          total: data.length,
+          pages: 1,
+        },
+      };
+    }
+
+    // Se já vier no formato correto com data e pagination
+    return data;
   } catch (err: any) {
     // fallback seguro para rota inexistente
     if (err?.response?.status === 404) {

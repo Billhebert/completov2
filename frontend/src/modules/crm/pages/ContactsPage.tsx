@@ -97,8 +97,6 @@ export const ContactsPage = () => {
         page: 1,
         limit: 50,
         ...filters,
-        // cache-buster (se seu api tiver cache/etag)
-        _ts: Date.now() as any,
       });
 
       setContacts(result?.data ?? []);

@@ -3,14 +3,12 @@
  * Modal para registrar interações (ligações, emails, reuniões e notas)
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { Button, Input } from "../../shared";
 import * as interactionService from "../services/interaction.service";
 import { handleApiError } from "../../../core/utils/api";
 import type {
-  InteractionType,
-  InteractionDirection,
   CreateInteractionRequest,
 } from "../services/interaction.service";
 
@@ -31,6 +29,7 @@ export function InteractionModal({
 }: InteractionModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const initializedRef = useRef(false);
 
   const {
     register,
@@ -43,7 +42,14 @@ export function InteractionModal({
   const selectedType = watch("type");
 
   useEffect(() => {
-    if (isOpen) {
+    if (!isOpen) {
+      initializedRef.current = false;
+      return;
+    }
+
+    // Only reset once when modal opens
+    if (!initializedRef.current) {
+      initializedRef.current = true;
       reset({
         type: "call",
         subject: "",

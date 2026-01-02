@@ -1,5 +1,5 @@
 // src/modules/crm/components/DealModal.tsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { Button, Input, Card } from "../../shared";
 import Select from "../../shared/components/UI/Select";
 
@@ -42,6 +42,10 @@ export function DealModal({ isOpen, onClose, onCreated, pipelineId, stageId, dea
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const prevDealIdRef = useRef<string | undefined>(undefined);
+  const contactSearchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const companySearchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const canSave = useMemo(() => {
     return !!title.trim() && !!contactId && Number(value) >= 0 && !!pipelineId && !!stageId;
   }, [title, contactId, value, pipelineId, stageId]);
@@ -49,6 +53,10 @@ export function DealModal({ isOpen, onClose, onCreated, pipelineId, stageId, dea
   // reset ao abrir (ou carregar deal para edição)
   useEffect(() => {
     if (!isOpen) return;
+
+    // Only load if dealId actually changed
+    if (prevDealIdRef.current === dealId) return;
+    prevDealIdRef.current = dealId;
 
     const loadDeal = async () => {
       if (isEditing && dealId) {
@@ -61,8 +69,8 @@ export function DealModal({ isOpen, onClose, onCreated, pipelineId, stageId, dea
           setCompanyId((deal as any).companyId || "");
 
           // Pre-load contact name if available
-          if (deal.contact) {
-            setContactSearch(deal.contact.name || "");
+          if ((deal as any).contact) {
+            setContactSearch((deal as any).contact.name || "");
           }
         } catch (e) {
           setError("Erro ao carregar negociação");
@@ -89,7 +97,12 @@ export function DealModal({ isOpen, onClose, onCreated, pipelineId, stageId, dea
   useEffect(() => {
     if (!isOpen) return;
 
-    const t = setTimeout(async () => {
+    // Clear previous timeout
+    if (contactSearchTimeoutRef.current) {
+      clearTimeout(contactSearchTimeoutRef.current);
+    }
+
+    contactSearchTimeoutRef.current = setTimeout(async () => {
       try {
         const res = await contactService.getContacts({
           page: 1,
@@ -110,14 +123,23 @@ export function DealModal({ isOpen, onClose, onCreated, pipelineId, stageId, dea
       }
     }, 250);
 
-    return () => clearTimeout(t);
+    return () => {
+      if (contactSearchTimeoutRef.current) {
+        clearTimeout(contactSearchTimeoutRef.current);
+      }
+    };
   }, [isOpen, contactSearch]);
 
   // buscar empresas (debounce simples)
   useEffect(() => {
     if (!isOpen) return;
 
-    const t = setTimeout(async () => {
+    // Clear previous timeout
+    if (companySearchTimeoutRef.current) {
+      clearTimeout(companySearchTimeoutRef.current);
+    }
+
+    companySearchTimeoutRef.current = setTimeout(async () => {
       try {
         const res = await companyService.getCompanies({
           page: 1,
@@ -137,7 +159,11 @@ export function DealModal({ isOpen, onClose, onCreated, pipelineId, stageId, dea
       }
     }, 250);
 
-    return () => clearTimeout(t);
+    return () => {
+      if (companySearchTimeoutRef.current) {
+        clearTimeout(companySearchTimeoutRef.current);
+      }
+    };
   }, [isOpen, companySearch]);
 
   async function handleSave() {
