@@ -160,7 +160,7 @@ export function extractData<T = any>(response: any): T {
     if (body.success === false) {
       throw new Error(body.message || "Request failed");
     }
-    if ("data" in body) return body as T; // <-- retorna {data, pagination...}
+    if ("data" in body) return body.data as T; // <-- retorna apenas o conteúdo de data
     return body as T;
   }
 

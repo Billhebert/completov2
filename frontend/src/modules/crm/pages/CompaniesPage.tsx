@@ -65,13 +65,19 @@ export default function CompaniesPage() {
   };
 
   const handleSave = async (payload: Partial<Company>) => {
-    if (editingCompany) {
-      await companyService.updateCompany(editingCompany.id, payload);
-    } else {
-      await companyService.createCompany(payload);
+    try {
+      if (editingCompany) {
+        await companyService.updateCompany(editingCompany.id, payload);
+      } else {
+        await companyService.createCompany(payload);
+      }
+      setModalOpen(false);
+      await loadCompanies();
+    } catch (err) {
+      console.error('Error saving company:', err);
+      setError(normalizeError(err));
+      throw err; // Re-throw para que o formulário também saiba que falhou
     }
-    setModalOpen(false);
-    await loadCompanies();
   };
 
   const handleDelete = async (company: Company) => {

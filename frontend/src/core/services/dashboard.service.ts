@@ -66,10 +66,13 @@ export interface DashboardData {
  */
 export const getDashboardData = async (): Promise<DashboardData> => {
   try {
+    console.log('[Dashboard Service] Making request to /dashboard...');
     const response = await api.get('/dashboard');
+    console.log('[Dashboard Service] Response received:', response);
     return extractData(response);
   } catch (error) {
     // Fallback para dados mock em caso de erro (desenvolvimento)
+    console.error('[Dashboard Service] Error fetching dashboard data:', error);
     console.warn('Using mock dashboard data');
     return getMockDashboardData();
   }
