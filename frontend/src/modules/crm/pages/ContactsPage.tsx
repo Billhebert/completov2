@@ -307,7 +307,20 @@ export const ContactsPage = () => {
                       </td>
 
                       <td className="text-gray-600">{c.phone || "-"}</td>
-                      <td className="text-gray-600">{c.companyName || "-"}</td>
+                      <td>
+                        {c.crmCompany ? (
+                          <div>
+                            <div className="font-medium text-gray-900">{c.crmCompany.name}</div>
+                            {c.crmCompany.industry && (
+                              <div className="text-xs text-gray-500">{c.crmCompany.industry}</div>
+                            )}
+                          </div>
+                        ) : c.companyName ? (
+                          <span className="text-gray-600">{c.companyName}</span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
 
                       <td>
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusBadgeClass(c.leadStatus)}`}>

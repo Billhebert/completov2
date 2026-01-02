@@ -26,6 +26,7 @@ const contactSchema = z.object({
   email: z.string().email().optional(),
   phone: z.string().optional(),
   companyName: z.string().optional(),
+  crmCompanyId: z.string().uuid().optional(), // FK para CrmCompany
   position: z.string().optional(),
   website: z.string().url().optional(),
   tags: z.array(z.string()).optional(),
@@ -141,6 +142,7 @@ function setupRoutes(app: Express, prisma: PrismaClient, eventBus: EventBus) {
             take: parseInt(limit as string),
             include: {
               owner: { select: { id: true, name: true, email: true } },
+              crmCompany: { select: { id: true, name: true, status: true } },
               _count: { select: { deals: true, interactions: true } },
             },
             orderBy: { createdAt: "desc" },
@@ -222,6 +224,7 @@ function setupRoutes(app: Express, prisma: PrismaClient, eventBus: EventBus) {
           where: { id: req.params.id, companyId: req.companyId! },
           include: {
             owner: { select: { id: true, name: true, email: true } },
+            crmCompany: { select: { id: true, name: true, status: true, industry: true } },
             deals: {
               include: { owner: { select: { id: true, name: true } } },
               orderBy: { createdAt: "desc" },

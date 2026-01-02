@@ -5,6 +5,8 @@ import { z } from "zod";
 
 import { Contact } from "../types";
 import { Button, Input } from "../../shared";
+import Select from "../../shared/components/UI/Select";
+import * as companyService from "../services/company.service";
 
 /* ================= SCHEMA ================= */
 
@@ -13,6 +15,7 @@ const contactSchema = z.object({
   email: z.string().email("Email inválido").optional().or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
   companyName: z.string().optional().or(z.literal("")),
+  crmCompanyId: z.string().optional().or(z.literal("")), // FK para CrmCompany
   position: z.string().optional().or(z.literal("")),
   leadStatus: z.enum([
     "lead",
@@ -48,6 +51,7 @@ interface Props {
 
 const ContactModal = ({ isOpen, onClose, onSave, contact }: Props) => {
   const [submitError, setSubmitError] = useState("");
+  const [companies, setCompanies] = useState<Array<{ id: string; name: string }>>([]);
 
   const defaultValues = useMemo<FormData>(
     () => ({
@@ -55,6 +59,7 @@ const ContactModal = ({ isOpen, onClose, onSave, contact }: Props) => {
       email: "",
       phone: "",
       companyName: "",
+      crmCompanyId: "",
       position: "",
       leadStatus: "lead",
       leadSource: "website",
@@ -62,6 +67,24 @@ const ContactModal = ({ isOpen, onClose, onSave, contact }: Props) => {
     }),
     []
   );
+
+  // Buscar empresas do CRM ao abrir o modal
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const loadCompanies = async () => {
+      try {
+        const result = await companyService.getCompanies({ page: 1, limit: 100 });
+        const companyList = Array.isArray(result.data) ? result.data : [];
+        setCompanies(companyList.map((c: any) => ({ id: c.id, name: c.name })));
+      } catch (error) {
+        console.error("Erro ao carregar empresas:", error);
+        setCompanies([]);
+      }
+    };
+
+    loadCompanies();
+  }, [isOpen]);
 
   const {
     register,
@@ -82,6 +105,7 @@ const ContactModal = ({ isOpen, onClose, onSave, contact }: Props) => {
         email: contact.email ?? "",
         phone: contact.phone ?? "",
         companyName: contact.companyName ?? "",
+        crmCompanyId: contact.crmCompanyId ?? "",
         position: contact.position ?? "",
         leadStatus: (contact.leadStatus as any) ?? "lead",
         leadSource: (contact.leadSource as any) ?? "website",
@@ -103,6 +127,7 @@ const ContactModal = ({ isOpen, onClose, onSave, contact }: Props) => {
         email: data.email?.trim() || undefined,
         phone: data.phone?.trim() || undefined,
         companyName: data.companyName?.trim() || undefined,
+        crmCompanyId: data.crmCompanyId?.trim() || undefined,
         position: data.position?.trim() || undefined,
         leadStatus: data.leadStatus,
         leadSource: data.leadSource,
@@ -134,7 +159,25 @@ const ContactModal = ({ isOpen, onClose, onSave, contact }: Props) => {
           <Input label="Nome" {...register("name")} error={errors.name?.message} />
           <Input label="Email" {...register("email")} error={errors.email?.message} />
           <Input label="Telefone" {...register("phone")} />
-          <Input label="Empresa" {...register("companyName")} />
+          <Input label="Empresa (texto livre)" {...register("companyName")} />
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Empresa do CRM
+            </label>
+            <Select {...register("crmCompanyId")}>
+              <option value="">Nenhuma</option>
+              {companies.map((company) => (
+                <option key={company.id} value={company.id}>
+                  {company.name}
+                </option>
+              ))}
+            </Select>
+            <p className="mt-1 text-sm text-gray-500">
+              Vincule este contato a uma empresa cadastrada no CRM
+            </p>
+          </div>
+
           <Input label="Cargo" {...register("position")} />
 
           <div className="grid grid-cols-2 gap-4">

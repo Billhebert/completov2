@@ -29,6 +29,7 @@ export interface Contact {
   phone?: string | null;
 
   companyName?: string | null;
+  crmCompanyId?: string | null; // FK para CrmCompany
   position?: string | null;
 
   website?: string | null;
@@ -54,6 +55,14 @@ export interface Contact {
   updatedAt: string;
   lastContactedAt?: string | null;
 
+  // relação com CrmCompany (populada pelo backend)
+  crmCompany?: {
+    id: string;
+    name: string;
+    status?: string;
+    industry?: string;
+  } | null;
+
   // agregados que aparecem no SELECT do prisma (podem vir como _aggr_count_*)
   _aggr_count_deals?: number;
   _aggr_count_interactions?: number;
@@ -75,6 +84,7 @@ export interface CreateContactRequest {
   phone?: string;
 
   companyName?: string;
+  crmCompanyId?: string; // FK para CrmCompany
   position?: string;
 
   website?: string;
