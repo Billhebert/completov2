@@ -11,10 +11,11 @@ import * as dealService from "../services/deal.service";
 import * as aiService from "../services/ai.service";
 import * as interactionService from "../services/interaction.service";
 import type { Deal } from "../types/deal.types";
-import type { DealProbability } from "../services/ai.service";
+import type { DealProbability, AIRecommendation } from "../services/ai.service";
 import type { Interaction } from "../services/interaction.service";
 import { formatDistanceToNow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { LightBulbIcon, SparklesIcon } from "@heroicons/react/24/outline";
 
 function getDealStageLabel(stage: string): string {
   const map: Record<string, string> = {
@@ -46,9 +47,11 @@ export default function DealDetailPage() {
 
   const [deal, setDeal] = useState<Deal | null>(null);
   const [probability, setProbability] = useState<DealProbability | null>(null);
+  const [aiRecommendations, setAiRecommendations] = useState<AIRecommendation[]>([]);
   const [interactions, setInteractions] = useState<Interaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingProbability, setIsLoadingProbability] = useState(false);
+  const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -97,9 +100,25 @@ export default function DealDetailPage() {
     }
   };
 
+  const loadRecommendations = async () => {
+    if (!id || !deal) return;
+
+    setIsLoadingRecommendations(true);
+
+    try {
+      const recommendations = await aiService.generateRecommendations("deal", id, deal);
+      setAiRecommendations(recommendations);
+    } catch (err) {
+      console.error("Failed to load AI recommendations:", err);
+    } finally {
+      setIsLoadingRecommendations(false);
+    }
+  };
+
   useEffect(() => {
     if (deal) {
       loadProbability();
+      loadRecommendations();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deal]);
@@ -422,6 +441,110 @@ export default function DealDetailPage() {
             </Card>
           </div>
         </div>
+
+        {/* AI Recommendations Section */}
+        {aiRecommendations.length > 0 && (
+          <div className="mt-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <SparklesIcon className="h-7 w-7 text-purple-600" />
+                Recomendações de IA
+              </h2>
+              {isLoadingRecommendations && (
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600" />
+                  Analisando...
+                </div>
+              )}
+            </div>
+
+            <Card>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-3 bg-purple-100 rounded-lg">
+                  <LightBulbIcon className="h-6 w-6 text-purple-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Próximas Ações Sugeridas
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Insights do sistema para maximizar as chances de fechamento
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {aiRecommendations.map((rec) => (
+                  <div
+                    key={rec.id}
+                    className={`border-l-4 pl-4 py-3 ${
+                      rec.priority === "critical"
+                        ? "border-red-500 bg-red-50"
+                        : rec.priority === "high"
+                          ? "border-orange-500 bg-orange-50"
+                          : rec.priority === "medium"
+                            ? "border-yellow-500 bg-yellow-50"
+                            : "border-blue-500 bg-blue-50"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-semibold text-gray-900">{rec.title}</h4>
+                          <span
+                            className={`text-xs px-2 py-0.5 rounded-full font-semibold uppercase ${
+                              rec.priority === "critical"
+                                ? "bg-red-200 text-red-800"
+                                : rec.priority === "high"
+                                  ? "bg-orange-200 text-orange-800"
+                                  : rec.priority === "medium"
+                                    ? "bg-yellow-200 text-yellow-800"
+                                    : "bg-blue-200 text-blue-800"
+                            }`}
+                          >
+                            {rec.priority === "critical" && "Crítico"}
+                            {rec.priority === "high" && "Alto"}
+                            {rec.priority === "medium" && "Médio"}
+                            {rec.priority === "low" && "Baixo"}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {rec.type === "risk_mitigation" && "Mitigação de Risco"}
+                            {rec.type === "deal_strategy" && "Estratégia"}
+                            {rec.type === "next_action" && "Próxima Ação"}
+                            {rec.type === "contact_approach" && "Abordagem"}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-700 mb-2">{rec.description}</p>
+                        <p className="text-xs text-gray-600 italic mb-3">
+                          💡 {rec.reasoning}
+                        </p>
+
+                        {rec.suggestedActions.length > 0 && (
+                          <div>
+                            <p className="text-xs font-semibold text-gray-900 mb-1">
+                              Ações sugeridas:
+                            </p>
+                            <ul className="space-y-1">
+                              {rec.suggestedActions.map((action, idx) => (
+                                <li
+                                  key={idx}
+                                  className="text-xs text-gray-700 flex items-start gap-2"
+                                >
+                                  <span className="text-purple-600 mt-0.5">→</span>
+                                  <span>{action}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
+        )}
       </div>
     </AppLayout>
   );

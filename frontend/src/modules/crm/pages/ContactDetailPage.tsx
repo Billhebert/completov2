@@ -11,12 +11,28 @@ import * as contactService from "../services/contact.service";
 import * as interactionService from "../services/interaction.service";
 import * as activityService from "../services/activity.service";
 import * as dealService from "../services/deal.service";
+import * as aiService from "../services/ai.service";
 import { handleApiError } from "../../../core/utils/api";
 import { formatDistanceToNow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { Interaction } from "../services/interaction.service";
 import type { Activity } from "../services/activity.service";
 import type { Deal } from "../types/deal.types";
+import type {
+  EnrichmentData,
+  EngagementScoreDetailed,
+  ChurnPrediction,
+  AIRecommendation,
+} from "../services/ai.service";
+import {
+  SparklesIcon,
+  ChartBarIcon,
+  ExclamationTriangleIcon,
+  LightBulbIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
+  MinusIcon,
+} from "@heroicons/react/24/outline";
 
 type TimelineItem = {
   id: string;
@@ -78,6 +94,13 @@ export default function ContactDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // AI Insights State
+  const [enrichmentData, setEnrichmentData] = useState<EnrichmentData | null>(null);
+  const [engagementScore, setEngagementScore] = useState<EngagementScoreDetailed | null>(null);
+  const [churnPrediction, setChurnPrediction] = useState<ChurnPrediction | null>(null);
+  const [aiRecommendations, setAiRecommendations] = useState<AIRecommendation[]>([]);
+  const [loadingAI, setLoadingAI] = useState(false);
+
   useEffect(() => {
     if (!id) return;
     loadContactDetails();
@@ -120,6 +143,39 @@ export default function ContactDetailPage() {
       setIsLoading(false);
     }
   };
+
+  // Load AI Insights
+  const loadAIInsights = async () => {
+    if (!contact || !id) return;
+
+    setLoadingAI(true);
+
+    try {
+      const [enrichment, engagement, churn, recommendations] = await Promise.all([
+        aiService.enrichContactData(id, contact),
+        aiService.calculateEngagementScoreDetailed(id, contact),
+        aiService.predictChurn(id, contact),
+        aiService.generateRecommendations("contact", id, contact),
+      ]);
+
+      setEnrichmentData(enrichment);
+      setEngagementScore(engagement);
+      setChurnPrediction(churn);
+      setAiRecommendations(recommendations);
+    } catch (err) {
+      console.error("Failed to load AI insights:", err);
+    } finally {
+      setLoadingAI(false);
+    }
+  };
+
+  // Load AI insights when contact is loaded
+  useEffect(() => {
+    if (contact) {
+      loadAIInsights();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contact]);
 
   // Cria timeline unificada
   const timeline: TimelineItem[] = [
@@ -517,6 +573,405 @@ export default function ContactDetailPage() {
                 </div>
               )}
             </Card>
+          </div>
+        </div>
+
+        {/* AI Insights Section */}
+        <div className="mt-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              <SparklesIcon className="h-7 w-7 text-purple-600" />
+              AI Insights
+            </h2>
+            {loadingAI && (
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600" />
+                Analisando...
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Engagement Score */}
+            {engagementScore && (
+              <Card>
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-blue-100 rounded-lg">
+                      <ChartBarIcon className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        Score de Engajamento
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        Nível de interação e atividade
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-3xl font-bold text-blue-600">
+                      {engagementScore.score}
+                    </div>
+                    <div className="flex items-center gap-1 text-sm text-gray-600 mt-1">
+                      {engagementScore.trend === "increasing" && (
+                        <ArrowTrendingUpIcon className="h-4 w-4 text-green-600" />
+                      )}
+                      {engagementScore.trend === "decreasing" && (
+                        <ArrowTrendingDownIcon className="h-4 w-4 text-red-600" />
+                      )}
+                      {engagementScore.trend === "stable" && (
+                        <MinusIcon className="h-4 w-4 text-gray-600" />
+                      )}
+                      {engagementScore.trend === "increasing" ? "Crescendo" :
+                       engagementScore.trend === "decreasing" ? "Decrescendo" : "Estável"}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  {Object.entries(engagementScore.factors).map(([key, value]) => (
+                    <div key={key}>
+                      <div className="flex items-center justify-between text-sm mb-1">
+                        <span className="text-gray-600 capitalize">
+                          {key === "emailResponsiveness" && "Email"}
+                          {key === "meetingAttendance" && "Reuniões"}
+                          {key === "dealProgression" && "Progresso Deals"}
+                          {key === "interactionFrequency" && "Frequência"}
+                          {key === "responseTime" && "Tempo Resposta"}
+                        </span>
+                        <span className="font-semibold text-gray-900">
+                          {Math.round(value)}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className={`h-2 rounded-full ${
+                            value >= 70
+                              ? "bg-green-500"
+                              : value >= 40
+                                ? "bg-yellow-500"
+                                : "bg-red-500"
+                          }`}
+                          style={{ width: `${value}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {engagementScore.recommendations.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <p className="text-sm font-semibold text-gray-900 mb-2">
+                      Recomendações:
+                    </p>
+                    <ul className="space-y-1">
+                      {engagementScore.recommendations.map((rec, idx) => (
+                        <li key={idx} className="text-sm text-gray-700 flex items-start gap-2">
+                          <span className="text-blue-600 mt-0.5">•</span>
+                          <span>{rec}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </Card>
+            )}
+
+            {/* Churn Prediction */}
+            {churnPrediction && (
+              <Card>
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`p-3 rounded-lg ${
+                        churnPrediction.churnRisk === "critical"
+                          ? "bg-red-100"
+                          : churnPrediction.churnRisk === "high"
+                            ? "bg-orange-100"
+                            : churnPrediction.churnRisk === "medium"
+                              ? "bg-yellow-100"
+                              : "bg-green-100"
+                      }`}
+                    >
+                      <ExclamationTriangleIcon
+                        className={`h-6 w-6 ${
+                          churnPrediction.churnRisk === "critical"
+                            ? "text-red-600"
+                            : churnPrediction.churnRisk === "high"
+                              ? "text-orange-600"
+                              : churnPrediction.churnRisk === "medium"
+                                ? "text-yellow-600"
+                                : "text-green-600"
+                        }`}
+                      />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        Risco de Churn
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        Probabilidade de perda do contato
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div
+                      className={`text-3xl font-bold ${
+                        churnPrediction.churnRisk === "critical"
+                          ? "text-red-600"
+                          : churnPrediction.churnRisk === "high"
+                            ? "text-orange-600"
+                            : churnPrediction.churnRisk === "medium"
+                              ? "text-yellow-600"
+                              : "text-green-600"
+                      }`}
+                    >
+                      {Math.round(churnPrediction.churnProbability)}%
+                    </div>
+                    <div className="text-sm font-semibold text-gray-600 mt-1 uppercase">
+                      {churnPrediction.churnRisk === "critical" && "Crítico"}
+                      {churnPrediction.churnRisk === "high" && "Alto"}
+                      {churnPrediction.churnRisk === "medium" && "Médio"}
+                      {churnPrediction.churnRisk === "low" && "Baixo"}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2 mb-4">
+                  <p className="text-sm font-semibold text-gray-900">Fatores de Risco:</p>
+                  {Object.entries(churnPrediction.factors).map(([key, active]) =>
+                    active ? (
+                      <div
+                        key={key}
+                        className="flex items-center gap-2 text-sm text-gray-700"
+                      >
+                        <span className="w-2 h-2 rounded-full bg-red-500" />
+                        {key === "noRecentActivity" && "Sem atividade recente"}
+                        {key === "dealsStagnant" && "Deals estagnados"}
+                        {key === "emailEngagementDrop" && "Queda no engajamento"}
+                        {key === "competitorMentions" && "Menções a concorrentes"}
+                        {key === "contractExpiringSoon" && "Contrato expirando"}
+                      </div>
+                    ) : null
+                  )}
+                </div>
+
+                {churnPrediction.preventionActions.length > 0 && (
+                  <div className="pt-4 border-t border-gray-200">
+                    <p className="text-sm font-semibold text-gray-900 mb-2">
+                      Ações de Prevenção:
+                    </p>
+                    <ul className="space-y-1">
+                      {churnPrediction.preventionActions.map((action, idx) => (
+                        <li key={idx} className="text-sm text-gray-700 flex items-start gap-2">
+                          <span className="text-red-600 mt-0.5">•</span>
+                          <span>{action}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </Card>
+            )}
+
+            {/* AI Recommendations */}
+            {aiRecommendations.length > 0 && (
+              <Card className="lg:col-span-2">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-3 bg-purple-100 rounded-lg">
+                    <LightBulbIcon className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Recomendações de IA
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      Próximas ações sugeridas pelo sistema
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {aiRecommendations.map((rec) => (
+                    <div
+                      key={rec.id}
+                      className={`border-l-4 pl-4 py-3 ${
+                        rec.priority === "critical"
+                          ? "border-red-500 bg-red-50"
+                          : rec.priority === "high"
+                            ? "border-orange-500 bg-orange-50"
+                            : rec.priority === "medium"
+                              ? "border-yellow-500 bg-yellow-50"
+                              : "border-blue-500 bg-blue-50"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="font-semibold text-gray-900">{rec.title}</h4>
+                            <span
+                              className={`text-xs px-2 py-0.5 rounded-full font-semibold uppercase ${
+                                rec.priority === "critical"
+                                  ? "bg-red-200 text-red-800"
+                                  : rec.priority === "high"
+                                    ? "bg-orange-200 text-orange-800"
+                                    : rec.priority === "medium"
+                                      ? "bg-yellow-200 text-yellow-800"
+                                      : "bg-blue-200 text-blue-800"
+                              }`}
+                            >
+                              {rec.priority === "critical" && "Crítico"}
+                              {rec.priority === "high" && "Alto"}
+                              {rec.priority === "medium" && "Médio"}
+                              {rec.priority === "low" && "Baixo"}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-700 mb-2">{rec.description}</p>
+                          <p className="text-xs text-gray-600 italic mb-3">
+                            {rec.reasoning}
+                          </p>
+
+                          {rec.suggestedActions.length > 0 && (
+                            <div>
+                              <p className="text-xs font-semibold text-gray-900 mb-1">
+                                Ações sugeridas:
+                              </p>
+                              <ul className="space-y-1">
+                                {rec.suggestedActions.map((action, idx) => (
+                                  <li
+                                    key={idx}
+                                    className="text-xs text-gray-700 flex items-start gap-2"
+                                  >
+                                    <span className="text-purple-600 mt-0.5">→</span>
+                                    <span>{action}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
+
+            {/* Data Enrichment */}
+            {enrichmentData && (
+              <Card className="lg:col-span-2">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-3 bg-green-100 rounded-lg">
+                    <SparklesIcon className="h-6 w-6 text-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Dados Enriquecidos
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      Informações adicionais coletadas de fontes públicas
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {enrichmentData.data.linkedin && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-900 mb-2">LinkedIn</h4>
+                      <div className="space-y-2 text-sm">
+                        {enrichmentData.data.linkedin.headline && (
+                          <p className="text-gray-700">
+                            <span className="text-gray-600">Cargo:</span>{" "}
+                            {enrichmentData.data.linkedin.headline}
+                          </p>
+                        )}
+                        {enrichmentData.data.linkedin.connections && (
+                          <p className="text-gray-700">
+                            <span className="text-gray-600">Conexões:</span>{" "}
+                            {enrichmentData.data.linkedin.connections}
+                          </p>
+                        )}
+                        {enrichmentData.data.linkedin.skills && (
+                          <div>
+                            <p className="text-gray-600 mb-1">Skills:</p>
+                            <div className="flex flex-wrap gap-1">
+                              {enrichmentData.data.linkedin.skills.map((skill, idx) => (
+                                <span
+                                  key={idx}
+                                  className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800"
+                                >
+                                  {skill}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {enrichmentData.data.company && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-900 mb-2">Empresa</h4>
+                      <div className="space-y-2 text-sm">
+                        {enrichmentData.data.company.industry && (
+                          <p className="text-gray-700">
+                            <span className="text-gray-600">Indústria:</span>{" "}
+                            {enrichmentData.data.company.industry}
+                          </p>
+                        )}
+                        {enrichmentData.data.company.size && (
+                          <p className="text-gray-700">
+                            <span className="text-gray-600">Tamanho:</span>{" "}
+                            {enrichmentData.data.company.size}
+                          </p>
+                        )}
+                        {enrichmentData.data.company.revenue && (
+                          <p className="text-gray-700">
+                            <span className="text-gray-600">Receita:</span>{" "}
+                            {enrichmentData.data.company.revenue}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {enrichmentData.data.location && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-900 mb-2">Localização</h4>
+                      <div className="space-y-2 text-sm">
+                        {enrichmentData.data.location.city && (
+                          <p className="text-gray-700">
+                            <span className="text-gray-600">Cidade:</span>{" "}
+                            {enrichmentData.data.location.city}
+                          </p>
+                        )}
+                        {enrichmentData.data.location.country && (
+                          <p className="text-gray-700">
+                            <span className="text-gray-600">País:</span>{" "}
+                            {enrichmentData.data.location.country}
+                          </p>
+                        )}
+                        {enrichmentData.data.location.timezone && (
+                          <p className="text-gray-700">
+                            <span className="text-gray-600">Timezone:</span>{" "}
+                            {enrichmentData.data.location.timezone}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <p className="text-xs text-gray-600">
+                    Fontes: {enrichmentData.sources.join(", ")} •{" "}
+                    Atualizado em {format(new Date(enrichmentData.enrichedAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                  </p>
+                </div>
+              </Card>
+            )}
           </div>
         </div>
       </div>
