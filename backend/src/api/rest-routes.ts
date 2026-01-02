@@ -28,7 +28,9 @@ export function setupAdditionalRoutes(app: Express, prisma: PrismaClient) {
 
   app.get(`${baseUrl}/dashboard`, authenticate, tenantIsolation, async (req: Request, res: Response, next: NextFunction) => {
     try {
+      console.log('[Dashboard] Request received from user:', req.user?.id);
       const companyId = req.companyId!;
+      console.log('[Dashboard] Company ID:', companyId);
 
       // Helper function to safely count with fallback
       const safeCount = async (fn: () => Promise<number>): Promise<number> => {
