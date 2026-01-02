@@ -44,6 +44,7 @@ import { servicesModule } from "./modules/services";
 import { partnershipsModule } from "./modules/partnerships";
 import { settingsModule } from "./modules/settings";
 import { webhooksModule } from "./modules/webhooks";
+import { feedbackModule } from "./modules/feedback";
 import { startWorkers } from "./workers";
 import { i18nMiddleware } from "./core/i18n";
 import { timezoneMiddleware } from "./core/timezone";
@@ -194,6 +195,7 @@ export async function createApp(): Promise<AppContext> {
   moduleLoader.register(partnershipsModule);
   moduleLoader.register(settingsModule);
   moduleLoader.register(webhooksModule);
+  moduleLoader.register(feedbackModule);
 
   // Enable modules (could be loaded from database per tenant)
   const enabledModules = [
@@ -225,6 +227,7 @@ export async function createApp(): Promise<AppContext> {
     "services",
     "partnerships",
     "settings",
+    "feedback",
   ];
 
   await moduleLoader.enableModules(enabledModules);
