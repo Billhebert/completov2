@@ -19,8 +19,8 @@ export const OmnichannelListPage: React.FC = () => {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const result = await omnichannelService.getAll();
-      setData(result.data);
+      const result = await omnichannelService.getWhatsAppAccounts();
+      setData(result);
     } catch (error) {
       console.error('Error loading data:', handleApiError(error));
     } finally {
