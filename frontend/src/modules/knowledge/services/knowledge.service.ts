@@ -20,7 +20,7 @@
  * - Perguntas e respostas (QA) utilizando RAG【719758748300185†L991-L1093】.
  */
 
-import api, { extractData } from '../../../core/utils/api';
+import api, { extractData } from "../../../core/utils/api";
 
 // Types para melhor documentação; use any se não houver definições locais
 export interface KnowledgeNode {
@@ -48,10 +48,12 @@ export interface KnowledgeNode {
 export const getNodes = async (
   params?: Record<string, string | number | boolean>
 ): Promise<KnowledgeNode[]> => {
-  const response = await api.get('/knowledge/nodes', { params });
+  const response = await api.get("/knowledge/nodes", { params });
   return extractData(response);
 };
-
+export const getAll = async (): Promise<KnowledgeNode[]> => {
+  return getNodes();
+};
 /**
  * Recupera os detalhes de um zettel específico【719758748300185†L157-L196】.
  *
@@ -68,8 +70,10 @@ export const getNode = async (id: string): Promise<KnowledgeNode> => {
  * @param data Objeto contendo `title`, `content`, `nodeType`, `tags`, `importanceScore`,
  *             `ownerId` e `isCompanyWide` conforme aplicável.
  */
-export const createNode = async (data: Partial<KnowledgeNode>): Promise<KnowledgeNode> => {
-  const response = await api.post('/knowledge/nodes', data);
+export const createNode = async (
+  data: Partial<KnowledgeNode>
+): Promise<KnowledgeNode> => {
+  const response = await api.post("/knowledge/nodes", data);
   return extractData(response);
 };
 
@@ -104,7 +108,11 @@ export const deleteNode = async (id: string): Promise<void> => {
  */
 export const createLink = async (
   nodeId: string,
-  data: { targetId: string; linkType: 'related' | 'derives' | 'supports' | 'contradicts'; strength?: number }
+  data: {
+    targetId: string;
+    linkType: "related" | "derives" | "supports" | "contradicts";
+    strength?: number;
+  }
 ): Promise<any> => {
   const response = await api.post(`/knowledge/nodes/${nodeId}/links`, data);
   return extractData(response);
@@ -128,7 +136,7 @@ export const deleteLink = async (linkId: string): Promise<void> => {
 export const getGraph = async (
   params?: Record<string, string | number | boolean>
 ): Promise<any> => {
-  const response = await api.get('/knowledge/graph/obsidian', { params });
+  const response = await api.get("/knowledge/graph/obsidian", { params });
   return extractData(response);
 };
 
@@ -139,7 +147,7 @@ export const getGraph = async (
  *             `isPersonal`.
  */
 export const convertEntity = async (data: any): Promise<any> => {
-  const response = await api.post('/knowledge/convert', data);
+  const response = await api.post("/knowledge/convert", data);
   return extractData(response);
 };
 
@@ -149,7 +157,7 @@ export const convertEntity = async (data: any): Promise<any> => {
  * @param entities Array de objetos entidade (cada um com `entityType`, `entityId`, `content`, etc.).
  */
 export const convertEntitiesBatch = async (entities: any[]): Promise<any> => {
-  const response = await api.post('/knowledge/convert/batch', { entities });
+  const response = await api.post("/knowledge/convert/batch", { entities });
   return extractData(response);
 };
 
@@ -168,8 +176,11 @@ export const getNodeSuggestions = async (nodeId: string): Promise<any[]> => {
  *
  * @param data Objeto contendo `title` e `content`.
  */
-export const suggestTags = async (data: { title: string; content: string }): Promise<{ tags: string[] }> => {
-  const response = await api.post('/knowledge/nodes/suggest-tags', data);
+export const suggestTags = async (data: {
+  title: string;
+  content: string;
+}): Promise<{ tags: string[] }> => {
+  const response = await api.post("/knowledge/nodes/suggest-tags", data);
   return extractData(response);
 };
 
@@ -187,7 +198,7 @@ export const suggestLinks = async (nodeId: string): Promise<any[]> => {
  * Lista todos os tags existentes no conhecimento da empresa【719758748300185†L873-L895】.
  */
 export const getTags = async (): Promise<{ tag: string; count: number }[]> => {
-  const response = await api.get('/knowledge/tags');
+  const response = await api.get("/knowledge/tags");
   return extractData(response);
 };
 
@@ -196,8 +207,12 @@ export const getTags = async (): Promise<{ tag: string; count: number }[]> => {
  *
  * @param query Objeto contendo `query`, `limit` (padrão 10) e `minScore` (padrão 0.7).
  */
-export const semanticSearch = async (query: { query: string; limit?: number; minScore?: number }): Promise<any> => {
-  const response = await api.post('/knowledge/search/semantic', query);
+export const semanticSearch = async (query: {
+  query: string;
+  limit?: number;
+  minScore?: number;
+}): Promise<any> => {
+  const response = await api.post("/knowledge/search/semantic", query);
   return extractData(response);
 };
 
@@ -207,7 +222,10 @@ export const semanticSearch = async (query: { query: string; limit?: number; min
  *
  * @param data Objeto contendo `question` e opcional `maxContext` (número de zettels para contexto).
  */
-export const askQuestion = async (data: { question: string; maxContext?: number }): Promise<any> => {
-  const response = await api.post('/knowledge/ask', data);
+export const askQuestion = async (data: {
+  question: string;
+  maxContext?: number;
+}): Promise<any> => {
+  const response = await api.post("/knowledge/ask", data);
   return extractData(response);
 };

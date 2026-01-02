@@ -1,84 +1,113 @@
 /**
- * Contacts Page
- * Página de gestão de contatos do CRM
+ * Contacts Page (alinhado com o backend)
  */
 
-import { useState, useEffect } from 'react';
-import { AppLayout, Card, Button, Breadcrumbs } from '../../shared';
-import { Contact, ContactStatus, ContactSource } from '../types';
-import * as contactService from '../services/contact.service';
-import { ContactModal } from '../components';
-import { handleApiError } from '../../../core/utils/api';
-import { formatDistanceToNow } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { useEffect, useMemo, useState } from "react";
+import { AppLayout, Card, Button, Breadcrumbs } from "../../shared";
+import { Contact } from "../types";
+import * as contactService from "../services/contact.service";
+import  ContactModal  from "../components/ContactModal";
+import { handleApiError } from "../../../core/utils/api";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
+
+function initialsFromName(name?: string) {
+  const safe = (name ?? "").trim();
+  if (!safe) return "??";
+  const parts = safe.split(/\s+/).filter(Boolean);
+  const first = parts[0]?.[0] ?? "?";
+  const last = (parts.length > 1 ? parts[parts.length - 1]?.[0] : parts[0]?.[1]) ?? "?";
+  return `${first}${last}`.toUpperCase();
+}
+
+function statusLabel(status?: string | null) {
+  const s = (status ?? "").toLowerCase();
+  const map: Record<string, string> = {
+    lead: "Lead",
+    prospect: "Prospect",
+    qualified: "Qualificado",
+    customer: "Cliente",
+    nurturing: "Nutrição",
+    lost: "Perdido",
+    inactive: "Inativo",
+  };
+  return map[s] ?? (status || "N/A");
+}
+
+function statusBadgeClass(status?: string | null) {
+  const s = (status ?? "").toLowerCase();
+  const map: Record<string, string> = {
+    lead: "bg-blue-100 text-blue-800",
+    prospect: "bg-yellow-100 text-yellow-800",
+    qualified: "bg-indigo-100 text-indigo-800",
+    customer: "bg-green-100 text-green-800",
+    nurturing: "bg-purple-100 text-purple-800",
+    lost: "bg-red-100 text-red-800",
+    inactive: "bg-gray-100 text-gray-800",
+  };
+  return map[s] ?? "bg-gray-100 text-gray-800";
+}
+
+function sourceLabel(source?: string | null) {
+  const s = (source ?? "").toLowerCase();
+  const map: Record<string, string> = {
+    website: "Website",
+    referral: "Indicação",
+    social: "Redes Sociais",
+    email: "Email",
+    phone: "Telefone",
+    event: "Evento",
+    other: "Outro",
+  };
+  return map[s] ?? (source || "-");
+}
 
 export const ContactsPage = () => {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<ContactStatus | ''>('');
-  const [sourceFilter, setSourceFilter] = useState<ContactSource | ''>('');
+  const [error, setError] = useState("");
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [leadStatusFilter, setLeadStatusFilter] = useState<string>("");
+  const [leadSourceFilter, setLeadSourceFilter] = useState<string>("");
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
 
+  const filters = useMemo(
+    () => ({
+      search: searchTerm || undefined,
+      leadStatus: leadStatusFilter || undefined,
+      leadSource: leadSourceFilter || undefined,
+    }),
+    [searchTerm, leadStatusFilter, leadSourceFilter]
+  );
+
   useEffect(() => {
     loadContacts();
-  }, [searchTerm, statusFilter, sourceFilter]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.search, filters.leadStatus, filters.leadSource]);
 
   const loadContacts = async () => {
     setIsLoading(true);
-    setError('');
+    setError("");
 
     try {
       const result = await contactService.getContacts({
         page: 1,
         limit: 50,
-        search: searchTerm || undefined,
-        status: statusFilter || undefined,
-        source: sourceFilter || undefined,
+        ...filters,
+        // cache-buster (se seu api tiver cache/etag)
+        _ts: Date.now() as any,
       });
-      setContacts(result.data);
+
+      setContacts(result?.data ?? []);
     } catch (err) {
       setError(handleApiError(err));
+      setContacts([]);
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const getStatusBadge = (status: ContactStatus) => {
-    const badges = {
-      lead: 'bg-blue-100 text-blue-800',
-      prospect: 'bg-yellow-100 text-yellow-800',
-      customer: 'bg-green-100 text-green-800',
-      inactive: 'bg-gray-100 text-gray-800',
-    };
-
-    const labels = {
-      lead: 'Lead',
-      prospect: 'Prospect',
-      customer: 'Cliente',
-      inactive: 'Inativo',
-    };
-
-    return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badges[status]}`}>
-        {labels[status]}
-      </span>
-    );
-  };
-
-  const getSourceLabel = (source: ContactSource) => {
-    const labels = {
-      website: 'Website',
-      referral: 'Indicação',
-      social: 'Redes Sociais',
-      email: 'Email',
-      phone: 'Telefone',
-      event: 'Evento',
-      other: 'Outro',
-    };
-    return labels[source];
   };
 
   const handleCreateContact = () => {
@@ -105,14 +134,13 @@ export const ContactsPage = () => {
       }
       await loadContacts();
     } catch (err) {
+      // o modal vai exibir isso
       throw new Error(handleApiError(err));
     }
   };
 
   const handleDeleteContact = async (id: string) => {
-    if (!window.confirm('Tem certeza que deseja excluir este contato?')) {
-      return;
-    }
+    if (!window.confirm("Tem certeza que deseja excluir este contato?")) return;
 
     try {
       await contactService.deleteContact(id);
@@ -125,34 +153,22 @@ export const ContactsPage = () => {
   return (
     <AppLayout>
       <div className="page-container">
-        {/* Breadcrumbs */}
-        <Breadcrumbs
-          items={[
-            { label: 'CRM', path: '/crm' },
-            { label: 'Contatos' }
-          ]}
-          className="mb-4"
-        />
+        <Breadcrumbs items={[{ label: "CRM", path: "/crm" }, { label: "Contatos" }]} className="mb-4" />
 
-        {/* Header */}
         <div className="page-header">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Contatos</h1>
-            <p className="text-gray-600 mt-1">
-              Gerencie seus contatos e leads
-            </p>
+            <p className="text-gray-600 mt-1">Gerencie seus contatos e leads</p>
           </div>
-          <div>
-            <Button variant="primary" onClick={handleCreateContact}>
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Novo Contato
-            </Button>
-          </div>
+
+          <Button variant="primary" onClick={handleCreateContact}>
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Novo contato
+          </Button>
         </div>
 
-        {/* Error Message */}
         {error && (
           <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
             {error}
@@ -162,7 +178,6 @@ export const ContactsPage = () => {
         {/* Filters */}
         <Card className="mb-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Search */}
             <div>
               <label className="label">Buscar</label>
               <div className="relative">
@@ -173,44 +188,35 @@ export const ContactsPage = () => {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="input pl-10"
                 />
-                <svg
-                  className="w-5 h-5 text-gray-400 absolute left-3 top-2.5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
+                <svg className="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
             </div>
 
-            {/* Status Filter */}
             <div>
               <label className="label">Status</label>
               <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as ContactStatus | '')}
+                value={leadStatusFilter}
+                onChange={(e) => setLeadStatusFilter(e.target.value)}
                 className="input"
               >
                 <option value="">Todos</option>
                 <option value="lead">Lead</option>
                 <option value="prospect">Prospect</option>
+                <option value="qualified">Qualificado</option>
                 <option value="customer">Cliente</option>
+                <option value="nurturing">Nutrição</option>
+                <option value="lost">Perdido</option>
                 <option value="inactive">Inativo</option>
               </select>
             </div>
 
-            {/* Source Filter */}
             <div>
               <label className="label">Origem</label>
               <select
-                value={sourceFilter}
-                onChange={(e) => setSourceFilter(e.target.value as ContactSource | '')}
+                value={leadSourceFilter}
+                onChange={(e) => setLeadSourceFilter(e.target.value)}
                 className="input"
               >
                 <option value="">Todas</option>
@@ -226,31 +232,16 @@ export const ContactsPage = () => {
           </div>
         </Card>
 
-        {/* Contacts Table */}
+        {/* Table */}
         <Card>
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
             </div>
           ) : contacts.length === 0 ? (
             <div className="text-center py-12">
-              <svg
-                className="mx-auto h-12 w-12 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                />
-              </svg>
-              <h3 className="mt-2 text-sm font-medium text-gray-900">Nenhum contato encontrado</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Comece criando um novo contato.
-              </p>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">Nenhum contato encontrado.</h3>
+              <p className="mt-1 text-sm text-gray-500">Comece criando um novo contato.</p>
               <div className="mt-6">
                 <Button variant="primary" onClick={handleCreateContact}>
                   Criar primeiro contato
@@ -268,60 +259,68 @@ export const ContactsPage = () => {
                     <th>Empresa</th>
                     <th>Status</th>
                     <th>Origem</th>
-                    <th>Última Interação</th>
+                    <th>Último contato</th>
                     <th className="text-right">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {contacts.map((contact) => (
-                    <tr key={contact.id}>
+                  {contacts.map((c) => (
+                    <tr key={c.id}>
                       <td>
                         <div className="flex items-center">
                           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-medium mr-3">
-                            {contact.firstName.charAt(0)}{contact.lastName.charAt(0)}
+                            {initialsFromName(c.name)}
                           </div>
                           <div>
-                            <div className="font-medium text-gray-900">
-                              {contact.firstName} {contact.lastName}
-                            </div>
-                            {contact.position && (
-                              <div className="text-sm text-gray-500">{contact.position}</div>
-                            )}
+                            <div className="font-medium text-gray-900">{c.name}</div>
+                            {c.position && <div className="text-sm text-gray-500">{c.position}</div>}
                           </div>
                         </div>
                       </td>
+
                       <td>
-                        <a href={`mailto:${contact.email}`} className="text-blue-600 hover:text-blue-800">
-                          {contact.email}
-                        </a>
+                        {c.email ? (
+                          <a href={`mailto:${c.email}`} className="text-blue-600 hover:text-blue-800">
+                            {c.email}
+                          </a>
+                        ) : (
+                          "-"
+                        )}
                       </td>
-                      <td className="text-gray-600">{contact.phone || contact.mobile || '-'}</td>
-                      <td className="text-gray-600">{contact.companyName || '-'}</td>
-                      <td>{getStatusBadge(contact.status)}</td>
-                      <td className="text-gray-600">{getSourceLabel(contact.source)}</td>
+
+                      <td className="text-gray-600">{c.phone || "-"}</td>
+                      <td className="text-gray-600">{c.companyName || "-"}</td>
+
+                      <td>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusBadgeClass(c.leadStatus)}`}>
+                          {statusLabel(c.leadStatus)}
+                        </span>
+                      </td>
+
+                      <td className="text-gray-600">{sourceLabel(c.leadSource)}</td>
+
                       <td className="text-gray-500 text-sm">
-                        {contact.lastContactDate
-                          ? formatDistanceToNow(new Date(contact.lastContactDate), {
-                              addSuffix: true,
-                              locale: ptBR,
-                            })
-                          : 'Nunca'}
+                        {c.lastContactedAt
+                          ? formatDistanceToNow(new Date(c.lastContactedAt), { addSuffix: true, locale: ptBR })
+                          : "Nunca"}
                       </td>
+
                       <td className="text-right">
                         <div className="flex justify-end gap-2">
                           <button
                             className="p-1 text-gray-400 hover:text-blue-600 transition"
                             title="Editar"
-                            onClick={() => handleEditContact(contact)}
+                            onClick={() => handleEditContact(c)}
                           >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
                           </button>
+
                           <button
                             className="p-1 text-gray-400 hover:text-red-600 transition"
                             title="Excluir"
-                            onClick={() => handleDeleteContact(contact.id)}
+                            onClick={() => handleDeleteContact(c.id)}
                           >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -337,43 +336,6 @@ export const ContactsPage = () => {
           )}
         </Card>
 
-        {/* Stats Summary */}
-        {!isLoading && contacts.length > 0 && (
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900">{contacts.length}</div>
-                <div className="text-sm text-gray-600">Total de Contatos</div>
-              </div>
-            </Card>
-            <Card>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">
-                  {contacts.filter(c => c.status === 'lead').length}
-                </div>
-                <div className="text-sm text-gray-600">Leads</div>
-              </div>
-            </Card>
-            <Card>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-yellow-600">
-                  {contacts.filter(c => c.status === 'prospect').length}
-                </div>
-                <div className="text-sm text-gray-600">Prospects</div>
-              </div>
-            </Card>
-            <Card>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">
-                  {contacts.filter(c => c.status === 'customer').length}
-                </div>
-                <div className="text-sm text-gray-600">Clientes</div>
-              </div>
-            </Card>
-          </div>
-        )}
-
-        {/* Contact Modal */}
         <ContactModal
           isOpen={isModalOpen}
           onClose={handleCloseModal}

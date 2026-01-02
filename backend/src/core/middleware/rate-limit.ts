@@ -76,7 +76,7 @@ export function createRateLimiter(options: {
     handler: () => {
       throw new TooManyRequestsError(message);
     },
-    skip: () => env.NODE_ENV === 'test',
+    skip: () => env.NODE_ENV === 'test' || env.NODE_ENV === "development",
     ...(redisClient && {
       store: new RedisStore(redisClient) as any, // (se TS reclamar, tipamos depois)
     }),

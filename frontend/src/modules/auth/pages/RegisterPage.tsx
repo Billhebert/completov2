@@ -1,6 +1,12 @@
 /**
- * Register Page - Enhanced
- * Página de cadastro com validação Zod e melhor UX
+ * Register Page with Company Domain
+ *
+ * This registration form collects the necessary information to create a
+ * new company and its administrator user. In addition to the full name,
+ * email, password and company name, it requires a unique `companyDomain`
+ * (only lowercase letters, numbers and hyphens) as required by the backend
+ * register schema【194810927977408†L13-L18】. The domain will be stored as
+ * the company's identifier and must not collide with existing domains【142012959897500†L109-L116】.
  */
 
 import React, { useState } from 'react';
@@ -13,38 +19,44 @@ import { register as registerUser } from '../services/auth.service';
 import { handleApiError, setAuthToken } from '../../../core/utils/api';
 import { STORAGE_KEYS } from '../../../core/utils/constants';
 
-// Schema de validação
-const registerSchema = z.object({
-  name: z
-    .string()
-    .min(3, 'Nome deve ter no mínimo 3 caracteres')
-    .max(100, 'Nome muito longo'),
-  email: z
-    .string()
-    .min(1, 'Email é obrigatório')
-    .email('Email inválido'),
-  companyName: z
-    .string()
-    .min(2, 'Nome da empresa deve ter no mínimo 2 caracteres')
-    .max(100, 'Nome muito longo'),
-  password: z
-    .string()
-    .min(8, 'Senha deve ter no mínimo 8 caracteres')
-    .regex(/[A-Z]/, 'Senha deve conter pelo menos uma letra maiúscula')
-    .regex(/[a-z]/, 'Senha deve conter pelo menos uma letra minúscula')
-    .regex(/[0-9]/, 'Senha deve conter pelo menos um número'),
-  confirmPassword: z
-    .string()
-    .min(1, 'Confirmação de senha é obrigatória'),
-  termsAccepted: z
-    .boolean()
-    .refine((val) => val === true, {
-      message: 'Você deve aceitar os termos de serviço',
-    }),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: 'As senhas não coincidem',
-  path: ['confirmPassword'],
-});
+// Validation schema using Zod. Includes companyDomain with constraints.
+const registerSchema = z
+  .object({
+    name: z
+      .string()
+      .min(3, 'Nome deve ter no mínimo 3 caracteres')
+      .max(100, 'Nome muito longo'),
+    email: z
+      .string()
+      .min(1, 'Email é obrigatório')
+      .email('Email inválido'),
+    companyName: z
+      .string()
+      .min(2, 'Nome da empresa deve ter no mínimo 2 caracteres')
+      .max(100, 'Nome muito longo'),
+    companyDomain: z
+      .string()
+      .min(2, 'Domínio da empresa é obrigatório')
+      .regex(/^[a-z0-9-]+$/, 'Use apenas letras minúsculas, números e hífens'),
+    password: z
+      .string()
+      .min(8, 'Senha deve ter no mínimo 8 caracteres')
+      .regex(/[A-Z]/, 'Senha deve conter pelo menos uma letra maiúscula')
+      .regex(/[a-z]/, 'Senha deve conter pelo menos uma letra minúscula')
+      .regex(/[0-9]/, 'Senha deve conter pelo menos um número'),
+    confirmPassword: z
+      .string()
+      .min(1, 'Confirmação de senha é obrigatória'),
+    termsAccepted: z
+      .boolean()
+      .refine((val) => val === true, {
+        message: 'Você deve aceitar os termos de serviço',
+      }),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'As senhas não coincidem',
+    path: ['confirmPassword'],
+  });
 
 type RegisterFormData = z.infer<typeof registerSchema>;
 
@@ -64,6 +76,7 @@ export const RegisterPage: React.FC = () => {
       name: '',
       email: '',
       companyName: '',
+      companyDomain: '',
       password: '',
       confirmPassword: '',
       termsAccepted: false,
@@ -72,7 +85,7 @@ export const RegisterPage: React.FC = () => {
 
   const password = watch('password');
 
-  // Validações de senha em tempo real
+  // Compute basic password strength indicators
   const passwordStrength = {
     hasMinLength: password?.length >= 8,
     hasUpperCase: /[A-Z]/.test(password || ''),
@@ -83,21 +96,24 @@ export const RegisterPage: React.FC = () => {
   const onSubmit = async (data: RegisterFormData) => {
     setApiError('');
     setIsLoading(true);
-
     try {
+      // Call backend register endpoint with companyDomain
       const response = await registerUser({
         name: data.name,
         email: data.email,
         password: data.password,
         companyName: data.companyName,
+        companyDomain: data.companyDomain,
       });
 
+      // Store tokens and user in local storage
       localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, response.accessToken);
       localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, response.refreshToken);
       localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(response.user));
       setAuthToken(response.accessToken);
 
-      navigate('/dashboard');
+      // Redirect to login after successful registration to avoid hitting a missing dashboard route
+      navigate('/login');
     } catch (err) {
       setApiError(handleApiError(err));
     } finally {
@@ -160,9 +176,7 @@ export const RegisterPage: React.FC = () => {
                 placeholder="João Silva"
                 autoComplete="name"
               />
-              {errors.name && (
-                <p className="form-error">{errors.name.message}</p>
-              )}
+              {errors.name && <p className="form-error">{errors.name.message}</p>}
             </div>
 
             {/* Email */}
@@ -175,9 +189,7 @@ export const RegisterPage: React.FC = () => {
                 placeholder="joao@empresa.com"
                 autoComplete="email"
               />
-              {errors.email && (
-                <p className="form-error">{errors.email.message}</p>
-              )}
+              {errors.email && <p className="form-error">{errors.email.message}</p>}
             </div>
 
             {/* Company Name */}
@@ -190,9 +202,23 @@ export const RegisterPage: React.FC = () => {
                 placeholder="Minha Empresa Ltda"
                 autoComplete="organization"
               />
-              {errors.companyName && (
-                <p className="form-error">{errors.companyName.message}</p>
-              )}
+              {errors.companyName && <p className="form-error">{errors.companyName.message}</p>}
+            </div>
+
+            {/* Company Domain */}
+            <div>
+              <label className="label">Domínio da empresa</label>
+              <input
+                {...register('companyDomain')}
+                type="text"
+                className={`input ${errors.companyDomain ? 'border-red-500' : ''}`}
+                placeholder="meu-dominio"
+                autoComplete="off"
+              />
+              {errors.companyDomain && <p className="form-error">{errors.companyDomain.message}</p>}
+              <p className="mt-1 text-xs text-gray-500">
+                Domínio deve conter apenas letras minúsculas, números e hífens. Esse será o identificador único da sua empresa.
+              </p>
             </div>
 
             {/* Password */}
@@ -205,33 +231,38 @@ export const RegisterPage: React.FC = () => {
                 placeholder="••••••••"
                 autoComplete="new-password"
               />
-              {errors.password && (
-                <p className="form-error">{errors.password.message}</p>
-              )}
-
+              {errors.password && <p className="form-error">{errors.password.message}</p>}
               {/* Password Strength Indicator */}
               {password && (
                 <div className="mt-2 space-y-1">
                   <div className="flex items-center text-xs">
-                    <div className={`w-2 h-2 rounded-full mr-2 ${passwordStrength.hasMinLength ? 'bg-green-500' : 'bg-gray-300'}`} />
+                    <div
+                      className={`w-2 h-2 rounded-full mr-2 ${passwordStrength.hasMinLength ? 'bg-green-500' : 'bg-gray-300'}`}
+                    />
                     <span className={passwordStrength.hasMinLength ? 'text-green-700' : 'text-gray-500'}>
                       Mínimo 8 caracteres
                     </span>
                   </div>
                   <div className="flex items-center text-xs">
-                    <div className={`w-2 h-2 rounded-full mr-2 ${passwordStrength.hasUpperCase ? 'bg-green-500' : 'bg-gray-300'}`} />
+                    <div
+                      className={`w-2 h-2 rounded-full mr-2 ${passwordStrength.hasUpperCase ? 'bg-green-500' : 'bg-gray-300'}`}
+                    />
                     <span className={passwordStrength.hasUpperCase ? 'text-green-700' : 'text-gray-500'}>
                       Letra maiúscula
                     </span>
                   </div>
                   <div className="flex items-center text-xs">
-                    <div className={`w-2 h-2 rounded-full mr-2 ${passwordStrength.hasLowerCase ? 'bg-green-500' : 'bg-gray-300'}`} />
+                    <div
+                      className={`w-2 h-2 rounded-full mr-2 ${passwordStrength.hasLowerCase ? 'bg-green-500' : 'bg-gray-300'}`}
+                    />
                     <span className={passwordStrength.hasLowerCase ? 'text-green-700' : 'text-gray-500'}>
                       Letra minúscula
                     </span>
                   </div>
                   <div className="flex items-center text-xs">
-                    <div className={`w-2 h-2 rounded-full mr-2 ${passwordStrength.hasNumber ? 'bg-green-500' : 'bg-gray-300'}`} />
+                    <div
+                      className={`w-2 h-2 rounded-full mr-2 ${passwordStrength.hasNumber ? 'bg-green-500' : 'bg-gray-300'}`}
+                    />
                     <span className={passwordStrength.hasNumber ? 'text-green-700' : 'text-gray-500'}>
                       Número
                     </span>

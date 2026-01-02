@@ -32,19 +32,29 @@ export const ModularRouter: React.FC = () => {
     registerAllRoutes();
   }, []);
 
-  // Obter todas as rotas dos módulos habilitados
+  // IDs de módulos que não aparecem em modules.config.ts,
+  // mas que precisam ser sempre registrados (dashboard, perfil, etc.)
+  const staticModuleIds = ['dashboard', 'profile', 'settings-page'];
+
+  // IDs de módulos dinâmicos (habilitados via ModuleProvider)
   const enabledModules = getEnabledModules();
-  const allRoutes = enabledModules.flatMap((module) => {
-    return routeRegistry.getModuleRoutes(module.id);
-  });
+  const dynamicModuleIds = enabledModules.map((module) => module.id);
+
+  // Combina e remove duplicatas
+  const moduleIds = Array.from(new Set([...staticModuleIds, ...dynamicModuleIds]));
+
+  // Obter rotas de todos os módulos selecionados
+  const allRoutes = moduleIds.flatMap((moduleId) =>
+    routeRegistry.getModuleRoutes(moduleId)
+  );
 
   return (
     <Suspense fallback={<LoadingFallback />}>
       <Routes>
         {/* Rota raiz - redireciona para dashboard */}
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
 
-        {/* Renderizar rotas dinâmicas dos módulos */}
+        {/* Renderizar rotas dinâmicas dos módulos e páginas estáticas */}
         {allRoutes.map((routeConfig, index) => {
           const { path, element, isPublic, ...config } = routeConfig;
 

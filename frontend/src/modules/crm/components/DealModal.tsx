@@ -1,284 +1,284 @@
-/**
- * Deal Modal Component
- * Modal para criar/editar negociações
- */
+// src/modules/crm/components/DealModal.tsx
+import { useEffect, useMemo, useState } from "react";
+import { Button, Input, Card } from "../../shared";
+import Select from "../../shared/components/UI/Select";
 
-import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Deal, DealStage } from '../types';
-import { Button, Input } from '../../shared';
+import * as dealService from "../services/deal.service";
+import * as contactService from "../services/contact.service";
+import * as companyService from "../services/company.service";
 
-const dealSchema = z.object({
-  title: z.string().min(1, 'Título é obrigatório'),
-  description: z.string().optional(),
-  value: z.number().min(0, 'Valor deve ser maior ou igual a 0'),
-  stage: z.enum(['lead', 'qualified', 'proposal', 'negotiation', 'won', 'lost']),
-  priority: z.enum(['low', 'medium', 'high']),
-  probability: z.number().min(0).max(100),
-  contactName: z.string().optional(),
-  companyName: z.string().optional(),
-  expectedCloseDate: z.string().optional(),
-  notes: z.string().optional(),
-});
-
-type DealFormData = z.infer<typeof dealSchema>;
-
-interface DealModalProps {
+type Props = {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: DealFormData) => Promise<void>;
-  deal?: Deal | null;
-  title?: string;
-  defaultStage?: DealStage;
-}
+  onCreated: () => Promise<void>;
 
-export const DealModal = ({ isOpen, onClose, onSave, deal, title, defaultStage }: DealModalProps) => {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-    reset,
-  } = useForm<DealFormData>({
-    resolver: zodResolver(dealSchema),
-    defaultValues: {
-      stage: defaultStage || 'lead',
-      priority: 'medium',
-      probability: 50,
-      value: 0,
-    },
-  });
+  // contexto vindo da página
+  pipelineId: string;
+  stageId: string; // estágio inicial sugerido (primeiro estágio do funil selecionado)
+};
 
+type ContactLite = { id: string; name: string; email?: string | null };
+type CompanyLite = { id: string; name: string };
+
+export function DealModal({ isOpen, onClose, onCreated, pipelineId, stageId }: Props) {
+  const [title, setTitle] = useState("");
+  const [value, setValue] = useState<string>("0");
+  const [currency, setCurrency] = useState("BRL");
+
+  // contato
+  const [contactSearch, setContactSearch] = useState("");
+  const [contacts, setContacts] = useState<ContactLite[]>([]);
+  const [contactId, setContactId] = useState<string>("");
+
+  // empresa (opcional)
+  const [companySearch, setCompanySearch] = useState("");
+  const [companies, setCompanies] = useState<CompanyLite[]>([]);
+  const [companyId, setCompanyId] = useState<string>("");
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const canSave = useMemo(() => {
+    return !!title.trim() && !!contactId && Number(value) >= 0 && !!pipelineId && !!stageId;
+  }, [title, contactId, value, pipelineId, stageId]);
+
+  // reset ao abrir
   useEffect(() => {
-    if (deal) {
-      reset({
-        title: deal.title,
-        description: deal.description || '',
-        value: deal.value,
-        stage: deal.stage,
-        priority: deal.priority,
-        probability: deal.probability,
-        contactName: deal.contactName || '',
-        companyName: deal.companyName || '',
-        expectedCloseDate: deal.expectedCloseDate || '',
-        notes: deal.notes || '',
-      });
-    } else {
-      reset({
-        title: '',
-        description: '',
-        value: 0,
-        stage: defaultStage || 'lead',
-        priority: 'medium',
-        probability: 50,
-        contactName: '',
-        companyName: '',
-        expectedCloseDate: '',
-        notes: '',
-      });
-    }
-  }, [deal, defaultStage, reset]);
+    if (!isOpen) return;
+    setTitle("");
+    setValue("0");
+    setCurrency("BRL");
+    setContactSearch("");
+    setContacts([]);
+    setContactId("");
+    setCompanySearch("");
+    setCompanies([]);
+    setCompanyId("");
+    setError("");
+  }, [isOpen]);
 
-  const handleFormSubmit = async (data: DealFormData) => {
+  // buscar contatos (debounce simples)
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const t = setTimeout(async () => {
+      try {
+        const res = await contactService.getContacts({
+          page: 1,
+          limit: 20,
+          search: contactSearch || undefined,
+        } as any);
+
+        const list = Array.isArray((res as any)?.data) ? (res as any).data : [];
+        setContacts(
+          list.map((c: any) => ({
+            id: String(c.id),
+            name: String(c.name ?? ""),
+            email: c.email ?? null,
+          }))
+        );
+      } catch {
+        setContacts([]);
+      }
+    }, 250);
+
+    return () => clearTimeout(t);
+  }, [isOpen, contactSearch]);
+
+  // buscar empresas (debounce simples)
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const t = setTimeout(async () => {
+      try {
+        const res = await companyService.getCompanies({
+          page: 1,
+          limit: 20,
+          search: companySearch || undefined,
+        } as any);
+
+        const list = Array.isArray((res as any)?.data) ? (res as any).data : [];
+        setCompanies(
+          list.map((c: any) => ({
+            id: String(c.id),
+            name: String(c.name ?? ""),
+          }))
+        );
+      } catch {
+        setCompanies([]);
+      }
+    }, 250);
+
+    return () => clearTimeout(t);
+  }, [isOpen, companySearch]);
+
+  async function handleSave() {
+    setError("");
+
+    if (!pipelineId) return setError("Selecione um funil antes de criar.");
+    if (!stageId) return setError("Selecione um estágio inicial.");
+    if (!title.trim()) return setError("Título é obrigatório.");
+    if (!contactId) return setError("Contato é obrigatório.");
+    const n = Number(value);
+    if (!Number.isFinite(n) || n < 0) return setError("Valor inválido.");
+
+    setLoading(true);
     try {
-      await onSave(data);
+      await dealService.createDeal({
+        title: title.trim(),
+        value: n,
+        currency,
+        contactId,
+        companyId: companyId || undefined,
+
+        // ✅ novos campos (seu service atualizado abaixo vai incluir no payload)
+        pipelineId,
+        stageId,
+      });
+
+      await onCreated();
       onClose();
-      reset();
-    } catch (error) {
-      console.error('Error saving deal:', error);
+    } catch (e: any) {
+      setError(e?.response?.data?.message ?? e?.message ?? "Erro ao criar oportunidade.");
+    } finally {
+      setLoading(false);
     }
-  };
+  }
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-        {/* Overlay */}
-        <div
-          className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"
-          onClick={onClose}
-        />
+    <div className="fixed inset-0 z-50">
+      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
+      <div className="absolute inset-x-0 top-10 mx-auto w-[min(900px,92vw)] bg-white rounded-2xl shadow-2xl overflow-hidden">
+        <div className="px-6 py-4 border-b flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold">Nova oportunidade</h3>
+            <p className="text-sm text-gray-600">
+              Crie uma oportunidade vinculada a um contato e organize no funil.
+            </p>
+          </div>
 
-        {/* Modal */}
-        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
-          <form onSubmit={handleSubmit(handleFormSubmit)}>
-            {/* Header */}
-            <div className="bg-white px-6 py-4 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  {title || (deal ? 'Editar Negociação' : 'Nova Negociação')}
-                </h3>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="text-gray-400 hover:text-gray-500"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
+          <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="p-6">
+          {error && (
+            <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+              {error}
             </div>
+          )}
 
-            {/* Body */}
-            <div className="bg-white px-6 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
-              {/* Título */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Título *
-                </label>
-                <Input
-                  {...register('title')}
-                  placeholder="Ex: Venda de software para empresa XYZ"
-                  error={errors.title?.message}
-                />
-              </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <Card className="p-4 lg:col-span-2">
+              <div className="font-semibold mb-3">Detalhes</div>
 
-              {/* Descrição */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Descrição
-                </label>
-                <textarea
-                  {...register('description')}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Detalhes sobre a negociação..."
-                />
-              </div>
-
-              {/* Valor, Probabilidade e Prioridade */}
-              <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Valor (R$) *
-                  </label>
+                  <div className="text-sm text-gray-600 mb-1">Título</div>
                   <Input
-                    {...register('value', { valueAsNumber: true })}
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    error={errors.value?.message}
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Ex: Proposta para ACME"
                   />
                 </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <div className="text-sm text-gray-600 mb-1">Valor</div>
+                    <Input value={value} onChange={(e) => setValue(e.target.value)} placeholder="0" />
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-600 mb-1">Moeda</div>
+                    <Select value={currency} onChange={(e) => setCurrency(e.target.value)}>
+                      <option value="BRL">BRL</option>
+                      <option value="USD">USD</option>
+                      <option value="EUR">EUR</option>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="text-xs text-gray-500">
+                  Dica: depois você pode arrastar a oportunidade entre os estágios.
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-4">
+              <div className="font-semibold mb-3">Vínculos</div>
+
+              <div className="space-y-4">
+                {/* contato */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Probabilidade (%) *
-                  </label>
+                  <div className="text-sm text-gray-600 mb-1">Contato (obrigatório)</div>
                   <Input
-                    {...register('probability', { valueAsNumber: true })}
-                    type="number"
-                    min="0"
-                    max="100"
-                    placeholder="50"
-                    error={errors.probability?.message}
+                    value={contactSearch}
+                    onChange={(e) => setContactSearch(e.target.value)}
+                    placeholder="Buscar contato..."
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Prioridade *
-                  </label>
-                  <select
-                    {...register('priority')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="low">Baixa</option>
-                    <option value="medium">Média</option>
-                    <option value="high">Alta</option>
-                  </select>
-                </div>
-              </div>
 
-              {/* Estágio */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Estágio *
-                </label>
-                <select
-                  {...register('stage')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="lead">Lead</option>
-                  <option value="qualified">Qualificado</option>
-                  <option value="proposal">Proposta</option>
-                  <option value="negotiation">Negociação</option>
-                  <option value="won">Ganho</option>
-                  <option value="lost">Perdido</option>
-                </select>
-              </div>
+                  <div className="mt-2">
+                    <Select value={contactId} onChange={(e) => setContactId(e.target.value)}>
+                      <option value="" disabled>
+                        Selecione um contato...
+                      </option>
+                      {contacts.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}{c.email ? ` — ${c.email}` : ""}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
 
-              {/* Contato e Empresa */}
-              <div className="grid grid-cols-2 gap-4">
+                  <div className="mt-1 text-xs text-gray-500">
+                    Se não encontrar, crie em <b>CRM &gt; Contatos</b>.
+                  </div>
+                </div>
+
+                {/* empresa opcional */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Contato
-                  </label>
+                  <div className="text-sm text-gray-600 mb-1">Empresa (opcional)</div>
                   <Input
-                    {...register('contactName')}
-                    placeholder="Nome do contato"
+                    value={companySearch}
+                    onChange={(e) => setCompanySearch(e.target.value)}
+                    placeholder="Buscar empresa..."
                   />
+
+                  <div className="mt-2">
+                    <Select value={companyId} onChange={(e) => setCompanyId(e.target.value)}>
+                      <option value="">Nenhuma</option>
+                      {companies.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Empresa
-                  </label>
-                  <Input
-                    {...register('companyName')}
-                    placeholder="Nome da empresa"
-                  />
+
+                {/* contexto do funil */}
+                <div className="text-xs text-gray-500 border-t pt-3">
+                  <div><b>Pipeline:</b> {pipelineId}</div>
+                  <div><b>Stage:</b> {stageId}</div>
                 </div>
               </div>
+            </Card>
+          </div>
 
-              {/* Data Esperada de Fechamento */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Data Esperada de Fechamento
-                </label>
-                <Input
-                  {...register('expectedCloseDate')}
-                  type="date"
-                />
-              </div>
-
-              {/* Notas */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Notas
-                </label>
-                <textarea
-                  {...register('notes')}
-                  rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Observações sobre a negociação..."
-                />
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={onClose}
-                disabled={isSubmitting}
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                variant="primary"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? 'Salvando...' : 'Salvar'}
-              </Button>
-            </div>
-          </form>
+          <div className="mt-6 flex justify-end gap-2">
+            <Button type="button" variant="secondary" onClick={onClose} disabled={loading}>
+              Cancelar
+            </Button>
+            <Button type="button" onClick={handleSave} disabled={loading || !canSave}>
+              {loading ? "Salvando..." : "Criar oportunidade"}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
   );
-};
-
-export default DealModal;
+}

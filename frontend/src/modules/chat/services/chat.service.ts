@@ -49,7 +49,9 @@ export interface ListRoomsParams {
    */
   includeUnread?: boolean;
 }
-
+export async function getAll(): Promise<ChatRoom[]> {
+  return getChatRooms();
+}
 /**
  * List chat rooms.
  *

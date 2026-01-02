@@ -5,11 +5,11 @@
 import React, { useState, useEffect } from 'react';
 import { AppLayout, Card, Button, DataTable } from '../../shared';
 import * as knowledgeService from '../services/knowledge.service';
-import { Knowledge } from '../types';
+import { KnowledgeNode } from '../services/knowledge.service'; // Tipagem direta
 import { handleApiError } from '../../../core/utils/api';
 
 export const KnowledgeListPage: React.FC = () => {
-  const [data, setData] = useState<Knowledge[]>([]);
+  const [data, setData] = useState<KnowledgeNode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -19,8 +19,8 @@ export const KnowledgeListPage: React.FC = () => {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const result = await knowledgeService.getAll();
-      setData(result.data);
+      const nodes = await knowledgeService.getNodes();
+      setData(nodes);
     } catch (error) {
       console.error('Error loading data:', handleApiError(error));
     } finally {
@@ -39,8 +39,8 @@ export const KnowledgeListPage: React.FC = () => {
         <Card noPadding>
           <DataTable
             columns={[
-              { key: 'name', label: 'Nome', sortable: true },
-              { key: 'status', label: 'Status' },
+              { key: 'title', label: 'Título', sortable: true },
+              { key: 'nodeType', label: 'Tipo' },
               { key: 'createdAt', label: 'Criado em' },
             ]}
             data={data}

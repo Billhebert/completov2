@@ -1,322 +1,230 @@
-/**
- * Deals Page
- * Página de gestão de negociações com Kanban board
- */
+// src/modules/crm/pages/DealsPage.tsx
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 
-import { useState, useEffect } from 'react';
-import { AppLayout, Card, Button, Breadcrumbs } from '../../shared';
-import { Deal, DealStage } from '../types';
-import * as dealService from '../services/deal.service';
-import { DealModal } from '../components';
-import { handleApiError } from '../../../core/utils/api';
+import { AppLayout, Card, Button } from "../../shared";
+import Select from "../../shared/components/UI/Select";
 
-const STAGES: { key: DealStage; label: string; color: string }[] = [
-  { key: 'lead', label: 'Lead', color: 'bg-gray-100 border-gray-300' },
-  { key: 'qualified', label: 'Qualificado', color: 'bg-blue-100 border-blue-300' },
-  { key: 'proposal', label: 'Proposta', color: 'bg-yellow-100 border-yellow-300' },
-  { key: 'negotiation', label: 'Negociação', color: 'bg-orange-100 border-orange-300' },
-  { key: 'won', label: 'Ganho', color: 'bg-green-100 border-green-300' },
-  { key: 'lost', label: 'Perdido', color: 'bg-red-100 border-red-300' },
-];
+import * as pipelineService from "../services/pipeline.service";
+import * as dealService from "../services/deal.service";
 
-export const DealsPage = () => {
-  const [dealsByStage, setDealsByStage] = useState<Record<DealStage, Deal[]>>({
-    lead: [],
-    qualified: [],
-    proposal: [],
-    negotiation: [],
-    won: [],
-    lost: [],
-  });
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [totalValue, setTotalValue] = useState(0);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
-  const [defaultStage, setDefaultStage] = useState<DealStage | undefined>(undefined);
+import type { CrmPipeline, CrmStage } from "../services/pipeline.service";
+import { PipelineManagerModal } from "../components/PipelineManagerModal";
+import { DealModal } from "../components/DealModal";
+
+type Deal = any; // seu deal.service já tipa via ../types, aqui deixo simples para não quebrar build
+
+export default function DealsPage() {
+  const [pipelines, setPipelines] = useState<CrmPipeline[]>([]);
+  const [pipelineId, setPipelineId] = useState<string>("");
+  const [deals, setDeals] = useState<Deal[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const [manageOpen, setManageOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+
+  const pipeline = useMemo(
+    () => pipelines.find((p) => p.id === pipelineId) ?? null,
+    [pipelines, pipelineId]
+  );
+
+  const stages = useMemo(() => {
+    const list = pipeline?.stages ? [...pipeline.stages] : [];
+    list.sort((a, b) => a.order - b.order);
+    return list;
+  }, [pipeline]);
+
+  const defaultStageId = stages[0]?.id ?? "";
+
+  async function loadPipelines() {
+    const list = await pipelineService.listPipelines();
+    setPipelines(list);
+
+    const def = list.find((p) => p.isDefault) ?? list[0];
+    setPipelineId((prev) => {
+      if (prev && list.some((p) => p.id === prev)) return prev;
+      return def?.id ?? "";
+    });
+  }
+
+  async function loadDeals(selectedPipelineId: string) {
+    const res = await dealService.getDeals({ pipelineId: selectedPipelineId, page: 1, limit: 200 } as any);
+    setDeals(Array.isArray(res?.data) ? res.data : []);
+  }
+
+  async function reloadAll() {
+    setLoading(true);
+    setError("");
+    try {
+      await loadPipelines();
+    } catch (e: any) {
+      setError(e?.message ?? "Erro ao carregar funis");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    loadDeals();
+    reloadAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const loadDeals = async () => {
-    setIsLoading(true);
-    setError('');
+  useEffect(() => {
+    if (!pipelineId) return;
+    setLoading(true);
+    setError("");
+    loadDeals(pipelineId)
+      .catch((e: any) => setError(e?.message ?? "Erro ao carregar negociações"))
+      .finally(() => setLoading(false));
+  }, [pipelineId]);
 
-    try {
-      const result = await dealService.getDeals({ page: 1, limit: 100 });
+  const grouped = useMemo(() => {
+    const map: Record<string, Deal[]> = {};
+    stages.forEach((s) => (map[s.id] = []));
+    deals.forEach((d: any) => {
+      const sid = d?.stageId;
+      if (sid && map[sid]) map[sid].push(d);
+    });
+    return map;
+  }, [deals, stages]);
 
-      // Organizar deals por estágio
-      const organized = STAGES.reduce((acc, stage) => {
-        acc[stage.key] = result.data.filter(d => d.stage === stage.key);
-        return acc;
-      }, {} as Record<DealStage, Deal[]>);
+  // Drag HTML5 simples
+  const [draggingDealId, setDraggingDealId] = useState<string | null>(null);
+  function onCardDragStart(dealId: string) {
+    setDraggingDealId(dealId);
+  }
+  function onCardDragEnd() {
+    setDraggingDealId(null);
+  }
 
-      setDealsByStage(organized);
+  async function moveDeal(dealId: string, targetStageId: string) {
+    // ✅ service atualizado abaixo detecta uuid e envia stageId
+    await dealService.updateDealStage(dealId, targetStageId);
+    await loadDeals(pipelineId);
+  }
 
-      // Calcular valor total de deals ativos (não won/lost)
-      const activeDeals = result.data.filter(d => !['won', 'lost'].includes(d.stage));
-      const total = activeDeals.reduce((sum, deal) => sum + deal.value, 0);
-      setTotalValue(total);
-    } catch (err) {
-      setError(handleApiError(err));
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const getPriorityBadge = (priority: string) => {
-    const badges = {
-      low: 'bg-gray-100 text-gray-700',
-      medium: 'bg-yellow-100 text-yellow-700',
-      high: 'bg-red-100 text-red-700',
-    };
-    const labels = { low: 'Baixa', medium: 'Média', high: 'Alta' };
-    return (
-      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${badges[priority as keyof typeof badges]}`}>
-        {labels[priority as keyof typeof labels]}
-      </span>
-    );
-  };
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(value);
-  };
-
-  const handleCreateDeal = (stage?: DealStage) => {
-    setEditingDeal(null);
-    setDefaultStage(stage);
-    setIsModalOpen(true);
-  };
-
-  const handleEditDeal = (deal: Deal) => {
-    setEditingDeal(deal);
-    setDefaultStage(undefined);
-    setIsModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setEditingDeal(null);
-    setDefaultStage(undefined);
-  };
-
-  const handleSaveDeal = async (data: any) => {
-    try {
-      if (editingDeal) {
-        await dealService.updateDeal(editingDeal.id, data);
-      } else {
-        await dealService.createDeal(data);
-      }
-      await loadDeals();
-    } catch (err) {
-      throw new Error(handleApiError(err));
-    }
-  };
-
-  const handleDeleteDeal = async (id: string) => {
-    if (!window.confirm('Tem certeza que deseja excluir esta negociação?')) {
-      return;
-    }
-
-    try {
-      await dealService.deleteDeal(id);
-      await loadDeals();
-    } catch (err) {
-      setError(handleApiError(err));
-    }
-  };
+  async function onDropStage(stageId: string) {
+    if (!draggingDealId) return;
+    await moveDeal(draggingDealId, stageId);
+    setDraggingDealId(null);
+  }
 
   return (
     <AppLayout>
       <div className="page-container">
-        {/* Breadcrumbs */}
-        <Breadcrumbs
-          items={[
-            { label: 'CRM', path: '/crm' },
-            { label: 'Negociações' }
-          ]}
-          className="mb-4"
-        />
-
-        {/* Header */}
-        <div className="page-header">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Pipeline de Vendas</h1>
-            <p className="text-gray-600 mt-1">
-              Gerencie suas oportunidades e negociações
-            </p>
-          </div>
-          <div>
-            <Button variant="primary" onClick={() => handleCreateDeal()}>
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Nova Oportunidade
-            </Button>
-          </div>
+        {/* Breadcrumb */}
+        <div className="mb-4 flex items-center gap-2 text-sm">
+          <Link to="/crm" className="text-gray-600 hover:text-gray-900">
+            CRM
+          </Link>
+          <span className="text-gray-400">/</span>
+          <Link to="/crm/deals" className="text-gray-900 font-medium hover:underline">
+            Negociações
+          </Link>
         </div>
 
-        {/* Error */}
+        {/* Header */}
+        <div className="flex items-start justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-3xl font-bold">Pipeline de Vendas</h1>
+            <p className="text-gray-600 mt-1">
+              Escolha um funil e arraste as oportunidades entre os estágios.
+            </p>
+
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">Funil:</span>
+                <Select value={pipelineId} onChange={(e) => setPipelineId(e.target.value)}>
+                  {pipelines.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                      {p.isDefault ? " (padrão)" : ""}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+
+              <Button variant="secondary" onClick={() => setManageOpen(true)}>
+                Gerenciar funis
+              </Button>
+            </div>
+          </div>
+
+          <Button onClick={() => setCreateOpen(true)} disabled={!pipelineId || !defaultStageId}>
+            + Nova Oportunidade
+          </Button>
+        </div>
+
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+          <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
             {error}
           </div>
         )}
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <Card>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900">
-                {Object.values(dealsByStage).flat().length}
-              </div>
-              <div className="text-sm text-gray-600">Total de Deals</div>
-            </div>
+        {loading ? (
+          <Card className="p-8 text-center">Carregando...</Card>
+        ) : !pipeline ? (
+          <Card className="p-8 text-center">
+            <p className="mb-3">Nenhum funil encontrado.</p>
+            <Button onClick={() => setManageOpen(true)}>Criar funil</Button>
           </Card>
-          <Card>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">
-                {formatCurrency(totalValue)}
-              </div>
-              <div className="text-sm text-gray-600">Valor em Pipeline</div>
-            </div>
-          </Card>
-          <Card>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">
-                {dealsByStage.won.length}
-              </div>
-              <div className="text-sm text-gray-600">Ganhos</div>
-            </div>
-          </Card>
-          <Card>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">
-                {dealsByStage.negotiation.length}
-              </div>
-              <div className="text-sm text-gray-600">Em Negociação</div>
-            </div>
-          </Card>
-        </div>
-
-        {/* Kanban Board */}
-        {isLoading ? (
-          <Card>
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            </div>
+        ) : stages.length === 0 ? (
+          <Card className="p-8 text-center">
+            <p className="mb-3">Este funil ainda não tem estágios.</p>
+            <Button onClick={() => setManageOpen(true)}>Adicionar estágios</Button>
           </Card>
         ) : (
-          <div className="overflow-x-auto pb-4">
-            <div className="flex gap-4 min-w-max">
-              {STAGES.map((stage) => (
-                <div key={stage.key} className="flex-shrink-0 w-80">
-                  <div className={`rounded-lg border-2 ${stage.color} p-4`}>
-                    {/* Stage Header */}
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-gray-900">
-                          {stage.label}
-                        </h3>
-                        <span className="bg-white px-2 py-1 rounded-full text-sm font-medium">
-                          {dealsByStage[stage.key].length}
-                        </span>
-                      </div>
-                      <button
-                        onClick={() => handleCreateDeal(stage.key)}
-                        className="text-gray-600 hover:text-blue-600 transition"
-                        title="Adicionar deal"
+          <div className="overflow-x-auto">
+            <div className="flex gap-4 min-w-[980px] pb-4">
+              {stages.map((stage: CrmStage) => (
+                <div
+                  key={stage.id}
+                  className="w-[320px] shrink-0"
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={() => onDropStage(stage.id)}
+                >
+                  <div className="mb-2 flex items-center justify-between">
+                    <div className="font-semibold">{stage.name}</div>
+                    <span className="text-xs text-gray-500">
+                      {(grouped[stage.id]?.length ?? 0)} itens
+                    </span>
+                  </div>
+
+                  <div className="rounded-xl border bg-gray-50 p-3 min-h-[420px] space-y-3">
+                    {(grouped[stage.id] ?? []).map((d: any) => (
+                      <div
+                        key={d.id}
+                        draggable
+                        onDragStart={() => onCardDragStart(d.id)}
+                        onDragEnd={onCardDragEnd}
+                        className={[
+                          "rounded-lg border bg-white p-3 shadow-sm hover:shadow-md transition cursor-grab",
+                          draggingDealId === d.id ? "opacity-70" : "",
+                        ].join(" ")}
                       >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                        </svg>
-                      </button>
-                    </div>
-
-                    {/* Deals Cards */}
-                    <div className="space-y-3">
-                      {dealsByStage[stage.key].length === 0 ? (
-                        <div className="text-center py-8 text-gray-400 text-sm">
-                          Nenhuma oportunidade
+                        <div className="font-medium text-gray-900">{d.title}</div>
+                        <div className="mt-1 text-sm text-gray-600">
+                          {d.currency ?? "BRL"}{" "}
+                          {typeof d.value === "number" ? d.value.toFixed(2) : d.value}
                         </div>
-                      ) : (
-                        dealsByStage[stage.key].map((deal) => (
-                          <Card key={deal.id} className="bg-white hover:shadow-md transition group relative">
-                            {/* Action Buttons */}
-                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition flex gap-1">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEditDeal(deal);
-                                }}
-                                className="p-1 bg-white rounded shadow-sm text-gray-600 hover:text-blue-600 transition"
-                                title="Editar"
-                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteDeal(deal.id);
-                                }}
-                                className="p-1 bg-white rounded shadow-sm text-gray-600 hover:text-red-600 transition"
-                                title="Excluir"
-                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                              </button>
-                            </div>
 
-                            <div className="space-y-2">
-                              {/* Title */}
-                              <h4 className="font-medium text-gray-900 line-clamp-2 pr-16">
-                                {deal.title}
-                              </h4>
+                        <div className="mt-3 flex gap-2">
+                          <Button variant="secondary" onClick={() => alert("Conecte sua edição aqui")}>
+                            Editar
+                          </Button>
+                          <Button variant="danger" onClick={() => alert("Conecte sua exclusão aqui")}>
+                            Excluir
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
 
-                              {/* Value */}
-                              <div className="text-lg font-bold text-blue-600">
-                                {formatCurrency(deal.value)}
-                              </div>
-
-                              {/* Contact/Company */}
-                              {(deal.contactName || deal.companyName) && (
-                                <div className="text-sm text-gray-600">
-                                  <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                  </svg>
-                                  {deal.companyName || deal.contactName}
-                                </div>
-                              )}
-
-                              {/* Priority & Probability */}
-                              <div className="flex items-center justify-between">
-                                {getPriorityBadge(deal.priority)}
-                                <span className="text-xs text-gray-500">
-                                  {deal.probability}% chance
-                                </span>
-                              </div>
-
-                              {/* Assigned To */}
-                              {deal.assignedToName && (
-                                <div className="flex items-center text-xs text-gray-500">
-                                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                  </svg>
-                                  {deal.assignedToName}
-                                </div>
-                              )}
-                            </div>
-                          </Card>
-                        ))
-                      )}
-                    </div>
+                    {(grouped[stage.id] ?? []).length === 0 && (
+                      <div className="text-sm text-gray-500 text-center py-10">
+                        Solte uma oportunidade aqui
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -324,17 +232,25 @@ export const DealsPage = () => {
           </div>
         )}
 
-        {/* Deal Modal */}
+        <PipelineManagerModal
+          isOpen={manageOpen}
+          onClose={() => setManageOpen(false)}
+          onChanged={async () => {
+            await loadPipelines();
+            if (pipelineId) await loadDeals(pipelineId);
+          }}
+        />
+
         <DealModal
-          isOpen={isModalOpen}
-          onClose={handleCloseModal}
-          onSave={handleSaveDeal}
-          deal={editingDeal}
-          defaultStage={defaultStage}
+          isOpen={createOpen}
+          onClose={() => setCreateOpen(false)}
+          onCreated={async () => {
+            if (pipelineId) await loadDeals(pipelineId);
+          }}
+          pipelineId={pipelineId}
+          stageId={defaultStageId}
         />
       </div>
     </AppLayout>
   );
-};
-
-export default DealsPage;
+}

@@ -3,8 +3,21 @@
  * Tipos para gestão de empresas/contas
  */
 
-export type CompanySize = 'startup' | 'small' | 'medium' | 'large' | 'enterprise';
-export type CompanyStatus = 'lead' | 'prospect' | 'customer' | 'partner' | 'inactive';
+export enum CompanySize {
+  startup = "startup",
+  small = "small",
+  medium = "medium",
+  large = "large",
+  enterprise = "enterprise",
+}
+
+export enum CompanyStatus {
+  lead = "lead",
+  prospect = "prospect",
+  customer = "customer",
+  partner = "partner",
+  inactive = "inactive",
+}
 
 export interface Company {
   id: string;

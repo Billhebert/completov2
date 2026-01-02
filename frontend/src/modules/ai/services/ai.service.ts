@@ -8,7 +8,7 @@
  * consultar/definir o modo de funcionamento da IA【282032691130219†L16-L124】.
  */
 
-import api, { extractData } from '../../../core/utils/api';
+import api, { extractData } from "../../../core/utils/api";
 
 // ----------------------------
 // RAG (Retrieve-Augmented Generation)
@@ -21,7 +21,7 @@ import api, { extractData } from '../../../core/utils/api';
  * @returns Resposta da IA contendo texto e possivelmente fontes utilizadas.
  */
 export const ragQuery = async (question: string): Promise<any> => {
-  const response = await api.post('/ai/rag/query', { question });
+  const response = await api.post("/ai/rag/query", { question });
   return extractData(response);
 };
 
@@ -31,7 +31,7 @@ export const ragQuery = async (question: string): Promise<any> => {
  * @param nodeId ID do zettel a ser ingerido.
  */
 export const ingestNode = async (nodeId: string): Promise<void> => {
-  await api.post('/ai/rag/ingest', { nodeId });
+  await api.post("/ai/rag/ingest", { nodeId });
 };
 
 /**
@@ -41,9 +41,104 @@ export const ingestNode = async (nodeId: string): Promise<void> => {
  * @param limit Número máximo de resultados a retornar (padrão: 5).
  * @returns Array de resultados com trechos de contexto e pontuação.
  */
-export const searchRAG = async (query: string, limit: number = 5): Promise<any[]> => {
-  const response = await api.get('/ai/rag/search', { params: { q: query, limit } });
+export const searchRAG = async (
+  query: string,
+  limit: number = 5
+): Promise<any[]> => {
+  const response = await api.get("/ai/rag/search", {
+    params: { q: query, limit },
+  });
   return extractData(response);
+};
+// frontend/src/modules/ai/services/ai.service.ts
+
+// ... funções existentes ragQuery, ingestNode, aiChat, getAIMode, setAIMode ...
+
+/**
+ * Stream de completions de chat (SSE).
+ * Como não há endpoint de streaming, usamos aiChat() e retornamos o texto completo via callback.
+ */
+export const chatCompletionStream = async (
+  payload: { messages: { role: string; content: string }[] },
+  onChunk: (chunk: string) => void
+): Promise<any> => {
+  const message = payload.messages[0]?.content ?? "";
+  const res = await aiChat(message);
+  const text = typeof res === "string" ? res : JSON.stringify(res);
+  onChunk(text);
+  return res;
+};
+
+/** Resumir texto (stub) */
+export const summarize = async (payload: {
+  text: string;
+}): Promise<{ summary: string }> => {
+  // Retorna apenas os primeiros 200 caracteres como "resumo"
+  return {
+    summary:
+      payload.text?.slice(0, 200) + (payload.text.length > 200 ? "…" : ""),
+  };
+};
+
+/** Analisar sentimento (stub) */
+export const sentiment = async (payload: {
+  text: string;
+}): Promise<{ sentiment: string }> => {
+  // Sempre retorna neutro para fins de demonstração
+  return { sentiment: "neutral" };
+};
+
+/** Extrair entidades (stub) */
+export const extract = async (payload: {
+  text: string;
+}): Promise<{ entities: string[] }> => {
+  // Retorna palavras separadas por espaço como entidades
+  return { entities: payload.text?.split(" ") ?? [] };
+};
+
+/** Executar agente (stub) */
+export const executeAgent = async (payload: {
+  agentId: string;
+  input: any;
+}): Promise<any> => {
+  // Retorna simplesmente o input recebido
+  return { output: payload.input, agentId: payload.agentId };
+};
+
+/** Conversas (stub) */
+export const getConversations = async (): Promise<any[]> => {
+  // Retorna lista vazia; backend não implementado
+  return [];
+};
+
+/** Uso / estatísticas (stub) */
+export const getUsageStats = async (): Promise<any> => {
+  return { message: "Uso não disponível." };
+};
+
+/** Documentos RAG (stub) */
+export const getDocuments = async (): Promise<any[]> => {
+  return [];
+};
+
+/** Estatísticas RAG (stub) */
+export const getRagStats = async (): Promise<any> => {
+  return { message: "RAG stats indisponível." };
+};
+
+/** Upload de documento (stub) */
+export const uploadDocument = async (form: FormData): Promise<void> => {
+  throw new Error("Endpoint /knowledge/rag/upload não disponível no momento.");
+};
+
+/** Reprocessar documento (stub) */
+export const reprocessDocument = async (id: string): Promise<void> => {
+  throw new Error("Endpoint de reprocessamento não disponível.");
+};
+
+/** Remover documento (stub) */
+export const deleteDocument = async (id: string): Promise<void> => {
+  throw new Error("Endpoint de remoção não disponível.");
 };
 
 // ----------------------------
@@ -66,7 +161,7 @@ export const aiChat = async (
   const payload: any = { message };
   if (systemMessage) payload.systemMessage = systemMessage;
   if (temperature !== undefined) payload.temperature = temperature;
-  const response = await api.post('/ai/chat', payload);
+  const response = await api.post("/ai/chat", payload);
   return extractData(response);
 };
 
@@ -80,7 +175,7 @@ export const aiChat = async (
  * @returns Objeto contendo a propriedade `mode`.
  */
 export const getAIMode = async (): Promise<{ mode: string }> => {
-  const response = await api.get('/ai/mode');
+  const response = await api.get("/ai/mode");
   return extractData(response);
 };
 
@@ -90,7 +185,9 @@ export const getAIMode = async (): Promise<{ mode: string }> => {
  * @param mode Modo a ser configurado.
  * @returns Novo modo configurado.
  */
-export const setAIMode = async (mode: 'full' | 'auto' | 'economico'): Promise<{ mode: string }> => {
-  const response = await api.post('/ai/mode', { mode });
+export const setAIMode = async (
+  mode: "full" | "auto" | "economico"
+): Promise<{ mode: string }> => {
+  const response = await api.post("/ai/mode", { mode });
   return extractData(response);
 };

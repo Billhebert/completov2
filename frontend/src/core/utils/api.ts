@@ -3,10 +3,10 @@
  * Cliente Axios configurado com interceptors para autenticação e refresh token
  */
 
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios';
-import { ApiResponse } from '../types';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from "axios";
+import { ApiResponse } from "../types";
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 /**
  * Instância do Axios configurada
@@ -15,7 +15,7 @@ const api: AxiosInstance = axios.create({
   baseURL: `${API_URL}/api/v1`,
   timeout: 30000,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
@@ -25,7 +25,7 @@ const api: AxiosInstance = axios.create({
  */
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('accessToken');
+    const token = localStorage.getItem("accessToken");
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -46,7 +46,10 @@ let failedQueue: Array<{
   reject: (reason?: unknown) => void;
 }> = [];
 
-const processQueue = (error: AxiosError | null, token: string | null = null) => {
+const processQueue = (
+  error: AxiosError | null,
+  token: string | null = null
+) => {
   failedQueue.forEach((prom) => {
     if (error) {
       prom.reject(error);
@@ -70,8 +73,8 @@ api.interceptors.response.use(
     if (
       error.response?.status === 401 &&
       !originalRequest._retry &&
-      !originalRequest.url?.includes('/auth/login') &&
-      !originalRequest.url?.includes('/auth/refresh')
+      !originalRequest.url?.includes("/auth/login") &&
+      !originalRequest.url?.includes("/auth/refresh")
     ) {
       if (isRefreshing) {
         // Se já está fazendo refresh, adiciona na fila
@@ -92,13 +95,13 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
-      const refreshToken = localStorage.getItem('refreshToken');
+      const refreshToken = localStorage.getItem("refreshToken");
 
       if (!refreshToken) {
         // Sem refresh token, faz logout
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        window.location.href = '/login';
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        window.location.href = "/login";
         return Promise.reject(error);
       }
 
@@ -111,8 +114,8 @@ api.interceptors.response.use(
         const { accessToken, refreshToken: newRefreshToken } =
           response.data.data;
 
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', newRefreshToken);
+        localStorage.setItem("accessToken", accessToken);
+        localStorage.setItem("refreshToken", newRefreshToken);
 
         if (originalRequest.headers) {
           originalRequest.headers.Authorization = `Bearer ${accessToken}`;
@@ -127,9 +130,9 @@ api.interceptors.response.use(
         isRefreshing = false;
 
         // Falha no refresh, faz logout
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        window.location.href = '/login';
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        window.location.href = "/login";
 
         return Promise.reject(refreshError);
       }
@@ -142,12 +145,33 @@ api.interceptors.response.use(
 /**
  * Helper para extrair dados da resposta
  */
-export const extractData = <T>(response: { data: ApiResponse<T> }): T => {
-  if (!response.data.success) {
-    throw new Error(response.data.error || 'Request failed');
+export function extractData<T = any>(response: any): T {
+  if (!response) throw new Error("Request failed");
+
+  const body = response.data;
+
+  // Se não veio body (ou veio vazio), falha
+  if (body === undefined || body === null) {
+    throw new Error("Request failed");
   }
-  return response.data.data as T;
-};
+
+  // Caso padrão do backend: { success, data, ... }
+  if (typeof body === "object" && "success" in body) {
+    if (body.success === false) {
+      throw new Error(body.message || "Request failed");
+    }
+    if ("data" in body) return body as T; // <-- retorna {data, pagination...}
+    return body as T;
+  }
+
+  // Caso: { data: ... }
+  if (typeof body === "object" && "data" in body) {
+    return body as T;
+  }
+
+  // Caso: array direto ou objeto direto
+  return body as T;
+}
 
 /**
  * Helper para tratar erros da API
@@ -168,7 +192,7 @@ export const handleApiError = (error: unknown): string => {
   if (error instanceof Error) {
     return error.message;
   }
-  return 'An unexpected error occurred';
+  return "An unexpected error occurred";
 };
 
 /**
@@ -176,9 +200,9 @@ export const handleApiError = (error: unknown): string => {
  */
 export const setAuthToken = (token: string | null) => {
   if (token) {
-    localStorage.setItem('accessToken', token);
+    localStorage.setItem("accessToken", token);
   } else {
-    localStorage.removeItem('accessToken');
+    localStorage.removeItem("accessToken");
   }
 };
 
@@ -186,8 +210,8 @@ export const setAuthToken = (token: string | null) => {
  * Limpar autenticação
  */
 export const clearAuth = () => {
-  localStorage.removeItem('accessToken');
-  localStorage.removeItem('refreshToken');
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("refreshToken");
 };
 
 export default api;

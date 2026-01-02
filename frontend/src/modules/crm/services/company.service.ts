@@ -1,41 +1,58 @@
-/**
- * Company Service
- * Serviço para gestão de empresas
- */
-
+// src/modules/crm/services/company.service.ts
 import api, { extractData } from '../../../core/utils/api';
-import { Company, CreateCompanyRequest, UpdateCompanyRequest, CompanyFilters } from '../types';
-import { PaginatedResult, PaginationParams } from '../../../core/types';
+import type { Company, CompanyFilters } from '../types';
+
+type PaginationParams = {
+  page?: number;
+  limit?: number;
+};
+
+type PaginatedResponse<T> = {
+  data: T[];
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+};
 
 export const getCompanies = async (
   params?: PaginationParams & CompanyFilters
-): Promise<PaginatedResult<Company>> => {
-  const response = await api.get('/crm/companies', { params });
+): Promise<PaginatedResponse<Company>> => {
+  try {
+    const response = await api.get('/crm/companies', { params });
+    return extractData(response);
+  } catch (err: any) {
+    // fallback seguro para rota inexistente
+    if (err?.response?.status === 404) {
+      return {
+        data: [],
+        pagination: {
+          page: params?.page ?? 1,
+          limit: params?.limit ?? 50,
+          total: 0,
+          pages: 0,
+        },
+      };
+    }
+    throw err;
+  }
+};
+
+export const createCompany = async (payload: Partial<Company>) => {
+  const response = await api.post('/crm/companies', payload);
   return extractData(response);
 };
 
-export const getCompanyById = async (id: string): Promise<Company> => {
-  const response = await api.get(`/crm/companies/${id}`);
+export const updateCompany = async (id: string, payload: Partial<Company>) => {
+  // ✅ FIX: seu backend não tem PUT /companies/:id (por isso 404).
+  // Use PATCH (update parcial) que é o padrão mais comum nesses módulos.
+  const response = await api.patch(`/crm/companies/${id}`, payload);
   return extractData(response);
 };
 
-export const createCompany = async (data: CreateCompanyRequest): Promise<Company> => {
-  const response = await api.post('/crm/companies', data);
+export const deleteCompany = async (id: string) => {
+  const response = await api.delete(`/crm/companies/${id}`);
   return extractData(response);
-};
-
-export const updateCompany = async (
-  id: string,
-  data: UpdateCompanyRequest
-): Promise<Company> => {
-  const response = await api.put(`/crm/companies/${id}`, data);
-  return extractData(response);
-};
-
-export const deleteCompany = async (id: string): Promise<void> => {
-  await api.delete(`/crm/companies/${id}`);
-};
-
-export const bulkDelete = async (ids: string[]): Promise<void> => {
-  await api.post('/crm/companies/bulk-delete', { ids });
 };

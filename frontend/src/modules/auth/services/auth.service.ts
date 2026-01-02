@@ -17,11 +17,27 @@ export interface LoginPayload {
 }
 
 export interface RegisterPayload {
+  /**
+   * E-mail do usuário administrador da nova conta. Deve ser único.
+   */
   email: string;
+  /**
+   * Senha do usuário administrador. Pelo menos 8 caracteres conforme esquema do backend【194810927977408†L13-L18】.
+   */
   password: string;
+  /**
+   * Nome completo do usuário administrador (campo `name` no backend). É obrigatório【194810927977408†L13-L18】.
+   */
+  name: string;
+  /**
+   * Nome da empresa a ser criada. Será armazenado na tabela `companies`【142012959897500†L122-L126】.
+   */
   companyName: string;
-  userName: string;
-  // Additional fields can be included depending on requirements
+  /**
+   * Domínio da empresa (somente letras minúsculas, números e hífens). Deve ser único no banco【142012959897500†L109-L116】.
+   */
+  companyDomain: string;
+  /** Campos adicionais são permitidos mas serão ignorados pelo backend. */
   [key: string]: any;
 }
 
@@ -98,3 +114,58 @@ class AuthService {
 
 export const authService = new AuthService();
 export default authService;
+
+// Named exports for functional usage in pages
+/**
+ * Realiza login com email/senha e opcionalmente código 2FA【230118662508263†L21-L37】.
+ */
+export const login = (payload: LoginPayload) => authService.login(payload);
+
+/**
+ * Registra uma nova empresa e usuário administrador【230118662508263†L40-L50】.
+ */
+export const register = (payload: RegisterPayload) => authService.register(payload);
+
+/**
+ * Solicita a troca do token de acesso usando um token de atualização válido【230118662508263†L58-L69】.
+ */
+export const refreshToken = (refreshToken: string) => authService.refreshToken(refreshToken);
+
+/**
+ * Recupera os dados do usuário autenticado【230118662508263†L76-L90】.
+ */
+export const getMe = () => authService.getMe();
+
+/**
+ * Inicia a configuração de 2FA, retornando o QR code e segredo【230118662508263†L96-L107】.
+ */
+export const setup2FA = (password: string) => authService.setup2FA(password);
+
+/**
+ * Verifica o código 2FA e habilita o segundo fator【230118662508263†L111-L124】.
+ */
+export const verify2FA = (token: string) => authService.verify2FA(token);
+
+/**
+ * Desativa o 2FA fornecendo senha e token【230118662508263†L131-L146】.
+ */
+export const disable2FA = (payload: { password: string; token: string }) => authService.disable2FA(payload);
+
+/**
+ * Efetua logout do usuário【230118662508263†L149-L160】.
+ */
+export const logout = () => authService.logout();
+
+/**
+ * Envia um email com instruções de redefinição de senha.
+ *
+ * Embora o backend atual não exponha explicitamente essa rota, utilizamos a
+ * convenção padrão `/auth/forgot-password`. Ajuste conforme a implementação real.
+ *
+ * @param payload Objeto contendo o email do usuário.
+ * @returns Objeto de resposta do backend.
+ */
+export const forgotPassword = async (payload: { email: string }): Promise<any> => {
+  const response = await api.post('/auth/forgot-password', payload);
+  return response.data;
+};

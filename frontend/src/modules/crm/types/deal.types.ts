@@ -1,72 +1,67 @@
-/**
- * Deal Types
- * Tipos para gestão de negociações/oportunidades
- */
+// src/modules/crm/types/deal.types.ts
 
-export type DealStage = 'lead' | 'qualified' | 'proposal' | 'negotiation' | 'won' | 'lost';
-export type DealPriority = 'low' | 'medium' | 'high';
+export type DealStage = "lead" | "qualified" | "proposal" | "negotiation" | "won" | "lost";
 
 export interface Deal {
   id: string;
   title: string;
-  description?: string;
   value: number;
+  currency?: string;
   stage: DealStage;
-  priority: DealPriority;
-  probability: number; // 0-100
-  contactId?: string;
-  contactName?: string;
-  companyId?: string;
-  companyName?: string;
-  assignedTo?: string;
-  assignedToName?: string;
-  expectedCloseDate?: string;
-  closedDate?: string;
-  tags?: string[];
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface CreateDealRequest {
-  title: string;
-  description?: string;
-  value: number;
-  stage?: DealStage;
-  priority?: DealPriority;
   probability?: number;
-  contactId?: string;
-  companyId?: string;
-  assignedTo?: string;
-  expectedCloseDate?: string;
-  tags?: string[];
-  notes?: string;
-}
+  expectedCloseDate?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 
-export interface UpdateDealRequest {
-  title?: string;
+  // relacionais
+  contactId?: string;
+  ownerId?: string;
+
+  // extras (se o backend devolver)
   description?: string;
-  value?: number;
-  stage?: DealStage;
-  priority?: DealPriority;
-  probability?: number;
-  contactId?: string;
-  companyId?: string;
-  assignedTo?: string;
-  expectedCloseDate?: string;
-  closedDate?: string;
-  tags?: string[];
+  priority?: "low" | "medium" | "high";
   notes?: string;
 }
 
-export interface DealFilters {
-  stage?: DealStage;
-  priority?: DealPriority;
-  contactId?: string;
-  companyId?: string;
-  assignedTo?: string;
-  minValue?: number;
-  maxValue?: number;
-  tags?: string[];
+export interface GetDealsParams {
+  page?: number;
+  limit?: number;
   search?: string;
+  stage?: DealStage;
+  _ts?: any;
 }
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  meta?: {
+    page?: number;
+    limit?: number;
+    total?: number;
+    totalPages?: number;
+  };
+}
+
+type DealContactRef =
+  | { contactId: string; contactName?: never }
+  | { contactId?: never; contactName: string };
+
+export type CreateDealRequest = DealContactRef & {
+  title: string;
+  value: number | string;
+  currency?: string;
+  stage?: DealStage;
+  expectedCloseDate?: string;
+  ownerId?: string;
+  products?: any[];
+
+  // extras
+  description?: string;
+  priority?: "low" | "medium" | "high";
+  probability?: number | string;
+  notes?: string;
+  companyName?: string;
+};
+
+export type UpdateDealRequest = Partial<Omit<CreateDealRequest, "contactName" | "contactId">> & {
+  // update pode manter contato como está; se quiser mudar contato, faça endpoint específico depois
+};

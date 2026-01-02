@@ -5,11 +5,12 @@
 import React, { useState, useEffect } from 'react';
 import { AppLayout, Card, Button, DataTable } from '../../shared';
 import * as chatService from '../services/chat.service';
-import { Chat } from '../types';
+import { ChatRoom } from '../types/chat.types';
 import { handleApiError } from '../../../core/utils/api';
 
 export const ChatListPage: React.FC = () => {
-  const [data, setData] = useState<Chat[]>([]);
+  // Utiliza ChatRoom em vez do tipo inexistente Chat
+  const [data, setData] = useState<ChatRoom[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -19,8 +20,9 @@ export const ChatListPage: React.FC = () => {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const result = await chatService.getAll();
-      setData(result.data);
+      // Pode usar chatService.getChatRooms() ou chatService.getAll()
+      const rooms = await chatService.getChatRooms();
+      setData(rooms);
     } catch (error) {
       console.error('Error loading data:', handleApiError(error));
     } finally {
@@ -40,7 +42,7 @@ export const ChatListPage: React.FC = () => {
           <DataTable
             columns={[
               { key: 'name', label: 'Nome', sortable: true },
-              { key: 'status', label: 'Status' },
+              { key: 'type', label: 'Tipo' },
               { key: 'createdAt', label: 'Criado em' },
             ]}
             data={data}

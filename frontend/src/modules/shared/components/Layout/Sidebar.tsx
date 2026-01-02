@@ -66,12 +66,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
   return (
     <aside
       className={clsx(
-        'sidebar transition-all duration-300',
+        // A classe `sidebar` define o estilo visual; a largura é controlada aqui.
+        'sidebar transition-all duration-300 overflow-hidden',
         isOpen ? 'w-64' : 'w-0'
       )}
-      style={{
-        display: isOpen ? 'block' : 'none',
-      }}
     >
       {/* Logo */}
       <div className="p-6 border-b border-gray-800">
@@ -131,7 +129,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
                       className="w-2 h-2 rounded-full mr-3"
                       style={{
                         backgroundColor:
-                          module.color || CATEGORY_COLORS[category] || '#6b7280',
+                          module.color || CATEGORY_COLORS[module.category || 'core'] || '#6b7280',
                       }}
                     />
                     <span className="flex-1">{module.name}</span>

@@ -74,7 +74,10 @@
   }
 
   .sidebar {
-    @apply w-64 bg-gray-900 text-white h-screen fixed left-0 top-0 overflow-y-auto;
+    /* A sidebar não deve ser fixa nem ter largura predefinida para que participe do layout flexível.
+     * A largura será controlada dinamicamente no componente Sidebar via classes Tailwind (w-64 ou w-0).
+     */
+    @apply bg-gray-900 text-white h-screen overflow-y-auto flex-shrink-0;
   }
 
   .topbar {

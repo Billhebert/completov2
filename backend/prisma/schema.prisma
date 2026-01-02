@@ -125,10 +125,11 @@ model Company {
   serviceTransactions ServiceTransaction[] @relation("ServiceTransactionClient")
 
   // Partnerships (NEW)
-  partnershipsAsCompanyA   Partnership[]       @relation("CompanyAPartnerships")
-  partnershipsAsCompanyB   Partnership[]       @relation("CompanyBPartnerships")
-  sentPartnershipInvites   PartnershipInvite[] @relation("SentPartnershipInvites")
+  partnershipsAsCompanyA     Partnership[]       @relation("CompanyAPartnerships")
+  partnershipsAsCompanyB     Partnership[]       @relation("CompanyBPartnerships")
+  sentPartnershipInvites     PartnershipInvite[] @relation("SentPartnershipInvites")
   receivedPartnershipInvites PartnershipInvite[] @relation("ReceivedPartnershipInvites")
+  CrmPipeline                CrmPipeline[]
 
   @@unique([domain])
   @@map("companies")
@@ -501,6 +502,71 @@ model SkillDevelopmentPlan {
 // ============================================
 // CRM
 // ============================================
+model CrmCompany {
+  id        String @id @default(uuid())
+  companyId String // tenantId (a "Company" do sistema)
+
+  name     String
+  website  String?
+  industry String?
+  size     String?
+  status   String  @default("lead")
+
+  email String?
+  phone String?
+
+  // endereço como objeto (pra bater com o frontend que usa company.address?.street etc.)
+  address Json?
+
+  notes      String?
+  tags       String[]
+  assignedTo String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId])
+  @@map("crm_companies")
+}
+
+model CrmPipeline {
+  id        String @id @default(uuid())
+  companyId String
+
+  name      String
+  isDefault Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  stages  CrmStage[]
+  deals   Deal[]
+
+  @@unique([companyId, name])
+  @@index([companyId])
+  @@map("crm_pipelines")
+}
+
+model CrmStage {
+  id         String @id @default(uuid())
+  pipelineId String
+
+  name   String
+  order  Int
+  isWon  Boolean @default(false)
+  isLost Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  pipeline CrmPipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  deals    Deal[]
+
+  @@unique([pipelineId, name])
+  @@index([pipelineId, order])
+  @@map("crm_stages")
+}
 
 model Contact {
   id               String    @id @default(uuid())
@@ -543,13 +609,20 @@ model Contact {
 }
 
 model Deal {
-  id                String    @id @default(uuid())
-  companyId         String
-  title             String
-  contactId         String
-  value             Float
-  currency          String    @default("USD")
-  stage             String    @default("lead")
+  id        String @id @default(uuid())
+  companyId String
+  title     String
+  contactId String
+  value     Float
+  currency  String @default("USD")
+
+  // ✅ NOVO
+  pipelineId String?
+  stageId    String?
+
+  // ✅ (mantém por compatibilidade; opcional, mas eu recomendo manter por enquanto)
+  stage String @default("lead")
+
   probability       Int?
   expectedCloseDate DateTime?
   closedDate        DateTime?
@@ -566,7 +639,13 @@ model Deal {
   interactions Interaction[]
   activities   Activity[]
 
+  // ✅ NOVO
+  pipeline CrmPipeline? @relation(fields: [pipelineId], references: [id], onDelete: SetNull)
+  stageRef CrmStage?    @relation(fields: [stageId], references: [id], onDelete: SetNull)
+
   @@index([companyId, stage])
+  @@index([companyId, pipelineId])
+  @@index([companyId, stageId])
   @@map("deals")
 }
 
@@ -3560,9 +3639,9 @@ model ServiceTransaction {
 
 // Parceria entre empresas
 model Partnership {
-  id          String @id @default(uuid())
-  companyAId  String // Empresa que iniciou a parceria
-  companyBId  String // Empresa parceira
+  id         String @id @default(uuid())
+  companyAId String // Empresa que iniciou a parceria
+  companyBId String // Empresa parceira
 
   // Informacoes da parceria
   name        String? // Nome da parceria (opcional)
@@ -3575,13 +3654,13 @@ model Partnership {
   shareResources Boolean @default(false) // Compartilhar recursos (funcionarios, equipamentos)
 
   // Status
-  status     String    @default("active") // active, paused, terminated
-  startDate  DateTime  @default(now())
-  endDate    DateTime? // Data de termino (opcional)
+  status    String    @default("active") // active, paused, terminated
+  startDate DateTime  @default(now())
+  endDate   DateTime? // Data de termino (opcional)
 
   // Metadata
-  terms      Json? // Termos da parceria
-  metadata   Json?
+  terms    Json? // Termos da parceria
+  metadata Json?
 
   // Quem criou/aprovou
   createdBy  String
@@ -3603,22 +3682,22 @@ model Partnership {
 
 // Convite de parceria
 model PartnershipInvite {
-  id              String @id @default(uuid())
-  fromCompanyId   String // Empresa que envia o convite
-  toCompanyId     String // Empresa que recebe o convite
+  id            String @id @default(uuid())
+  fromCompanyId String // Empresa que envia o convite
+  toCompanyId   String // Empresa que recebe o convite
 
   // Dados do convite
-  message         String? @db.Text
-  proposedTerms   Json? // Termos propostos
+  message       String? @db.Text
+  proposedTerms Json? // Termos propostos
 
   // Permissoes propostas
-  shareJobs       Boolean @default(true)
-  shareServices   Boolean @default(true)
-  shareResources  Boolean @default(false)
+  shareJobs      Boolean @default(true)
+  shareServices  Boolean @default(true)
+  shareResources Boolean @default(false)
 
   // Status
-  status          String    @default("pending") // pending, accepted, rejected, expired
-  expiresAt       DateTime? // Data de expiracao do convite
+  status    String    @default("pending") // pending, accepted, rejected, expired
+  expiresAt DateTime? // Data de expiracao do convite
 
   // Resposta
   respondedBy     String?
@@ -3637,4 +3716,26 @@ model PartnershipInvite {
   @@index([toCompanyId])
   @@index([status])
   @@map("partnership_invites")
+}
+model CrmDealHealthRule {
+  id            String   @id @default(uuid())
+  companyId     String
+  pipelineId    String?  // null = regra global do cliente
+
+  type          DealHealthType
+  name          String
+  days          Int
+  color         String   // hex ou tailwind token
+  priority      Int      // resolve conflitos
+  isActive      Boolean  @default(true)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([companyId, pipelineId])
+}
+
+enum DealHealthType {
+  NO_ACTIVITY   // dias sem interação
+  OVERDUE       // atraso vs expectedCloseDate
 }
