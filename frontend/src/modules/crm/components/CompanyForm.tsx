@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -51,40 +51,49 @@ export function CompanyForm({
     defaultValues: { status: 'lead' },
   });
 
+  const prevCompanyIdRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (company) {
-      const addr: any = (company as any).address ?? {};
-      reset({
-        name: company.name,
-        website: (company as any).website || '',
-        industry: (company as any).industry || '',
-        size: (company as any).size,
-        status: (company as any).status,
-        email: (company as any).email || '',
-        phone: (company as any).phone || '',
-        street: addr.street || '',
-        city: addr.city || '',
-        state: addr.state || '',
-        zipCode: addr.zipCode || '',
-        country: addr.country || 'Brasil',
-        notes: (company as any).notes || '',
-      });
-    } else {
-      reset({
-        name: '',
-        website: '',
-        industry: '',
-        size: undefined,
-        status: 'lead',
-        email: '',
-        phone: '',
-        street: '',
-        city: '',
-        state: '',
-        zipCode: '',
-        country: 'Brasil',
-        notes: '',
-      });
+    const companyId = company?.id || null;
+
+    // Only reset if company actually changed (not on every render)
+    if (prevCompanyIdRef.current !== companyId) {
+      prevCompanyIdRef.current = companyId;
+
+      if (company) {
+        const addr: any = (company as any).address ?? {};
+        reset({
+          name: company.name,
+          website: (company as any).website || '',
+          industry: (company as any).industry || '',
+          size: (company as any).size,
+          status: (company as any).status,
+          email: (company as any).email || '',
+          phone: (company as any).phone || '',
+          street: addr.street || '',
+          city: addr.city || '',
+          state: addr.state || '',
+          zipCode: addr.zipCode || '',
+          country: addr.country || 'Brasil',
+          notes: (company as any).notes || '',
+        });
+      } else {
+        reset({
+          name: '',
+          website: '',
+          industry: '',
+          size: undefined,
+          status: 'lead',
+          email: '',
+          phone: '',
+          street: '',
+          city: '',
+          state: '',
+          zipCode: '',
+          country: 'Brasil',
+          notes: '',
+        });
+      }
     }
   }, [company, reset]);
 

@@ -64,7 +64,7 @@ export default function CompaniesPage() {
     setModalOpen(true);
   };
 
-  const handleSave = async (payload: Partial<Company>) => {
+  const handleSave = async (payload: any) => {
     try {
       if (editingCompany) {
         await companyService.updateCompany(editingCompany.id, payload);

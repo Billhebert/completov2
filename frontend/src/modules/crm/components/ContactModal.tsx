@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -52,6 +52,8 @@ interface Props {
 const ContactModal = ({ isOpen, onClose, onSave, contact }: Props) => {
   const [submitError, setSubmitError] = useState("");
   const [companies, setCompanies] = useState<Array<{ id: string; name: string }>>([]);
+  const companiesLoadedRef = useRef(false);
+  const prevContactIdRef = useRef<string | null>(null);
 
   const defaultValues = useMemo<FormData>(
     () => ({
@@ -68,9 +70,16 @@ const ContactModal = ({ isOpen, onClose, onSave, contact }: Props) => {
     []
   );
 
-  // Buscar empresas do CRM ao abrir o modal
+  // Buscar empresas do CRM ao abrir o modal (apenas uma vez)
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      companiesLoadedRef.current = false;
+      return;
+    }
+
+    if (companiesLoadedRef.current) return;
+
+    companiesLoadedRef.current = true;
 
     const loadCompanies = async () => {
       try {
@@ -97,22 +106,28 @@ const ContactModal = ({ isOpen, onClose, onSave, contact }: Props) => {
   });
 
   useEffect(() => {
-    setSubmitError("");
+    const contactId = contact?.id || null;
 
-    if (contact) {
-      reset({
-        name: contact.name ?? "",
-        email: contact.email ?? "",
-        phone: contact.phone ?? "",
-        companyName: contact.companyName ?? "",
-        crmCompanyId: contact.crmCompanyId ?? "",
-        position: contact.position ?? "",
-        leadStatus: (contact.leadStatus as any) ?? "lead",
-        leadSource: (contact.leadSource as any) ?? "website",
-        tags: Array.isArray(contact.tags) ? contact.tags.join(", ") : "",
-      });
-    } else {
-      reset(defaultValues);
+    // Only reset if contact actually changed
+    if (prevContactIdRef.current !== contactId) {
+      prevContactIdRef.current = contactId;
+      setSubmitError("");
+
+      if (contact) {
+        reset({
+          name: contact.name ?? "",
+          email: contact.email ?? "",
+          phone: contact.phone ?? "",
+          companyName: contact.companyName ?? "",
+          crmCompanyId: contact.crmCompanyId ?? "",
+          position: contact.position ?? "",
+          leadStatus: (contact.leadStatus as any) ?? "lead",
+          leadSource: (contact.leadSource as any) ?? "website",
+          tags: Array.isArray(contact.tags) ? contact.tags.join(", ") : "",
+        });
+      } else {
+        reset(defaultValues);
+      }
     }
   }, [contact, reset, defaultValues]);
 
