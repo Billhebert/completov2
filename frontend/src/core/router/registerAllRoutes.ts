@@ -39,6 +39,7 @@ import cmmsRoutes from '../../modules/cmms/routes';
 import simulationRoutes from '../../modules/simulation/routes';
 import emailtemplatesRoutes from '../../modules/email-templates/routes';
 import settingsRoutes from '../../modules/settings/routes';
+import feedbackRoutes from '../../modules/feedback/routes';
 
 // Main Pages
 const DashboardPage = lazy(() => import('../../pages/Dashboard'));
@@ -136,6 +137,7 @@ export const registerAllRoutes = () => {
 
   // Register settings
   routeRegistry.registerModuleRoutes('settings', settingsRoutes);
+  routeRegistry.registerModuleRoutes('feedback', feedbackRoutes);
 };
 
 export default registerAllRoutes;

@@ -476,8 +476,22 @@ export const modulesConfig: ModuleConfig[] = [
   },
 
   // ========================================
-  // SETTINGS MODULE
+  // FEEDBACK & SETTINGS
   // ========================================
+  {
+    id: 'feedback',
+    name: 'Feedback',
+    description: 'Sistema de feedback e suporte',
+    version: '1.0.0',
+    enabled: true,
+    icon: 'ChatBubbleLeftRightIcon',
+    color: '#6b7280',
+    order: 99,
+    category: 'core',
+    showInMenu: true,
+    dependencies: ['auth'],
+    requiredPermissions: [],
+  },
   {
     id: 'settings',
     name: 'Configurações',
