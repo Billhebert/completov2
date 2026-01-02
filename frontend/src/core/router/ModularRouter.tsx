@@ -8,6 +8,7 @@ import { Suspense, lazy, useEffect } from 'react';
 import { ProtectedRoute } from './ProtectedRoute';
 import { routeRegistry } from './RouteRegistry';
 import { useModule } from '../providers/ModuleProvider';
+import { useAuth } from '../providers/AuthProvider';
 import registerAllRoutes from './registerAllRoutes';
 
 // Lazy load de páginas especiais
@@ -20,6 +21,19 @@ const LoadingFallback = () => (
     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
   </div>
 );
+
+/**
+ * Componente para rota raiz que redireciona baseado em autenticação
+ */
+const RootRedirect = () => {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <LoadingFallback />;
+  }
+
+  return <Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />;
+};
 
 /**
  * Router modular principal
@@ -51,8 +65,8 @@ export const ModularRouter: React.FC = () => {
   return (
     <Suspense fallback={<LoadingFallback />}>
       <Routes>
-        {/* Rota raiz - redireciona para dashboard */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        {/* Rota raiz - redireciona baseado em autenticação */}
+        <Route path="/" element={<RootRedirect />} />
 
         {/* Renderizar rotas dinâmicas dos módulos e páginas estáticas */}
         {allRoutes.map((routeConfig, index) => {

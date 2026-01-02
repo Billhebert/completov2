@@ -6,6 +6,7 @@
 import React from 'react';
 import { AppProviders } from './core/providers';
 import { ModularRouter } from './core/router';
+import { ErrorBoundary } from './core/components/ErrorBoundary';
 
 
 
@@ -14,9 +15,11 @@ import { ModularRouter } from './core/router';
  */
 const App: React.FC = () => {
   return (
-    <AppProviders>
-      <ModularRouter />
-    </AppProviders>
+    <ErrorBoundary>
+      <AppProviders>
+        <ModularRouter />
+      </AppProviders>
+    </ErrorBoundary>
   );
 };
 

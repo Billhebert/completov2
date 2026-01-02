@@ -127,7 +127,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    * Verificar se o usuário tem uma permissão específica
    */
   const hasPermission = (permission: string): boolean => {
-    return true
     if (!user) return false;
 
     // DEV e ADMIN_GERAL têm todas as permissões

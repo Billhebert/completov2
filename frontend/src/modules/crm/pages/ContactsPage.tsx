@@ -4,6 +4,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AppLayout, Card, Button, Breadcrumbs } from "../../shared";
+import { EmptyState, LoadingSkeleton } from "../../shared/components/UI";
 import { Contact } from "../types";
 import * as contactService from "../services/contact.service";
 import  ContactModal  from "../components/ContactModal";
@@ -249,22 +250,22 @@ export const ContactsPage = () => {
         </Card>
 
         {/* Table */}
-        <Card>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-            </div>
-          ) : contacts.length === 0 ? (
-            <div className="text-center py-12">
-              <h3 className="mt-2 text-sm font-medium text-gray-900">Nenhum contato encontrado.</h3>
-              <p className="mt-1 text-sm text-gray-500">Comece criando um novo contato.</p>
-              <div className="mt-6">
-                <Button variant="primary" onClick={handleCreateContact}>
-                  Criar primeiro contato
-                </Button>
-              </div>
-            </div>
-          ) : (
+        {isLoading ? (
+          <LoadingSkeleton type="table" count={5} />
+        ) : contacts.length === 0 ? (
+          <EmptyState
+            icon="👥"
+            title="Nenhum contato encontrado"
+            description={
+              searchTerm || leadStatusFilter || leadSourceFilter
+                ? "Tente ajustar os filtros para encontrar contatos."
+                : "Comece criando seu primeiro contato para gerenciar seus leads e clientes."
+            }
+            actionLabel="Criar primeiro contato"
+            onAction={handleCreateContact}
+          />
+        ) : (
+          <Card>
             <div className="overflow-x-auto">
               <table className="data-table">
                 <thead>
@@ -362,8 +363,8 @@ export const ContactsPage = () => {
                 </tbody>
               </table>
             </div>
-          )}
-        </Card>
+          </Card>
+        )}
 
         <ContactModal
           isOpen={isModalOpen}

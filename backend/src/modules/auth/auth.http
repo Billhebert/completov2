@@ -1,0 +1,231 @@
+###############################################################################
+# AUTH MODULE - HTTP TESTS
+# Base URL: http://localhost:3000/api/v1/auth
+#
+# This file contains all HTTP requests for testing the Auth module.
+# Use with VSCode REST Client extension or similar HTTP client.
+#
+# Variables:
+# - {{baseUrl}}: Base API URL
+# - {{accessToken}}: Access token from login
+# - {{refreshToken}}: Refresh token from login
+###############################################################################
+
+@baseUrl = http://localhost:3000/api/v1
+@authUrl = {{baseUrl}}/auth
+
+###############################################################################
+# 1. REGISTER - Create new company + admin user
+###############################################################################
+
+### Register new company
+POST {{authUrl}}/register
+Content-Type: application/json
+
+{
+  "companyName": "Test Company Ltd",
+  "companyEmail": "company@test.com",
+  "companyPhone": "+1234567890",
+  "industry": "Technology",
+  "size": "SMALL",
+  "adminName": "Admin User",
+  "adminEmail": "admin@test.com",
+  "adminPassword": "SecurePass123!",
+  "timezone": "America/New_York",
+  "language": "en"
+}
+
+###############################################################################
+# 2. LOGIN - Get access and refresh tokens
+###############################################################################
+
+### Login with email and password
+# @name login
+POST {{authUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "admin@test.com",
+  "password": "SecurePass123!"
+}
+
+### Extract tokens from response
+@accessToken = {{login.response.body.data.accessToken}}
+@refreshToken = {{login.response.body.data.refreshToken}}
+
+### Login with 2FA (if enabled)
+POST {{authUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "admin@test.com",
+  "password": "SecurePass123!",
+  "code2FA": "123456"
+}
+
+###############################################################################
+# 3. GET ME - Get current user information
+###############################################################################
+
+### Get current user info
+GET {{authUrl}}/me
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# 4. REFRESH TOKEN - Get new access token
+###############################################################################
+
+### Refresh access token
+POST {{authUrl}}/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+###############################################################################
+# 5. TWO-FACTOR AUTHENTICATION (2FA)
+###############################################################################
+
+### Setup 2FA - Get QR code
+POST {{authUrl}}/2fa/setup
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "password": "SecurePass123!"
+}
+
+### Verify 2FA token and enable 2FA
+POST {{authUrl}}/2fa/verify
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "token": "123456"
+}
+
+### Disable 2FA
+POST {{authUrl}}/2fa/disable
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "password": "SecurePass123!",
+  "token": "123456"
+}
+
+###############################################################################
+# 6. LOGOUT - Logout user
+###############################################################################
+
+### Logout (client-side token removal)
+POST {{authUrl}}/logout
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# ERROR SCENARIOS - Testing validation and error handling
+###############################################################################
+
+### Login with invalid credentials
+POST {{authUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "wrong@test.com",
+  "password": "WrongPassword"
+}
+
+### Login with missing password
+POST {{authUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "admin@test.com"
+}
+
+### Access protected route without token
+GET {{authUrl}}/me
+
+### Access protected route with invalid token
+GET {{authUrl}}/me
+Authorization: Bearer invalid_token_here
+
+### Register with duplicate email
+POST {{authUrl}}/register
+Content-Type: application/json
+
+{
+  "companyName": "Duplicate Company",
+  "companyEmail": "duplicate@test.com",
+  "adminName": "Another Admin",
+  "adminEmail": "admin@test.com",
+  "adminPassword": "AnotherPass123!"
+}
+
+### Refresh with invalid token
+POST {{authUrl}}/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "invalid_refresh_token"
+}
+
+###############################################################################
+# ADDITIONAL TEST SCENARIOS
+###############################################################################
+
+### Test rate limiting - Send multiple rapid requests
+# Rate limit should trigger after 5 requests in 15 minutes
+POST {{authUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "test@test.com",
+  "password": "test123"
+}
+
+###
+POST {{authUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "test@test.com",
+  "password": "test123"
+}
+
+###
+POST {{authUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "test@test.com",
+  "password": "test123"
+}
+
+###
+POST {{authUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "test@test.com",
+  "password": "test123"
+}
+
+###
+POST {{authUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "test@test.com",
+  "password": "test123"
+}
+
+### This should be rate limited
+POST {{authUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "test@test.com",
+  "password": "test123"
+}

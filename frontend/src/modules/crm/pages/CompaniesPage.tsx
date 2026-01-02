@@ -1,6 +1,7 @@
 // src/modules/crm/pages/CompaniesPage.tsx
 import { useEffect, useState } from "react";
 import { AppLayout, Card, Button, Breadcrumbs, Input } from "../../shared";
+import { EmptyState, LoadingSkeleton } from "../../shared/components/UI";
 import Select from "../../shared/components/UI/Select";
 import { CompanyModal } from "../components";
 import * as companyService from "../services/company.service";
@@ -144,12 +145,19 @@ export default function CompaniesPage() {
         )}
 
         {isLoading ? (
-          <Card className="p-8 text-center">Carregando...</Card>
+          <LoadingSkeleton type="card" count={6} />
         ) : companies.length === 0 ? (
-          <Card className="p-8 text-center">
-            <p className="mb-4">Nenhuma empresa encontrada.</p>
-            <Button onClick={handleCreate}>Criar primeira empresa</Button>
-          </Card>
+          <EmptyState
+            icon="🏢"
+            title="Nenhuma empresa encontrada"
+            description={
+              searchTerm || statusFilter || sizeFilter
+                ? "Tente ajustar os filtros para encontrar empresas."
+                : "Comece criando sua primeira empresa para gerenciar seus clientes."
+            }
+            actionLabel="Criar primeira empresa"
+            onAction={handleCreate}
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {companies.map((company) => (

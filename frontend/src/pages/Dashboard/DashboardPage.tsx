@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../core/providers/AuthProvider';
 import { AppLayout, Card, Breadcrumbs } from '../../modules/shared';
+import { LoadingSkeleton, EmptyState } from '../../modules/shared/components/UI';
 import {
   getDashboardData,
   updateTaskStatus,
@@ -133,8 +134,11 @@ export const DashboardPage: React.FC = () => {
   if (isLoading) {
     return (
       <AppLayout>
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="page-container">
+          <div className="mb-8">
+            <LoadingSkeleton type="text" count={2} />
+          </div>
+          <LoadingSkeleton type="card" count={4} />
         </div>
       </AppLayout>
     );
@@ -249,8 +253,13 @@ export const DashboardPage: React.FC = () => {
         {/* Activities & Tasks */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card title="Atividades Recentes">
-            <div className="space-y-4">
-              {data.recentActivities.map((activity) => (
+            {data.recentActivities.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <p className="text-sm">Nenhuma atividade recente</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {data.recentActivities.map((activity) => (
                 <div key={activity.id} className="flex items-start gap-3 pb-4 border-b border-gray-100 last:border-0">
                   <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
                     <span className="text-lg">{getActivityIcon(activity.type)}</span>
@@ -274,13 +283,20 @@ export const DashboardPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </Card>
 
           <Card title="Tarefas Pendentes">
-            <div className="space-y-3">
-              {data.pendingTasks.map((task) => (
+            {data.pendingTasks.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <p className="text-sm">Nenhuma tarefa pendente</p>
+                <p className="text-xs mt-1">Parabéns! Você está em dia 🎉</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {data.pendingTasks.map((task) => (
                 <div
                   key={task.id}
                   className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
@@ -315,8 +331,9 @@ export const DashboardPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </Card>
         </div>
       </div>

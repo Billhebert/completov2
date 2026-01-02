@@ -1,4 +1,6 @@
 import React, { useMemo, useState } from 'react';
+import { AppLayout } from '../../shared/components/Layout/AppLayout';
+import { Breadcrumbs } from '../../shared/components/Navigation/Breadcrumbs';
 import { Tabs } from '../components/Tabs';
 import { OverviewPage } from './OverviewPage';
 import { ReportsPage } from './ReportsPage';
@@ -11,9 +13,9 @@ export default function AnalyticsListPage() {
   const tabs = useMemo(
     () => [
       { key: 'overview', label: 'Overview' },
-      { key: 'reports', label: 'Reports' },
-      { key: 'funnels', label: 'Funnels' },
-      { key: 'cohorts', label: 'Cohorts' },
+      { key: 'reports', label: 'Relatórios' },
+      { key: 'funnels', label: 'Funis' },
+      { key: 'cohorts', label: 'Coortes' },
       { key: 'churn', label: 'Churn' },
       { key: 'clv', label: 'CLV' },
     ],
@@ -23,19 +25,30 @@ export default function AnalyticsListPage() {
   const [active, setActive] = useState('overview');
 
   return (
-    <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
-        <h1 style={{ margin: 0 }}>Analytics</h1>
+    <AppLayout>
+      <div className="page-container">
+        <Breadcrumbs
+          items={[
+            { label: 'Home', href: '/dashboard' },
+            { label: 'Analytics', href: '/analytics' },
+          ]}
+        />
+
+        <div className="page-header">
+          <h1 className="text-3xl font-bold text-gray-900">Analytics</h1>
+        </div>
+
+        <div className="space-y-6">
+          <Tabs tabs={tabs} activeKey={active} onChange={setActive} />
+
+          {active === 'overview' && <OverviewPage />}
+          {active === 'reports' && <ReportsPage />}
+          {active === 'funnels' && <FunnelsPage />}
+          {active === 'cohorts' && <CohortsPage />}
+          {active === 'churn' && <ChurnPage />}
+          {active === 'clv' && <CLVPage />}
+        </div>
       </div>
-
-      <Tabs tabs={tabs} activeKey={active} onChange={setActive} />
-
-      {active === 'overview' ? <OverviewPage /> : null}
-      {active === 'reports' ? <ReportsPage /> : null}
-      {active === 'funnels' ? <FunnelsPage /> : null}
-      {active === 'cohorts' ? <CohortsPage /> : null}
-      {active === 'churn' ? <ChurnPage /> : null}
-      {active === 'clv' ? <CLVPage /> : null}
-    </div>
+    </AppLayout>
   );
 }

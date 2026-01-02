@@ -9,6 +9,7 @@ import clsx from 'clsx';
 export interface BreadcrumbItem {
   label: string;
   path?: string;
+  href?: string; // Alias para path (para compatibilidade)
   icon?: React.ReactNode;
 }
 
