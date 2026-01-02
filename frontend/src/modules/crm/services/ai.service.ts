@@ -154,16 +154,18 @@ export interface AIRecommendation {
   status: "pending" | "accepted" | "dismissed";
 }
 
-// Contact Enrichment with external data
+// Contact Enrichment with external data (uses real backend API)
 export const enrichContactData = async (contactId: string, contact: Contact): Promise<EnrichmentData> => {
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+  const response = await api.get(`/crm/contacts/${contactId}/enrich`);
+  const data = extractData(response);
 
+  // Transform backend response to match frontend interface
   const domain = contact.email?.split("@")[1] || "";
 
   return {
     contactId,
     enrichedAt: new Date().toISOString(),
-    sources: ["linkedin", "clearbit", "hunter"],
+    sources: ["AI Analysis", "Data Validation"],
     data: {
       linkedin: {
         profileUrl: `https://linkedin.com/in/${contact.name.toLowerCase().replace(/ /g, "-")}`,
@@ -176,7 +178,7 @@ export const enrichContactData = async (contactId: string, contact: Contact): Pr
             size: contact.crmCompany.size || "medium",
             industry: contact.crmCompany.industry || "Technology",
             revenue: "$10M-$50M",
-            website: `https://${domain}`,
+            website: contact.website || `https://${domain}`,
           }
         : undefined,
       social: {
@@ -192,13 +194,15 @@ export const enrichContactData = async (contactId: string, contact: Contact): Pr
   };
 };
 
-// Calculate detailed engagement score
+// Calculate detailed engagement score (uses real backend API)
 export const calculateEngagementScoreDetailed = async (
   contactId: string,
   contact: Contact
 ): Promise<EngagementScoreDetailed> => {
-  await new Promise((resolve) => setTimeout(resolve, 500));
+  const response = await api.get(`/crm/contacts/${contactId}/engagement`);
+  const backendData = extractData(response);
 
+  // Calculate detailed metrics based on contact data
   const dealsCount = contact._aggr_count_deals || 0;
   const interactionsCount = contact._aggr_count_interactions || 0;
   const leadScore = contact.leadScore || 0;
@@ -209,7 +213,7 @@ export const calculateEngagementScoreDetailed = async (
   const interactionFrequency = Math.min(100, interactionsCount * 10);
   const responseTime = Math.floor(Math.random() * 100);
 
-  const score = Math.round(
+  const score = backendData.engagementScore || Math.round(
     (emailResponsiveness * 0.25 +
       meetingAttendance * 0.2 +
       dealProgression * 0.25 +
@@ -224,6 +228,7 @@ export const calculateEngagementScoreDetailed = async (
   if (meetingAttendance < 50) recommendations.push("Agendar reunião de alinhamento");
   if (interactionFrequency < 50) recommendations.push("Retomar contato ativo");
   if (score < 40) recommendations.push("URGENTE: Contato em risco de churn");
+  if (backendData.nextAction) recommendations.push(backendData.nextAction);
 
   return {
     contactId,

@@ -1113,6 +1113,288 @@ Suggest the best next action (Portuguese).
     }
   );
 
+  // Contact churn prediction
+  app.get(
+    `${base}/contacts/:id/churn`,
+    authenticate,
+    tenantIsolation,
+    requirePermission(Permission.CONTACT_READ),
+    async (req, res, next) => {
+      try {
+        const contact = await prisma.contact.findFirst({
+          where: { id: req.params.id, companyId: req.companyId! },
+          include: {
+            deals: true,
+            interactions: { orderBy: { timestamp: "desc" }, take: 20 },
+          },
+        });
+
+        if (!contact) {
+          return res
+            .status(404)
+            .json({ success: false, error: { message: "Contact not found" } });
+        }
+
+        const { getAIService } = await import("../../core/ai/ai.service");
+        const aiService = getAIService(prisma);
+
+        const now = Date.now();
+        const dealsCount = contact.deals?.length || 0;
+        const interactionsCount = contact.interactions?.length || 0;
+        const leadScore = contact.leadScore || 0;
+
+        const recentInteractions =
+          contact.interactions?.filter(
+            (i) =>
+              now - new Date(i.timestamp).getTime() < 30 * 24 * 60 * 60 * 1000
+          ).length || 0;
+
+        const lastInteraction = contact.interactions?.[0]?.timestamp
+          ? Math.floor(
+              (now - new Date(contact.interactions[0].timestamp).getTime()) /
+                (1000 * 60 * 60 * 24)
+            )
+          : null;
+
+        const openDeals =
+          contact.deals?.filter((d) => !["won", "lost"].includes(d.stage))
+            .length || 0;
+
+        // Calculate risk factors
+        const noRecentActivity = recentInteractions < 2;
+        const dealsStagnant = dealsCount > 0 && leadScore < 30;
+        const emailEngagementDrop = interactionsCount === 0;
+        const longTimeSinceContact = lastInteraction !== null && lastInteraction > 60;
+
+        const riskFactorsCount = [
+          noRecentActivity,
+          dealsStagnant,
+          emailEngagementDrop,
+          longTimeSinceContact,
+        ].filter(Boolean).length;
+
+        const churnProbability = Math.min(
+          100,
+          riskFactorsCount * 25 + (100 - leadScore)
+        );
+
+        let churnRisk: "low" | "medium" | "high" | "critical";
+        if (churnProbability >= 75) churnRisk = "critical";
+        else if (churnProbability >= 50) churnRisk = "high";
+        else if (churnProbability >= 25) churnRisk = "medium";
+        else churnRisk = "low";
+
+        const context = `
+Contact Churn Risk Analysis:
+- Total Interactions: ${interactionsCount}
+- Recent Interactions (30 days): ${recentInteractions}
+- Days Since Last Contact: ${lastInteraction || "Never"}
+- Open Deals: ${openDeals}
+- Total Deals: ${dealsCount}
+- Lead Score: ${leadScore}
+- Churn Risk: ${churnRisk} (${churnProbability}%)
+
+Generate 3-5 specific prevention actions in Portuguese.
+`;
+
+        const preventionActions = await aiService.generateSuggestions(
+          context,
+          "churn prevention actions (in Portuguese)"
+        );
+
+        const actionsList = preventionActions
+          .split(/\n/)
+          .filter((s) => s.trim().length > 0)
+          .slice(0, 5);
+
+        res.json({
+          success: true,
+          data: {
+            contactId: req.params.id,
+            companyId: contact.companyId,
+            churnRisk,
+            churnProbability,
+            predictedChurnDate:
+              churnProbability > 50
+                ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+                : undefined,
+            factors: {
+              noRecentActivity,
+              dealsStagnant,
+              emailEngagementDrop,
+              competitorMentions: false,
+              contractExpiringSoon: false,
+            },
+            preventionActions: actionsList,
+          },
+        });
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
+  // AI Recommendations
+  app.get(
+    `${base}/:entityType/:id/recommendations`,
+    authenticate,
+    tenantIsolation,
+    requirePermission(Permission.CONTACT_READ),
+    async (req, res, next) => {
+      try {
+        const { entityType, id } = req.params;
+
+        if (!["contacts", "deals"].includes(entityType)) {
+          return res.status(400).json({
+            success: false,
+            error: { message: "Invalid entity type. Use 'contacts' or 'deals'" },
+          });
+        }
+
+        const { getAIService } = await import("../../core/ai/ai.service");
+        const aiService = getAIService(prisma);
+
+        let entity: any;
+        let recommendations: any[] = [];
+
+        if (entityType === "contacts") {
+          entity = await prisma.contact.findFirst({
+            where: { id, companyId: req.companyId! },
+            include: {
+              deals: true,
+              interactions: { orderBy: { timestamp: "desc" }, take: 10 },
+            },
+          });
+
+          if (!entity) {
+            return res.status(404).json({
+              success: false,
+              error: { message: "Contact not found" },
+            });
+          }
+
+          const dealsCount = entity.deals?.length || 0;
+          const interactionsCount = entity.interactions?.length || 0;
+
+          if (interactionsCount === 0) {
+            recommendations.push({
+              id: `rec-${Date.now()}-1`,
+              type: "next_action",
+              priority: "high",
+              title: "Iniciar primeiro contato",
+              description: "Este contato ainda não tem interações registradas",
+              reasoning: "Contatos sem interações tendem a esfriar rapidamente",
+              suggestedActions: [
+                "Enviar email de apresentação personalizado",
+                "Conectar no LinkedIn",
+                "Agendar discovery call",
+              ],
+              relatedEntityType: "contact",
+              relatedEntityId: id,
+              createdAt: new Date().toISOString(),
+              status: "pending",
+            });
+          }
+
+          if (dealsCount === 0 && interactionsCount > 2) {
+            recommendations.push({
+              id: `rec-${Date.now()}-2`,
+              type: "deal_strategy",
+              priority: "medium",
+              title: "Criar deal para este contato",
+              description: "Contato engajado sem deal associado",
+              reasoning:
+                "Múltiplas interações indicam interesse, mas falta deal formal",
+              suggestedActions: [
+                "Qualificar necessidades em próxima reunião",
+                "Criar deal exploratory",
+                "Enviar proposta inicial",
+              ],
+              relatedEntityType: "contact",
+              relatedEntityId: id,
+              createdAt: new Date().toISOString(),
+              status: "pending",
+            });
+          }
+        } else if (entityType === "deals") {
+          entity = await prisma.deal.findFirst({
+            where: { id, companyId: req.companyId! },
+            include: {
+              contact: true,
+              interactions: { orderBy: { timestamp: "desc" }, take: 10 },
+            },
+          });
+
+          if (!entity) {
+            return res.status(404).json({
+              success: false,
+              error: { message: "Deal not found" },
+            });
+          }
+
+          if (entity.probability && entity.probability < 30) {
+            recommendations.push({
+              id: `rec-${Date.now()}-3`,
+              type: "risk_mitigation",
+              priority: "critical",
+              title: "Deal com baixa probabilidade",
+              description: `Probabilidade atual: ${entity.probability}%`,
+              reasoning:
+                "Deals abaixo de 30% raramente convertem sem ação imediata",
+              suggestedActions: [
+                "Identificar objeções principais",
+                "Agendar reunião com decisor",
+                "Revisar proposta de valor",
+                "Considerar ajuste de preço/escopo",
+              ],
+              relatedEntityType: "deal",
+              relatedEntityId: id,
+              createdAt: new Date().toISOString(),
+              status: "pending",
+            });
+          }
+
+          if (entity.createdAt) {
+            const daysSinceCreation = Math.floor(
+              (Date.now() - new Date(entity.createdAt).getTime()) /
+                (1000 * 60 * 60 * 24)
+            );
+
+            if (
+              daysSinceCreation > 60 &&
+              entity.stage !== "won" &&
+              entity.stage !== "lost"
+            ) {
+              recommendations.push({
+                id: `rec-${Date.now()}-4`,
+                type: "deal_strategy",
+                priority: "high",
+                title: "Deal parado há muito tempo",
+                description: `${daysSinceCreation} dias sem progresso significativo`,
+                reasoning:
+                  "Deals que permanecem no mesmo estágio por mais de 60 dias raramente fecham",
+                suggestedActions: [
+                  "Reagendar reunião de revisão",
+                  "Requalificar necessidade e urgência",
+                  "Considerar re-engajamento do champion",
+                  "Avaliar se vale manter ativo",
+                ],
+                relatedEntityType: "deal",
+                relatedEntityId: id,
+                createdAt: new Date().toISOString(),
+                status: "pending",
+              });
+            }
+          }
+        }
+
+        res.json({ success: true, data: recommendations });
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
   // =========================================================
   // ANALYTICS/REPORTS
   // =========================================================
