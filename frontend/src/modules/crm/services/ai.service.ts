@@ -246,172 +246,35 @@ export const calculateEngagementScoreDetailed = async (
   };
 };
 
-// Predict churn risk
+// Predict churn risk (uses real backend API)
 export const predictChurn = async (contactId: string, contact: Contact): Promise<ChurnPrediction> => {
-  await new Promise((resolve) => setTimeout(resolve, 500));
-
-  const dealsCount = contact._aggr_count_deals || 0;
-  const interactionsCount = contact._aggr_count_interactions || 0;
-  const leadScore = contact.leadScore || 0;
-
-  const noRecentActivity = interactionsCount < 2;
-  const dealsStagnant = dealsCount > 0 && leadScore < 30;
-  const emailEngagementDrop = interactionsCount === 0;
-  const competitorMentions = Math.random() > 0.8;
-  const contractExpiringSoon = Math.random() > 0.9;
-
-  const riskFactorsCount = [
-    noRecentActivity,
-    dealsStagnant,
-    emailEngagementDrop,
-    competitorMentions,
-    contractExpiringSoon,
-  ].filter(Boolean).length;
-
-  const churnProbability = Math.min(100, riskFactorsCount * 25 + (100 - leadScore));
-
-  let churnRisk: "low" | "medium" | "high" | "critical";
-  if (churnProbability >= 75) churnRisk = "critical";
-  else if (churnProbability >= 50) churnRisk = "high";
-  else if (churnProbability >= 25) churnRisk = "medium";
-  else churnRisk = "low";
-
-  const preventionActions: string[] = [];
-  if (noRecentActivity) preventionActions.push("Retomar contato imediatamente");
-  if (dealsStagnant) preventionActions.push("Revisar proposta e identificar blockers");
-  if (emailEngagementDrop) preventionActions.push("Tentar canal alternativo (telefone, LinkedIn)");
-  if (competitorMentions) preventionActions.push("Apresentar diferenciais competitivos");
-  if (contractExpiringSoon) preventionActions.push("Iniciar conversa de renovação");
+  const response = await api.get(`/crm/contacts/${contactId}/churn`);
+  const data = extractData(response);
 
   return {
-    contactId,
-    companyId: contact.companyId,
-    churnRisk,
-    churnProbability,
-    predictedChurnDate:
-      churnProbability > 50
-        ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-        : undefined,
-    factors: {
-      noRecentActivity,
-      dealsStagnant,
-      emailEngagementDrop,
-      competitorMentions,
-      contractExpiringSoon,
-    },
-    preventionActions,
+    contactId: data.contactId,
+    companyId: data.companyId,
+    churnRisk: data.churnRisk,
+    churnProbability: data.churnProbability,
+    predictedChurnDate: data.predictedChurnDate,
+    factors: data.factors,
+    preventionActions: data.preventionActions,
   };
 };
 
-// Generate AI recommendations
+// Generate AI recommendations (uses real backend API)
 export const generateRecommendations = async (
   entityType: "contact" | "deal" | "company",
   entityId: string,
   entityData: any
 ): Promise<AIRecommendation[]> => {
-  await new Promise((resolve) => setTimeout(resolve, 300));
+  // Map entityType to plural for backend API
+  const entityTypePlural = entityType === "contact" ? "contacts" : entityType === "deal" ? "deals" : "companies";
 
-  const recommendations: AIRecommendation[] = [];
+  const response = await api.get(`/crm/${entityTypePlural}/${entityId}/recommendations`);
+  const data = extractData(response);
 
-  if (entityType === "contact") {
-    const contact = entityData as Contact;
-    const dealsCount = contact._aggr_count_deals || 0;
-    const interactionsCount = contact._aggr_count_interactions || 0;
-
-    if (interactionsCount === 0) {
-      recommendations.push({
-        id: `rec-${Date.now()}-1`,
-        type: "next_action",
-        priority: "high",
-        title: "Iniciar primeiro contato",
-        description: "Este contato ainda não tem interações registradas",
-        reasoning: "Contatos sem interações tendem a esfriar rapidamente",
-        suggestedActions: [
-          "Enviar email de apresentação personalizado",
-          "Conectar no LinkedIn",
-          "Agendar discovery call",
-        ],
-        relatedEntityType: "contact",
-        relatedEntityId: entityId,
-        createdAt: new Date().toISOString(),
-        status: "pending",
-      });
-    }
-
-    if (dealsCount === 0 && interactionsCount > 2) {
-      recommendations.push({
-        id: `rec-${Date.now()}-2`,
-        type: "deal_strategy",
-        priority: "medium",
-        title: "Criar deal para este contato",
-        description: "Contato engajado sem deal associado",
-        reasoning: "Múltiplas interações indicam interesse, mas falta deal formal",
-        suggestedActions: [
-          "Qualificar necessidades em próxima reunião",
-          "Criar deal exploratory",
-          "Enviar proposta inicial",
-        ],
-        relatedEntityType: "contact",
-        relatedEntityId: entityId,
-        createdAt: new Date().toISOString(),
-        status: "pending",
-      });
-    }
-  }
-
-  if (entityType === "deal") {
-    const deal = entityData as Deal;
-
-    if (deal.probability && deal.probability < 30) {
-      recommendations.push({
-        id: `rec-${Date.now()}-3`,
-        type: "risk_mitigation",
-        priority: "critical",
-        title: "Deal com baixa probabilidade",
-        description: `Probabilidade atual: ${deal.probability}%`,
-        reasoning: "Deals abaixo de 30% raramente convertem sem ação imediata",
-        suggestedActions: [
-          "Identificar objeções principais",
-          "Agendar reunião com decisor",
-          "Revisar proposta de valor",
-          "Considerar ajuste de preço/escopo",
-        ],
-        relatedEntityType: "deal",
-        relatedEntityId: entityId,
-        createdAt: new Date().toISOString(),
-        status: "pending",
-      });
-    }
-
-    if (deal.createdAt) {
-      const daysSinceCreation = Math.floor(
-        (Date.now() - new Date(deal.createdAt).getTime()) / (1000 * 60 * 60 * 24)
-      );
-
-      if (daysSinceCreation > 60 && deal.stage !== "won" && deal.stage !== "lost") {
-        recommendations.push({
-          id: `rec-${Date.now()}-4`,
-          type: "deal_strategy",
-          priority: "high",
-          title: "Deal parado há muito tempo",
-          description: `${daysSinceCreation} dias sem progresso significativo`,
-          reasoning: "Deals que permanecem no mesmo estágio por mais de 60 dias raramente fecham",
-          suggestedActions: [
-            "Reagendar reunião de revisão",
-            "Requalificar necessidade e urgência",
-            "Considerar re-engajamento do champion",
-            "Avaliar se vale manter ativo",
-          ],
-          relatedEntityType: "deal",
-          relatedEntityId: entityId,
-          createdAt: new Date().toISOString(),
-          status: "pending",
-        });
-      }
-    }
-  }
-
-  return recommendations;
+  return data || [];
 };
 
 export default {
