@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
+import { GlobalSearch, useGlobalSearch } from '../../../crm/components/GlobalSearch';
 
 interface AppLayoutProps {
   children?: React.ReactNode;
@@ -17,6 +18,7 @@ interface AppLayoutProps {
  */
 export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const { isOpen: searchOpen, setIsOpen: setSearchOpen } = useGlobalSearch();
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -30,13 +32,20 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       {/* Main content area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* TopBar */}
-        <TopBar onMenuClick={toggleSidebar} sidebarOpen={sidebarOpen} />
+        <TopBar
+          onMenuClick={toggleSidebar}
+          sidebarOpen={sidebarOpen}
+          onSearchClick={() => setSearchOpen(true)}
+        />
 
         {/* Page content */}
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50">
           {children || <Outlet />}
         </main>
       </div>
+
+      {/* Global Search Modal (Cmd+K / Ctrl+K) */}
+      <GlobalSearch isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
     </div>
   );
 };

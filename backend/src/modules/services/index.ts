@@ -1,5 +1,5 @@
 // src/modules/services/index.ts
-import { Router, Request, Response } from 'express';
+import { Express, Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { logger } from '../../core/logger';
 import { authenticate } from '../../core/middleware/auth';

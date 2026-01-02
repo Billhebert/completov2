@@ -13,6 +13,12 @@ const DealDetailPage = lazy(() => import('./pages/DealDetailPage'));
 const CompaniesPage = lazy(() => import('./pages/CompaniesPage'));
 const ActivitiesPage = lazy(() => import('./pages/ActivitiesPage'));
 const InteractionsPage = lazy(() => import('./pages/InteractionsPage'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const KanbanPage = lazy(() => import('./pages/KanbanPage'));
+const DealHealthPage = lazy(() => import('./pages/DealHealthPage'));
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
+const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
+const ImportExportPage = lazy(() => import('./pages/ImportExportPage'));
 
 export const crmRoutes: ProtectedRouteConfig[] = [
   {
@@ -21,6 +27,54 @@ export const crmRoutes: ProtectedRouteConfig[] = [
     requiredPermissions: ['crm.read'],
     meta: {
       title: 'CRM',
+    },
+  },
+  {
+    path: '/crm/dashboard',
+    element: <DashboardPage />,
+    requiredPermissions: ['crm.read'],
+    meta: {
+      title: 'Dashboard Executivo - CRM',
+    },
+  },
+  {
+    path: '/crm/kanban',
+    element: <KanbanPage />,
+    requiredPermissions: ['crm.read'],
+    meta: {
+      title: 'Pipeline Kanban - CRM',
+    },
+  },
+  {
+    path: '/crm/deal-health',
+    element: <DealHealthPage />,
+    requiredPermissions: ['crm.read'],
+    meta: {
+      title: 'Deal Health - CRM',
+    },
+  },
+  {
+    path: '/crm/notifications',
+    element: <NotificationsPage />,
+    requiredPermissions: ['crm.read'],
+    meta: {
+      title: 'Notificações - CRM',
+    },
+  },
+  {
+    path: '/crm/analytics',
+    element: <AnalyticsPage />,
+    requiredPermissions: ['crm.read'],
+    meta: {
+      title: 'Analytics & Relatórios - CRM',
+    },
+  },
+  {
+    path: '/crm/import-export',
+    element: <ImportExportPage />,
+    requiredPermissions: ['crm.read'],
+    meta: {
+      title: 'Importação & Exportação - CRM',
     },
   },
   {
