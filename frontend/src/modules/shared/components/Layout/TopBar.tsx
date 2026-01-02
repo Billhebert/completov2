@@ -6,16 +6,19 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../../../core/providers/AuthProvider';
 import { useNavigate } from 'react-router-dom';
+import { NotificationBell } from '../../../crm/components/NotificationBell';
+import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 
 interface TopBarProps {
   onMenuClick: () => void;
   sidebarOpen: boolean;
+  onSearchClick?: () => void;
 }
 
 /**
  * Componente de TopBar
  */
-export const TopBar: React.FC<TopBarProps> = ({ onMenuClick, sidebarOpen }) => {
+export const TopBar: React.FC<TopBarProps> = ({ onMenuClick, sidebarOpen, onSearchClick }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -57,51 +60,25 @@ export const TopBar: React.FC<TopBarProps> = ({ onMenuClick, sidebarOpen }) => {
           </svg>
         </button>
 
-        {/* Search bar (placeholder) */}
-        <div className="ml-4 hidden md:block">
-          <div className="relative">
-            <input
-              type="search"
-              placeholder="Buscar..."
-              className="w-64 pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-            />
-            <svg
-              className="w-5 h-5 text-gray-400 absolute left-3 top-2.5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-          </div>
-        </div>
+        {/* Global Search Button (Cmd+K) */}
+        {onSearchClick && (
+          <button
+            onClick={onSearchClick}
+            className="ml-4 hidden md:flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors border border-gray-300"
+          >
+            <MagnifyingGlassIcon className="h-5 w-5" />
+            <span>Buscar</span>
+            <kbd className="hidden lg:inline-flex items-center gap-1 rounded border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs font-sans text-gray-600">
+              ⌘K
+            </kbd>
+          </button>
+        )}
       </div>
 
       {/* Right side - User menu and notifications */}
       <div className="flex items-center gap-4">
-        {/* Notifications */}
-        <button className="p-2 rounded-lg hover:bg-gray-100 transition relative">
-          <svg
-            className="w-6 h-6 text-gray-600"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-            />
-          </svg>
-          {/* Badge de notificações não lidas */}
-          <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-        </button>
+        {/* Notification Bell with real functionality */}
+        <NotificationBell />
 
         {/* User menu */}
         <div className="relative">
