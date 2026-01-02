@@ -45,6 +45,10 @@ import { partnershipsModule } from "./modules/partnerships";
 import { settingsModule } from "./modules/settings";
 import { webhooksModule } from "./modules/webhooks";
 import { feedbackModule } from "./modules/feedback";
+import { cmmsModule } from "./modules/cmms/module";
+import { fsmModule } from "./modules/fsm/module";
+import { mcpModule } from "./modules/mcp/module";
+import { deduplicationModule } from "./modules/deduplication";
 import { startWorkers } from "./workers";
 import { i18nMiddleware } from "./core/i18n";
 import { timezoneMiddleware } from "./core/timezone";
@@ -196,6 +200,10 @@ export async function createApp(): Promise<AppContext> {
   moduleLoader.register(settingsModule);
   moduleLoader.register(webhooksModule);
   moduleLoader.register(feedbackModule);
+  moduleLoader.register(cmmsModule);
+  moduleLoader.register(fsmModule);
+  moduleLoader.register(mcpModule);
+  moduleLoader.register(deduplicationModule);
 
   // Enable modules (could be loaded from database per tenant)
   const enabledModules = [
@@ -228,6 +236,10 @@ export async function createApp(): Promise<AppContext> {
     "partnerships",
     "settings",
     "feedback",
+    "cmms",
+    "fsm",
+    "mcp",
+    "deduplication",
   ];
 
   await moduleLoader.enableModules(enabledModules);
