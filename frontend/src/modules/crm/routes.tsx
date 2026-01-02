@@ -16,6 +16,9 @@ const InteractionsPage = lazy(() => import('./pages/InteractionsPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const KanbanPage = lazy(() => import('./pages/KanbanPage'));
 const DealHealthPage = lazy(() => import('./pages/DealHealthPage'));
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
+const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
+const ImportExportPage = lazy(() => import('./pages/ImportExportPage'));
 
 export const crmRoutes: ProtectedRouteConfig[] = [
   {
@@ -48,6 +51,30 @@ export const crmRoutes: ProtectedRouteConfig[] = [
     requiredPermissions: ['crm.read'],
     meta: {
       title: 'Deal Health - CRM',
+    },
+  },
+  {
+    path: '/crm/notifications',
+    element: <NotificationsPage />,
+    requiredPermissions: ['crm.read'],
+    meta: {
+      title: 'Notificações - CRM',
+    },
+  },
+  {
+    path: '/crm/analytics',
+    element: <AnalyticsPage />,
+    requiredPermissions: ['crm.read'],
+    meta: {
+      title: 'Analytics & Relatórios - CRM',
+    },
+  },
+  {
+    path: '/crm/import-export',
+    element: <ImportExportPage />,
+    requiredPermissions: ['crm.read'],
+    meta: {
+      title: 'Importação & Exportação - CRM',
     },
   },
   {
