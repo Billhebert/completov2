@@ -292,23 +292,44 @@ function setupRoutes(app: Express, prisma: PrismaClient, eventBus: EventBus) {
           });
         }
 
-        // Se houver deals associados, impede a exclusão
-        if (contact._count.deals > 0) {
-          return res.status(400).json({
-            success: false,
-            code: "CONTACT_HAS_DEALS",
-            message: `Não é possível excluir este contato porque ele possui ${contact._count.deals} negociação(ões) associada(s). Exclua ou reassocie as negociações primeiro.`,
-            details: {
-              dealCount: contact._count.deals,
-              interactionCount: contact._count.interactions,
-            },
+        // Exclusão em cascata: primeiro deleta os produtos dos deals, depois os deals, depois as interações, e por fim o contato
+        await prisma.$transaction(async (tx) => {
+          // 1. Deleta produtos de todos os deals deste contato
+          const deals = await tx.deal.findMany({
+            where: { contactId: req.params.id },
+            select: { id: true },
           });
-        }
 
-        // Se houver apenas interações, deleta tudo em cascata
-        await prisma.contact.delete({ where: { id: req.params.id } });
+          for (const deal of deals) {
+            await tx.dealProduct.deleteMany({
+              where: { dealId: deal.id },
+            });
+          }
 
-        res.json({ success: true, message: "Contact deleted" });
+          // 2. Deleta todos os deals deste contato
+          await tx.deal.deleteMany({
+            where: { contactId: req.params.id },
+          });
+
+          // 3. Deleta todas as interações deste contato
+          await tx.interaction.deleteMany({
+            where: { contactId: req.params.id },
+          });
+
+          // 4. Deleta o contato
+          await tx.contact.delete({
+            where: { id: req.params.id },
+          });
+        });
+
+        res.json({
+          success: true,
+          message: "Contact deleted",
+          deletedRelations: {
+            deals: contact._count.deals,
+            interactions: contact._count.interactions,
+          },
+        });
       } catch (error) {
         next(error);
       }
@@ -505,6 +526,158 @@ function setupRoutes(app: Express, prisma: PrismaClient, eventBus: EventBus) {
         });
 
         return res.status(201).json({ success: true, data: created });
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
+  // Get single deal
+  app.get(
+    `${base}/deals/:id`,
+    authenticate,
+    tenantIsolation,
+    requirePermission(Permission.CONTACT_READ),
+    async (req, res, next) => {
+      try {
+        const deal = await prisma.deal.findFirst({
+          where: { id: req.params.id, companyId: req.companyId! },
+          include: {
+            contact: { select: { id: true, name: true, email: true } },
+            owner: { select: { id: true, name: true, email: true } },
+            products: true,
+            pipeline: true,
+            stageRef: true,
+            interactions: {
+              orderBy: { timestamp: "desc" },
+              take: 10,
+            },
+          },
+        });
+
+        if (!deal) {
+          return res
+            .status(404)
+            .json({ success: false, error: { message: "Deal not found" } });
+        }
+
+        res.json({ success: true, data: deal });
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
+  // Update deal
+  app.put(
+    `${base}/deals/:id`,
+    authenticate,
+    tenantIsolation,
+    requirePermission(Permission.CONTACT_CREATE),
+    async (req, res, next) => {
+      try {
+        const deal = await prisma.deal.findFirst({
+          where: { id: req.params.id, companyId: req.companyId! },
+        });
+
+        if (!deal) {
+          return res
+            .status(404)
+            .json({ success: false, message: "Deal não encontrado" });
+        }
+
+        const { products, pipelineId, stageId, ...updateData } = req.body;
+
+        // Resolve stage if stageId is provided
+        let resolvedPipelineId = pipelineId;
+        let resolvedStageId = stageId;
+        let resolvedStageString = updateData.stage || deal.stage;
+        let closedDate = deal.closedDate;
+
+        if (stageId) {
+          const stage = await prisma.crmStage.findFirst({
+            where: { id: stageId },
+            include: { pipeline: true },
+          });
+
+          if (!stage || stage.pipeline.companyId !== req.companyId!) {
+            return res
+              .status(404)
+              .json({ success: false, message: "Stage inválido" });
+          }
+
+          resolvedPipelineId = stage.pipelineId;
+          resolvedStageId = stage.id;
+          resolvedStageString = stage.isWon
+            ? "won"
+            : stage.isLost
+            ? "lost"
+            : "open";
+          closedDate = stage.isWon || stage.isLost ? new Date() : null;
+        }
+
+        const updated = await prisma.deal.update({
+          where: { id: req.params.id },
+          data: {
+            ...updateData,
+            pipelineId: resolvedPipelineId,
+            stageId: resolvedStageId,
+            stage: resolvedStageString,
+            closedDate,
+          },
+          include: {
+            products: true,
+            pipeline: true,
+            stageRef: true,
+            contact: true,
+            owner: true,
+          },
+        });
+
+        res.json({ success: true, data: updated });
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
+  // Delete deal
+  app.delete(
+    `${base}/deals/:id`,
+    authenticate,
+    tenantIsolation,
+    requirePermission(Permission.CONTACT_CREATE),
+    async (req, res, next) => {
+      try {
+        const deal = await prisma.deal.findFirst({
+          where: { id: req.params.id, companyId: req.companyId! },
+        });
+
+        if (!deal) {
+          return res
+            .status(404)
+            .json({ success: false, message: "Deal não encontrado" });
+        }
+
+        // Delete in transaction: products first, then deal
+        await prisma.$transaction(async (tx) => {
+          // Delete all products of this deal
+          await tx.dealProduct.deleteMany({
+            where: { dealId: req.params.id },
+          });
+
+          // Delete all interactions of this deal
+          await tx.interaction.deleteMany({
+            where: { dealId: req.params.id },
+          });
+
+          // Delete the deal
+          await tx.deal.delete({
+            where: { id: req.params.id },
+          });
+        });
+
+        res.json({ success: true, message: "Deal deleted" });
       } catch (error) {
         next(error);
       }

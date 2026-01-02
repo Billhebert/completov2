@@ -140,26 +140,31 @@ export const ContactsPage = () => {
   };
 
   const handleDeleteContact = async (id: string) => {
-    if (!window.confirm("Tem certeza que deseja excluir este contato?")) return;
+    const contact = contacts.find(c => c.id === id);
+    const dealCount = contact?.dealsCount || 0;
+    const interactionCount = contact?.interactionsCount || 0;
+
+    let confirmMessage = "Tem certeza que deseja excluir este contato?";
+
+    if (dealCount > 0 || interactionCount > 0) {
+      confirmMessage = `Tem certeza que deseja excluir este contato?\n\nISSO TAMBÉM IRÁ EXCLUIR:`;
+      if (dealCount > 0) {
+        confirmMessage += `\n- ${dealCount} negociação(ões)`;
+      }
+      if (interactionCount > 0) {
+        confirmMessage += `\n- ${interactionCount} interação(ões)`;
+      }
+      confirmMessage += `\n\nEsta ação não pode ser desfeita.`;
+    }
+
+    if (!window.confirm(confirmMessage)) return;
 
     try {
       await contactService.deleteContact(id);
       await loadContacts();
       setError(""); // Limpa erro em caso de sucesso
     } catch (err: any) {
-      // Verifica se é erro de contato com deals associados
-      const errorCode = err?.response?.data?.code;
-      const errorMessage = err?.response?.data?.message;
-      const dealCount = err?.response?.data?.details?.dealCount;
-
-      if (errorCode === "CONTACT_HAS_DEALS") {
-        setError(
-          errorMessage ||
-          `Não é possível excluir este contato porque ele possui ${dealCount || 'uma ou mais'} negociação(ões) associada(s). Exclua ou reassocie as negociações primeiro.`
-        );
-      } else {
-        setError(handleApiError(err));
-      }
+      setError(handleApiError(err));
     }
   };
 

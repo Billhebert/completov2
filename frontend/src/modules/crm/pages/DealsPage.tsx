@@ -23,6 +23,7 @@ export default function DealsPage() {
 
   const [manageOpen, setManageOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [editingDealId, setEditingDealId] = useState<string | null>(null);
 
   const pipeline = useMemo(
     () => pipelines.find((p) => p.id === pipelineId) ?? null,
@@ -108,6 +109,24 @@ export default function DealsPage() {
     if (!draggingDealId) return;
     await moveDeal(draggingDealId, stageId);
     setDraggingDealId(null);
+  }
+
+  function handleEditDeal(dealId: string) {
+    setEditingDealId(dealId);
+  }
+
+  async function handleDeleteDeal(dealId: string) {
+    if (!window.confirm("Tem certeza que deseja excluir esta negociação?\n\nEsta ação não pode ser desfeita.")) {
+      return;
+    }
+
+    try {
+      await dealService.deleteDeal(dealId);
+      await loadDeals(pipelineId);
+      setError("");
+    } catch (e: any) {
+      setError(e?.response?.data?.message || e?.message || "Erro ao excluir negociação");
+    }
   }
 
   return (
@@ -210,10 +229,10 @@ export default function DealsPage() {
                         </div>
 
                         <div className="mt-3 flex gap-2">
-                          <Button variant="secondary" onClick={() => alert("Conecte sua edição aqui")}>
+                          <Button variant="secondary" onClick={() => handleEditDeal(d.id)}>
                             Editar
                           </Button>
-                          <Button variant="danger" onClick={() => alert("Conecte sua exclusão aqui")}>
+                          <Button variant="danger" onClick={() => handleDeleteDeal(d.id)}>
                             Excluir
                           </Button>
                         </div>
@@ -249,6 +268,18 @@ export default function DealsPage() {
           }}
           pipelineId={pipelineId}
           stageId={defaultStageId}
+        />
+
+        <DealModal
+          isOpen={!!editingDealId}
+          onClose={() => setEditingDealId(null)}
+          onCreated={async () => {
+            if (pipelineId) await loadDeals(pipelineId);
+            setEditingDealId(null);
+          }}
+          pipelineId={pipelineId}
+          stageId={defaultStageId}
+          dealId={editingDealId || undefined}
         />
       </div>
     </AppLayout>

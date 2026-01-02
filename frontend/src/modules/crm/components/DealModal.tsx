@@ -15,12 +15,16 @@ type Props = {
   // contexto vindo da página
   pipelineId: string;
   stageId: string; // estágio inicial sugerido (primeiro estágio do funil selecionado)
+
+  // para edição
+  dealId?: string; // se fornecido, carrega e edita o deal
 };
 
 type ContactLite = { id: string; name: string; email?: string | null };
 type CompanyLite = { id: string; name: string };
 
-export function DealModal({ isOpen, onClose, onCreated, pipelineId, stageId }: Props) {
+export function DealModal({ isOpen, onClose, onCreated, pipelineId, stageId, dealId }: Props) {
+  const isEditing = !!dealId;
   const [title, setTitle] = useState("");
   const [value, setValue] = useState<string>("0");
   const [currency, setCurrency] = useState("BRL");
@@ -42,20 +46,44 @@ export function DealModal({ isOpen, onClose, onCreated, pipelineId, stageId }: P
     return !!title.trim() && !!contactId && Number(value) >= 0 && !!pipelineId && !!stageId;
   }, [title, contactId, value, pipelineId, stageId]);
 
-  // reset ao abrir
+  // reset ao abrir (ou carregar deal para edição)
   useEffect(() => {
     if (!isOpen) return;
-    setTitle("");
-    setValue("0");
-    setCurrency("BRL");
-    setContactSearch("");
-    setContacts([]);
-    setContactId("");
-    setCompanySearch("");
-    setCompanies([]);
-    setCompanyId("");
-    setError("");
-  }, [isOpen]);
+
+    const loadDeal = async () => {
+      if (isEditing && dealId) {
+        try {
+          const deal = await dealService.getDealById(dealId);
+          setTitle(deal.title || "");
+          setValue(String(deal.value || 0));
+          setCurrency(deal.currency || "BRL");
+          setContactId(deal.contactId || "");
+          setCompanyId((deal as any).companyId || "");
+
+          // Pre-load contact name if available
+          if (deal.contact) {
+            setContactSearch(deal.contact.name || "");
+          }
+        } catch (e) {
+          setError("Erro ao carregar negociação");
+        }
+      } else {
+        // Reset for creation
+        setTitle("");
+        setValue("0");
+        setCurrency("BRL");
+        setContactSearch("");
+        setContactId("");
+        setCompanySearch("");
+        setCompanyId("");
+      }
+      setContacts([]);
+      setCompanies([]);
+      setError("");
+    };
+
+    loadDeal();
+  }, [isOpen, isEditing, dealId]);
 
   // buscar contatos (debounce simples)
   useEffect(() => {
@@ -115,7 +143,7 @@ export function DealModal({ isOpen, onClose, onCreated, pipelineId, stageId }: P
   async function handleSave() {
     setError("");
 
-    if (!pipelineId) return setError("Selecione um funil antes de criar.");
+    if (!pipelineId) return setError("Selecione um funil antes de " + (isEditing ? "salvar." : "criar."));
     if (!stageId) return setError("Selecione um estágio inicial.");
     if (!title.trim()) return setError("Título é obrigatório.");
     if (!contactId) return setError("Contato é obrigatório.");
@@ -124,7 +152,7 @@ export function DealModal({ isOpen, onClose, onCreated, pipelineId, stageId }: P
 
     setLoading(true);
     try {
-      await dealService.createDeal({
+      const payload = {
         title: title.trim(),
         value: n,
         currency,
@@ -134,12 +162,18 @@ export function DealModal({ isOpen, onClose, onCreated, pipelineId, stageId }: P
         // ✅ novos campos (seu service atualizado abaixo vai incluir no payload)
         pipelineId,
         stageId,
-      });
+      };
+
+      if (isEditing && dealId) {
+        await dealService.updateDeal(dealId, payload);
+      } else {
+        await dealService.createDeal(payload);
+      }
 
       await onCreated();
       onClose();
     } catch (e: any) {
-      setError(e?.response?.data?.message ?? e?.message ?? "Erro ao criar oportunidade.");
+      setError(e?.response?.data?.message ?? e?.message ?? `Erro ao ${isEditing ? 'atualizar' : 'criar'} oportunidade.`);
     } finally {
       setLoading(false);
     }
@@ -153,9 +187,13 @@ export function DealModal({ isOpen, onClose, onCreated, pipelineId, stageId }: P
       <div className="absolute inset-x-0 top-10 mx-auto w-[min(900px,92vw)] bg-white rounded-2xl shadow-2xl overflow-hidden">
         <div className="px-6 py-4 border-b flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold">Nova oportunidade</h3>
+            <h3 className="text-lg font-semibold">
+              {isEditing ? "Editar oportunidade" : "Nova oportunidade"}
+            </h3>
             <p className="text-sm text-gray-600">
-              Crie uma oportunidade vinculada a um contato e organize no funil.
+              {isEditing
+                ? "Atualize as informações da oportunidade."
+                : "Crie uma oportunidade vinculada a um contato e organize no funil."}
             </p>
           </div>
 
@@ -274,7 +312,7 @@ export function DealModal({ isOpen, onClose, onCreated, pipelineId, stageId }: P
               Cancelar
             </Button>
             <Button type="button" onClick={handleSave} disabled={loading || !canSave}>
-              {loading ? "Salvando..." : "Criar oportunidade"}
+              {loading ? "Salvando..." : isEditing ? "Salvar alterações" : "Criar oportunidade"}
             </Button>
           </div>
         </div>

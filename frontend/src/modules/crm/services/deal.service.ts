@@ -205,6 +205,12 @@ export const getDeals = async (
   return normalizePaginated<Deal>(response.data);
 };
 
+export const getDealById = async (id: string): Promise<Deal> => {
+  const response = await api.get(`/crm/deals/${id}`);
+  const raw = response.data?.data ?? response.data?.deal ?? response.data;
+  return raw as Deal;
+};
+
 export const createDeal = async (input: AnyObj): Promise<Deal> => {
   const payload = await normalizeCreatePayload(input);
   const response = await api.post('/crm/deals', payload);
