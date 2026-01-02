@@ -119,7 +119,7 @@ export const updateContact = async (
   id: string,
   data: UpdateContactRequest
 ): Promise<Contact> => {
-  const response = await api.put(`/crm/contacts/${id}`, data);
+  const response = await api.patch(`/crm/contacts/${id}`, data);
   const payload = response.data;
   const raw = payload?.data ?? payload?.contact ?? payload;
   return sanitizeContact(raw);

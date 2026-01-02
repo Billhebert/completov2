@@ -140,12 +140,30 @@ export const ContactsPage = () => {
   };
 
   const handleDeleteContact = async (id: string) => {
-    if (!window.confirm("Tem certeza que deseja excluir este contato?")) return;
+    const contact = contacts.find(c => c.id === id);
+    const dealCount = contact?.dealsCount || 0;
+    const interactionCount = contact?.interactionsCount || 0;
+
+    let confirmMessage = "Tem certeza que deseja excluir este contato?";
+
+    if (dealCount > 0 || interactionCount > 0) {
+      confirmMessage = `Tem certeza que deseja excluir este contato?\n\nISSO TAMBÉM IRÁ EXCLUIR:`;
+      if (dealCount > 0) {
+        confirmMessage += `\n- ${dealCount} negociação(ões)`;
+      }
+      if (interactionCount > 0) {
+        confirmMessage += `\n- ${interactionCount} interação(ões)`;
+      }
+      confirmMessage += `\n\nEsta ação não pode ser desfeita.`;
+    }
+
+    if (!window.confirm(confirmMessage)) return;
 
     try {
       await contactService.deleteContact(id);
       await loadContacts();
-    } catch (err) {
+      setError(""); // Limpa erro em caso de sucesso
+    } catch (err: any) {
       setError(handleApiError(err));
     }
   };
@@ -289,7 +307,20 @@ export const ContactsPage = () => {
                       </td>
 
                       <td className="text-gray-600">{c.phone || "-"}</td>
-                      <td className="text-gray-600">{c.companyName || "-"}</td>
+                      <td>
+                        {c.crmCompany ? (
+                          <div>
+                            <div className="font-medium text-gray-900">{c.crmCompany.name}</div>
+                            {c.crmCompany.industry && (
+                              <div className="text-xs text-gray-500">{c.crmCompany.industry}</div>
+                            )}
+                          </div>
+                        ) : c.companyName ? (
+                          <span className="text-gray-600">{c.companyName}</span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
 
                       <td>
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusBadgeClass(c.leadStatus)}`}>

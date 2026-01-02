@@ -26,6 +26,7 @@ const contactSchema = z.object({
   email: z.string().email().optional(),
   phone: z.string().optional(),
   companyName: z.string().optional(),
+  crmCompanyId: z.string().uuid().optional(), // FK para CrmCompany
   position: z.string().optional(),
   website: z.string().url().optional(),
   tags: z.array(z.string()).optional(),
@@ -141,6 +142,7 @@ function setupRoutes(app: Express, prisma: PrismaClient, eventBus: EventBus) {
             take: parseInt(limit as string),
             include: {
               owner: { select: { id: true, name: true, email: true } },
+              crmCompany: { select: { id: true, name: true, status: true } },
               _count: { select: { deals: true, interactions: true } },
             },
             orderBy: { createdAt: "desc" },
@@ -222,6 +224,7 @@ function setupRoutes(app: Express, prisma: PrismaClient, eventBus: EventBus) {
           where: { id: req.params.id, companyId: req.companyId! },
           include: {
             owner: { select: { id: true, name: true, email: true } },
+            crmCompany: { select: { id: true, name: true, status: true, industry: true } },
             deals: {
               include: { owner: { select: { id: true, name: true } } },
               orderBy: { createdAt: "desc" },
@@ -272,8 +275,64 @@ function setupRoutes(app: Express, prisma: PrismaClient, eventBus: EventBus) {
     requirePermission(Permission.CONTACT_CREATE),
     async (req, res, next) => {
       try {
-        await prisma.contact.delete({ where: { id: req.params.id } });
-        res.json({ success: true, message: "Contact deleted" });
+        // Verifica se o contato existe e pertence ao tenant
+        const contact = await prisma.contact.findFirst({
+          where: { id: req.params.id, companyId: req.companyId! },
+          include: {
+            _count: {
+              select: {
+                deals: true,
+                interactions: true,
+              },
+            },
+          },
+        });
+
+        if (!contact) {
+          return res.status(404).json({
+            success: false,
+            message: "Contato não encontrado",
+          });
+        }
+
+        // Exclusão em cascata: primeiro deleta os produtos dos deals, depois os deals, depois as interações, e por fim o contato
+        await prisma.$transaction(async (tx) => {
+          // 1. Deleta produtos de todos os deals deste contato
+          const deals = await tx.deal.findMany({
+            where: { contactId: req.params.id },
+            select: { id: true },
+          });
+
+          for (const deal of deals) {
+            await tx.dealProduct.deleteMany({
+              where: { dealId: deal.id },
+            });
+          }
+
+          // 2. Deleta todos os deals deste contato
+          await tx.deal.deleteMany({
+            where: { contactId: req.params.id },
+          });
+
+          // 3. Deleta todas as interações deste contato
+          await tx.interaction.deleteMany({
+            where: { contactId: req.params.id },
+          });
+
+          // 4. Deleta o contato
+          await tx.contact.delete({
+            where: { id: req.params.id },
+          });
+        });
+
+        res.json({
+          success: true,
+          message: "Contact deleted",
+          deletedRelations: {
+            deals: contact._count.deals,
+            interactions: contact._count.interactions,
+          },
+        });
       } catch (error) {
         next(error);
       }
@@ -470,6 +529,158 @@ function setupRoutes(app: Express, prisma: PrismaClient, eventBus: EventBus) {
         });
 
         return res.status(201).json({ success: true, data: created });
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
+  // Get single deal
+  app.get(
+    `${base}/deals/:id`,
+    authenticate,
+    tenantIsolation,
+    requirePermission(Permission.CONTACT_READ),
+    async (req, res, next) => {
+      try {
+        const deal = await prisma.deal.findFirst({
+          where: { id: req.params.id, companyId: req.companyId! },
+          include: {
+            contact: { select: { id: true, name: true, email: true } },
+            owner: { select: { id: true, name: true, email: true } },
+            products: true,
+            pipeline: true,
+            stageRef: true,
+            interactions: {
+              orderBy: { timestamp: "desc" },
+              take: 10,
+            },
+          },
+        });
+
+        if (!deal) {
+          return res
+            .status(404)
+            .json({ success: false, error: { message: "Deal not found" } });
+        }
+
+        res.json({ success: true, data: deal });
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
+  // Update deal
+  app.put(
+    `${base}/deals/:id`,
+    authenticate,
+    tenantIsolation,
+    requirePermission(Permission.CONTACT_CREATE),
+    async (req, res, next) => {
+      try {
+        const deal = await prisma.deal.findFirst({
+          where: { id: req.params.id, companyId: req.companyId! },
+        });
+
+        if (!deal) {
+          return res
+            .status(404)
+            .json({ success: false, message: "Deal não encontrado" });
+        }
+
+        const { products, pipelineId, stageId, ...updateData } = req.body;
+
+        // Resolve stage if stageId is provided
+        let resolvedPipelineId = pipelineId;
+        let resolvedStageId = stageId;
+        let resolvedStageString = updateData.stage || deal.stage;
+        let closedDate = deal.closedDate;
+
+        if (stageId) {
+          const stage = await prisma.crmStage.findFirst({
+            where: { id: stageId },
+            include: { pipeline: true },
+          });
+
+          if (!stage || stage.pipeline.companyId !== req.companyId!) {
+            return res
+              .status(404)
+              .json({ success: false, message: "Stage inválido" });
+          }
+
+          resolvedPipelineId = stage.pipelineId;
+          resolvedStageId = stage.id;
+          resolvedStageString = stage.isWon
+            ? "won"
+            : stage.isLost
+            ? "lost"
+            : "open";
+          closedDate = stage.isWon || stage.isLost ? new Date() : null;
+        }
+
+        const updated = await prisma.deal.update({
+          where: { id: req.params.id },
+          data: {
+            ...updateData,
+            pipelineId: resolvedPipelineId,
+            stageId: resolvedStageId,
+            stage: resolvedStageString,
+            closedDate,
+          },
+          include: {
+            products: true,
+            pipeline: true,
+            stageRef: true,
+            contact: true,
+            owner: true,
+          },
+        });
+
+        res.json({ success: true, data: updated });
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
+  // Delete deal
+  app.delete(
+    `${base}/deals/:id`,
+    authenticate,
+    tenantIsolation,
+    requirePermission(Permission.CONTACT_CREATE),
+    async (req, res, next) => {
+      try {
+        const deal = await prisma.deal.findFirst({
+          where: { id: req.params.id, companyId: req.companyId! },
+        });
+
+        if (!deal) {
+          return res
+            .status(404)
+            .json({ success: false, message: "Deal não encontrado" });
+        }
+
+        // Delete in transaction: products first, then deal
+        await prisma.$transaction(async (tx) => {
+          // Delete all products of this deal
+          await tx.dealProduct.deleteMany({
+            where: { dealId: req.params.id },
+          });
+
+          // Delete all interactions of this deal
+          await tx.interaction.deleteMany({
+            where: { dealId: req.params.id },
+          });
+
+          // Delete the deal
+          await tx.deal.delete({
+            where: { id: req.params.id },
+          });
+        });
+
+        res.json({ success: true, message: "Deal deleted" });
       } catch (error) {
         next(error);
       }
