@@ -1,0 +1,13 @@
+export { setupServicesListRoute } from './list.route';
+export { setupServicesGetRoute } from './get.route';
+export { setupServicesCreateRoute } from './create.route';
+export { setupServicesUpdateRoute } from './update.route';
+export { setupServicesDeleteRoute } from './delete.route';
+export { setupServicesProposeRoute } from './propose.route';
+export { setupServicesProposalsListRoute } from './proposals-list.route';
+export { setupServicesProposalAcceptRoute } from './proposal-accept.route';
+export { setupServicesProposalRejectRoute } from './proposal-reject.route';
+export { setupServicesCompleteRoute } from './complete.route';
+export { setupServicesRateRoute } from './rate.route';
+export { setupServicesTransactionsListRoute } from './transactions-list.route';
+export { setupServicesTransactionPaymentRoute } from './transaction-payment.route';

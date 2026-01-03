@@ -1,0 +1,12 @@
+export { setupOmnichannelAccountsListRoute } from './accounts-list.route';
+export { setupOmnichannelAccountsCreateRoute } from './accounts-create.route';
+export { setupOmnichannelQrcodeRoute } from './qrcode.route';
+export { setupOmnichannelSendMessageRoute } from './send-message.route';
+export { setupOmnichannelConversationsListRoute } from './conversations-list.route';
+export { setupOmnichannelWebhookRoute } from './webhook.route';
+export { setupOmnichannelAccountStatusRoute } from './account-status.route';
+export { setupOmnichannelAccountDisconnectRoute } from './account-disconnect.route';
+export { setupOmnichannelAccountDeleteRoute } from './account-delete.route';
+export { setupOmnichannelConversationsCreateRoute } from './conversations-create.route';
+export { setupOmnichannelConversationsGetRoute } from './conversations-get.route';
+export { setupOmnichannelConversationsUpdateRoute } from './conversations-update.route';

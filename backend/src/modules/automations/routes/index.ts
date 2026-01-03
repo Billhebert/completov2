@@ -1,0 +1,12 @@
+export { setupAutomationsWorkflowsListRoute } from './workflows-list.route';
+export { setupAutomationsWorkflowsGetRoute } from './workflows-get.route';
+export { setupAutomationsWorkflowsCreateRoute } from './workflows-create.route';
+export { setupAutomationsWorkflowsUpdateRoute } from './workflows-update.route';
+export { setupAutomationsWorkflowsDeleteRoute } from './workflows-delete.route';
+export { setupAutomationsWorkflowsActivateRoute } from './workflows-activate.route';
+export { setupAutomationsWorkflowsPauseRoute } from './workflows-pause.route';
+export { setupAutomationsWorkflowsTestRoute } from './workflows-test.route';
+export { setupAutomationsExecutionsListRoute } from './executions-list.route';
+export { setupAutomationsExecutionLogsRoute } from './execution-logs.route';
+export { setupAutomationsSuggestionsRoute } from './suggestions.route';
+export { setupAutomationsWorkflowAnalyzeRoute } from './workflow-analyze.route';

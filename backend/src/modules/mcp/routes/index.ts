@@ -1,0 +1,11 @@
+export { setupMcpServersListRoute } from './servers-list.route';
+export { setupMcpServersGetRoute } from './servers-get.route';
+export { setupMcpServersCreateRoute } from './servers-create.route';
+export { setupMcpServersUpdateRoute } from './servers-update.route';
+export { setupMcpServersDeleteRoute } from './servers-delete.route';
+export { setupMcpToolsListRoute } from './tools-list.route';
+export { setupMcpToolsCreateRoute } from './tools-create.route';
+export { setupMcpResourcesListRoute } from './resources-list.route';
+export { setupMcpResourcesCreateRoute } from './resources-create.route';
+export { setupMcpLogsListRoute } from './logs-list.route';
+export { setupMcpLogsCreateRoute } from './logs-create.route';
