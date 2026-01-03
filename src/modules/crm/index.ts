@@ -42,11 +42,10 @@ import {
   setupDealsProbabilityRoute,
 } from './routes/deals';
 
-// Import NEW modular routes - Interactions
-import {
-  setupInteractionsCreateRoute,
-  setupInteractionsListRoute,
-} from './routes/interactions';
+// Import CRUD factory for simple entities
+import { createCrudRoutes } from '../../core/factories/crud-routes.factory';
+import { createInteractionSchema } from './schemas/interaction.schema';
+import { Permission } from '../../core/middleware';
 
 // Import NEW modular routes - AI
 import { setupAIRecommendationsRoute } from './routes/ai';
@@ -98,10 +97,49 @@ function setupRoutes(app: Express, prisma: PrismaClient, eventBus: EventBus) {
   setupDealsProbabilityRoute(app, prisma, base);
 
   // =========================================================
-  // NEW ULTRA-MODULAR ROUTES - INTERACTIONS
+  // INTERACTIONS - Using CRUD Factory
   // =========================================================
-  setupInteractionsCreateRoute(app, prisma, base);
-  setupInteractionsListRoute(app, prisma, base);
+  createCrudRoutes(app, prisma, {
+    entityName: 'interaction',
+    baseUrl: `${base}/interactions`,
+    singularName: 'interaction',
+    pluralName: 'interactions',
+    tenantIsolation: true,
+    auditLog: true,
+    softDelete: false,
+    allowedSortFields: ['timestamp', 'type', 'createdAt'],
+    readPermission: Permission.CONTACT_READ,
+    createPermission: Permission.CONTACT_CREATE,
+    create: {
+      schema: createInteractionSchema,
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        contact: { select: { id: true, name: true } },
+        deal: { select: { id: true, title: true } },
+      },
+      beforeOperation: async (req, data) => {
+        data.userId = req.user!.id;
+      },
+    },
+    list: {
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        contact: { select: { id: true, name: true } },
+        deal: { select: { id: true, title: true } },
+      },
+    },
+    customFilters: (query) => {
+      const where: any = {};
+      if (query.contactId) where.contactId = query.contactId;
+      if (query.dealId) where.dealId = query.dealId;
+      if (query.type) where.type = query.type;
+      return where;
+    },
+    // Disable operations not needed
+    get: { enabled: false },
+    update: { enabled: false },
+    delete: { enabled: false },
+  });
 
   // =========================================================
   // NEW ULTRA-MODULAR ROUTES - AI
