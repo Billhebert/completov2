@@ -596,6 +596,7 @@ model Contact {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
   lastContactedAt  DateTime?
+  deletedAt        DateTime? // Soft delete support
 
   company           Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
   crmCompany        CrmCompany?        @relation("ContactCrmCompany", fields: [crmCompanyId], references: [id], onDelete: SetNull)
@@ -635,6 +636,7 @@ model Deal {
   ownerId           String
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
+  deletedAt         DateTime? // Soft delete support
 
   company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
   contact      Contact       @relation(fields: [contactId], references: [id])
@@ -685,6 +687,7 @@ model Interaction {
   scheduledFor DateTime?
   completedAt  DateTime?
   metadata     Json?
+  deletedAt    DateTime? // Soft delete support
 
   company Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   contact Contact? @relation(fields: [contactId], references: [id], onDelete: Cascade)

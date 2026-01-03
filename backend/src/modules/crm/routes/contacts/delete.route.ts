@@ -1,12 +1,21 @@
 /**
  * CRM - Contacts Delete Route
  * DELETE /api/v1/crm/contacts/:id
- * Delete a contact and all related data (cascade)
+ * Soft delete a contact and cascade to related entities
+ *
+ * Security:
+ * - Uses soft delete (sets deletedAt timestamp)
+ * - Related deals and interactions also soft-deleted
+ * - Audit logging enabled
+ * - Can be restored via restore endpoint
  */
 
 import { Express, Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticate, tenantIsolation, requirePermission, Permission } from '../../../../core/middleware';
+import { notDeleted } from '../../../../core/utils/soft-delete';
+import { auditLogger } from '../../../../core/audit/audit-logger';
+import { successResponse, notFoundResponse } from '../../../../core/utils/api-response';
 
 export function setupContactsDeleteRoute(app: Express, prisma: PrismaClient, baseUrl: string) {
   app.delete(
@@ -16,9 +25,13 @@ export function setupContactsDeleteRoute(app: Express, prisma: PrismaClient, bas
     requirePermission(Permission.CONTACT_CREATE),
     async (req: Request, res: Response, next: NextFunction) => {
       try {
-        // Verify contact exists and belongs to tenant
+        // Verify contact exists, belongs to tenant, and is not already deleted
         const contact = await prisma.contact.findFirst({
-          where: { id: req.params.id, companyId: req.companyId! },
+          where: {
+            id: req.params.id,
+            companyId: req.companyId!,
+            ...notDeleted,
+          },
           include: {
             _count: {
               select: {
@@ -30,50 +43,76 @@ export function setupContactsDeleteRoute(app: Express, prisma: PrismaClient, bas
         });
 
         if (!contact) {
-          return res.status(404).json({
-            success: false,
-            message: 'Contato não encontrado',
-          });
+          return notFoundResponse(res, 'Contact not found or already deleted');
         }
 
-        // Cascade deletion: products -> deals -> interactions -> contact
+        const now = new Date();
+
+        // Soft delete: contact and cascade to related entities
         await prisma.$transaction(async (tx) => {
-          // 1. Delete products from all deals of this contact
-          const deals = await tx.deal.findMany({
-            where: { contactId: req.params.id },
-            select: { id: true },
+          // 1. Soft delete all deals of this contact
+          await tx.deal.updateMany({
+            where: {
+              contactId: req.params.id,
+              deletedAt: null,
+            },
+            data: {
+              deletedAt: now,
+            },
           });
 
-          for (const deal of deals) {
-            await tx.dealProduct.deleteMany({
-              where: { dealId: deal.id },
-            });
-          }
-
-          // 2. Delete all deals of this contact
-          await tx.deal.deleteMany({
-            where: { contactId: req.params.id },
+          // 2. Soft delete all interactions of this contact
+          await tx.interaction.updateMany({
+            where: {
+              contactId: req.params.id,
+              deletedAt: null,
+            },
+            data: {
+              deletedAt: now,
+            },
           });
 
-          // 3. Delete all interactions of this contact
-          await tx.interaction.deleteMany({
-            where: { contactId: req.params.id },
-          });
-
-          // 4. Delete the contact
-          await tx.contact.delete({
+          // 3. Soft delete the contact
+          await tx.contact.update({
             where: { id: req.params.id },
+            data: {
+              deletedAt: now,
+            },
           });
         });
 
-        res.json({
-          success: true,
-          message: 'Contact deleted',
-          deletedRelations: {
-            deals: contact._count.deals,
-            interactions: contact._count.interactions,
+        // Audit log the deletion
+        await auditLogger.log({
+          action: 'contact.delete',
+          userId: req.user!.id,
+          companyId: req.companyId!,
+          resourceType: 'contact',
+          resourceId: contact.id,
+          details: {
+            contactName: contact.name,
+            contactEmail: contact.email,
+            cascadeDeleted: {
+              deals: contact._count.deals,
+              interactions: contact._count.interactions,
+            },
           },
         });
+
+        return successResponse(
+          res,
+          {
+            id: contact.id,
+            deletedAt: now,
+            cascadeDeleted: {
+              deals: contact._count.deals,
+              interactions: contact._count.interactions,
+            },
+          },
+          {
+            message: 'Contact soft-deleted successfully. Can be restored within 30 days.',
+            requestId: req.id,
+          }
+        );
       } catch (error) {
         next(error);
       }
