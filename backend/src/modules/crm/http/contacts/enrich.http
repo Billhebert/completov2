@@ -1,0 +1,137 @@
+###############################################################################
+# CRM - CONTACTS ENRICH (AI)
+# GET /api/v1/crm/contacts/:id/enrich
+# AI-powered contact data enrichment suggestions
+###############################################################################
+
+@baseUrl = http://localhost:3000/api/v1
+@crmUrl = {{baseUrl}}/crm
+@accessToken = your_access_token_here
+@contactId = contact-uuid-here
+
+###############################################################################
+# 1. ENRICH CONTACT - Basic
+###############################################################################
+
+### Get enrichment suggestions for contact
+GET {{crmUrl}}/contacts/{{contactId}}/enrich
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# 2. ENRICH CONTACT - Different Scenarios
+###############################################################################
+
+### Enrich contact - with missing email
+GET {{crmUrl}}/contacts/contact-no-email-uuid/enrich
+Authorization: Bearer {{accessToken}}
+
+### Enrich contact - with missing phone
+GET {{crmUrl}}/contacts/contact-no-phone-uuid/enrich
+Authorization: Bearer {{accessToken}}
+
+### Enrich contact - with multiple missing fields
+GET {{crmUrl}}/contacts/incomplete-contact-uuid/enrich
+Authorization: Bearer {{accessToken}}
+
+### Enrich contact - complete profile (should return no suggestions)
+GET {{crmUrl}}/contacts/complete-contact-uuid/enrich
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# RESPONSE STRUCTURE - Incomplete Contact
+###############################################################################
+# {
+#   "success": true,
+#   "data": {
+#     "complete": false,
+#     "completionPercentage": 66,
+#     "missingFields": ["phone", "website"],
+#     "suggestions": [
+#       "1. Busque o número de telefone no LinkedIn do contato",
+#       "2. Verifique o site da empresa no Google",
+#       "3. Consulte bases de dados empresariais como CNPJ",
+#       "4. Entre em contato por email solicitando as informações",
+#       "5. Verifique assinatura de email anterior do contato"
+#     ]
+#   }
+# }
+
+###############################################################################
+# RESPONSE STRUCTURE - Complete Contact
+###############################################################################
+# {
+#   "success": true,
+#   "data": {
+#     "complete": true,
+#     "message": "Contato já possui todas as informações principais",
+#     "suggestions": []
+#   }
+# }
+
+###############################################################################
+# FIELDS CHECKED FOR COMPLETENESS
+###############################################################################
+# The enrichment endpoint checks for these 6 fields:
+# 1. email
+# 2. phone
+# 3. companyName
+# 4. position
+# 5. website
+# 6. Basic contact info
+#
+# Completion percentage = (fields_present / 6) * 100
+
+###############################################################################
+# AI-POWERED SUGGESTIONS
+###############################################################################
+# The AI analyzes:
+# - Contact's current data
+# - Missing fields
+# - Lead status
+# - Tags
+# - Recent interactions
+#
+# And provides Portuguese suggestions on:
+# - Where to find missing information
+# - How to enrich the contact data
+# - Best practices for data collection
+
+###############################################################################
+# ERROR SCENARIOS
+###############################################################################
+
+### Error - Contact not found (404)
+GET {{crmUrl}}/contacts/non-existent-uuid/enrich
+Authorization: Bearer {{accessToken}}
+
+### Error - Invalid UUID format
+GET {{crmUrl}}/contacts/invalid-uuid/enrich
+Authorization: Bearer {{accessToken}}
+
+### Error - Contact from another company (tenant isolation)
+GET {{crmUrl}}/contacts/other-company-contact-uuid/enrich
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# ERROR SCENARIOS - Authentication
+###############################################################################
+
+### Error - No authentication token
+GET {{crmUrl}}/contacts/{{contactId}}/enrich
+
+### Error - Invalid token
+GET {{crmUrl}}/contacts/{{contactId}}/enrich
+Authorization: Bearer invalid_token_xyz
+
+### Error - Insufficient permissions
+GET {{crmUrl}}/contacts/{{contactId}}/enrich
+Authorization: Bearer user_without_read_permission_token
+
+###############################################################################
+# USE CASES
+###############################################################################
+# 1. Data Quality Dashboard: Show incomplete contacts
+# 2. Sales Rep Actions: Prioritize contacts needing enrichment
+# 3. Lead Scoring: Higher scores for complete profiles
+# 4. Automated Workflows: Trigger enrichment tasks
+# 5. Reporting: Track data completeness over time

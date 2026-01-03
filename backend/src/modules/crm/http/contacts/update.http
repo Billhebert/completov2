@@ -1,0 +1,237 @@
+###############################################################################
+# CRM - CONTACTS UPDATE
+# PATCH /api/v1/crm/contacts/:id
+# Update an existing contact
+###############################################################################
+
+@baseUrl = http://localhost:3000/api/v1
+@crmUrl = {{baseUrl}}/crm
+@accessToken = your_access_token_here
+@contactId = contact-uuid-here
+
+###############################################################################
+# 1. UPDATE CONTACT - Single Field
+###############################################################################
+
+### Update contact - name only
+PATCH {{crmUrl}}/contacts/{{contactId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "John Updated Doe"
+}
+
+### Update contact - email only
+PATCH {{crmUrl}}/contacts/{{contactId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "email": "john.updated@example.com"
+}
+
+### Update contact - phone only
+PATCH {{crmUrl}}/contacts/{{contactId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "phone": "+1-555-9999"
+}
+
+###############################################################################
+# 2. UPDATE CONTACT - Multiple Fields
+###############################################################################
+
+### Update contact - name and email
+PATCH {{crmUrl}}/contacts/{{contactId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Jane Updated Smith",
+  "email": "jane.new@example.com",
+  "position": "VP of Sales"
+}
+
+### Update contact - complete profile update
+PATCH {{crmUrl}}/contacts/{{contactId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Robert Johnson Jr.",
+  "email": "robert.jr@newcompany.com",
+  "phone": "+1-555-1234",
+  "companyName": "New Corp Inc",
+  "position": "Senior Director",
+  "website": "https://newcorp.com"
+}
+
+###############################################################################
+# 3. UPDATE CONTACT - Tags
+###############################################################################
+
+### Update contact - add tags
+PATCH {{crmUrl}}/contacts/{{contactId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "tags": ["vip", "enterprise", "priority", "decision-maker"]
+}
+
+### Update contact - replace tags
+PATCH {{crmUrl}}/contacts/{{contactId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "tags": ["cold-lead", "follow-up-needed"]
+}
+
+### Update contact - remove all tags
+PATCH {{crmUrl}}/contacts/{{contactId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "tags": []
+}
+
+###############################################################################
+# 4. UPDATE CONTACT - Lead Status
+###############################################################################
+
+### Update contact - change lead status to qualified
+PATCH {{crmUrl}}/contacts/{{contactId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "leadStatus": "qualified"
+}
+
+### Update contact - change lead status to contacted
+PATCH {{crmUrl}}/contacts/{{contactId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "leadStatus": "contacted"
+}
+
+### Update contact - change lead status to converted
+PATCH {{crmUrl}}/contacts/{{contactId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "leadStatus": "converted"
+}
+
+###############################################################################
+# 5. UPDATE CONTACT - Lead Score
+###############################################################################
+
+### Update contact - increase lead score
+PATCH {{crmUrl}}/contacts/{{contactId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "leadScore": 85
+}
+
+### Update contact - decrease lead score
+PATCH {{crmUrl}}/contacts/{{contactId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "leadScore": 45
+}
+
+###############################################################################
+# 6. UPDATE CONTACT - Change Owner
+###############################################################################
+
+### Update contact - reassign to different owner
+PATCH {{crmUrl}}/contacts/{{contactId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "ownerId": "new-owner-user-uuid"
+}
+
+###############################################################################
+# 7. UPDATE CONTACT - Link to CRM Company
+###############################################################################
+
+### Update contact - link to CRM company
+PATCH {{crmUrl}}/contacts/{{contactId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "crmCompanyId": "crm-company-uuid-here"
+}
+
+### Update contact - unlink from CRM company
+PATCH {{crmUrl}}/contacts/{{contactId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "crmCompanyId": null
+}
+
+###############################################################################
+# ERROR SCENARIOS
+###############################################################################
+
+### Error - Contact not found (404)
+PATCH {{crmUrl}}/contacts/non-existent-uuid
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Should Fail"
+}
+
+### Error - Invalid email format
+PATCH {{crmUrl}}/contacts/{{contactId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "email": "not-valid-email"
+}
+
+### Error - Invalid UUID for ownerId
+PATCH {{crmUrl}}/contacts/{{contactId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "ownerId": "invalid-uuid"
+}
+
+### Error - No authentication token
+PATCH {{crmUrl}}/contacts/{{contactId}}
+Content-Type: application/json
+
+{
+  "name": "Unauthorized Update"
+}
+
+### Error - Invalid token
+PATCH {{crmUrl}}/contacts/{{contactId}}
+Authorization: Bearer invalid_token
+Content-Type: application/json
+
+{
+  "name": "Invalid Token Update"
+}

@@ -1,0 +1,297 @@
+###############################################################################
+# CRM MODULE - ALL ROUTES CONSOLIDATED
+# Base URL: http://localhost:3000/api/v1/crm
+#
+# This file contains ALL CRM routes for comprehensive testing
+# Total Routes: 19 endpoints across 5 categories
+#
+# Categories:
+# 1. CONTACTS (8 routes)
+# 2. DEALS (7 routes)
+# 3. INTERACTIONS (2 routes)
+# 4. AI/RECOMMENDATIONS (1 route)
+# 5. ANALYTICS (1 route)
+###############################################################################
+
+@baseUrl = http://localhost:3000/api/v1
+@crmUrl = {{baseUrl}}/crm
+@accessToken = your_access_token_here
+
+###############################################################################
+# SECTION 1: CONTACTS (8 routes)
+###############################################################################
+
+### 1.1 List Contacts
+GET {{crmUrl}}/contacts?page=1&limit=20
+Authorization: Bearer {{accessToken}}
+
+### 1.2 Create Contact
+# @name createContact
+POST {{crmUrl}}/contacts
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "email": "john.doe@example.com",
+  "phone": "+1-555-0123",
+  "companyName": "ACME Corp",
+  "position": "CEO",
+  "tags": ["vip", "enterprise"]
+}
+
+@contactId = {{createContact.response.body.data.id}}
+
+### 1.3 Get Contact
+GET {{crmUrl}}/contacts/{{contactId}}
+Authorization: Bearer {{accessToken}}
+
+### 1.4 Update Contact
+PATCH {{crmUrl}}/contacts/{{contactId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "leadStatus": "qualified",
+  "leadScore": 85
+}
+
+### 1.5 Delete Contact
+# DELETE {{crmUrl}}/contacts/{{contactId}}
+# Authorization: Bearer {{accessToken}}
+
+### 1.6 Contact Enrichment (AI)
+GET {{crmUrl}}/contacts/{{contactId}}/enrich
+Authorization: Bearer {{accessToken}}
+
+### 1.7 Contact Engagement Score (AI)
+GET {{crmUrl}}/contacts/{{contactId}}/engagement
+Authorization: Bearer {{accessToken}}
+
+### 1.8 Contact Churn Prediction (AI)
+GET {{crmUrl}}/contacts/{{contactId}}/churn
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# SECTION 2: DEALS (7 routes)
+###############################################################################
+
+### 2.1 List Deals
+GET {{crmUrl}}/deals?page=1&limit=20
+Authorization: Bearer {{accessToken}}
+
+### 2.2 Create Deal
+# @name createDeal
+POST {{crmUrl}}/deals
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "title": "Q1 Enterprise Deal",
+  "contactId": "{{contactId}}",
+  "value": 50000,
+  "currency": "USD",
+  "stage": "open",
+  "expectedCloseDate": "2025-03-31",
+  "products": [
+    {
+      "productId": "prod-1",
+      "productName": "Enterprise License",
+      "quantity": 10,
+      "unitPrice": 5000
+    }
+  ]
+}
+
+@dealId = {{createDeal.response.body.data.id}}
+
+### 2.3 Get Deal
+GET {{crmUrl}}/deals/{{dealId}}
+Authorization: Bearer {{accessToken}}
+
+### 2.4 Update Deal
+PUT {{crmUrl}}/deals/{{dealId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "value": 55000,
+  "stage": "negotiation"
+}
+
+### 2.5 Delete Deal
+# DELETE {{crmUrl}}/deals/{{dealId}}
+# Authorization: Bearer {{accessToken}}
+
+### 2.6 Move Deal Stage
+PATCH {{crmUrl}}/deals/{{dealId}}/stage
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "stageId": "stage-uuid-here"
+}
+
+### 2.7 Deal Probability (AI)
+GET {{crmUrl}}/deals/{{dealId}}/probability
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# SECTION 3: INTERACTIONS (2 routes)
+###############################################################################
+
+### 3.1 Create Interaction
+POST {{crmUrl}}/interactions
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "type": "email",
+  "contactId": "{{contactId}}",
+  "dealId": "{{dealId}}",
+  "subject": "Follow-up on Q1 Deal",
+  "content": "Hi John, following up on our discussion...",
+  "direction": "outbound"
+}
+
+### 3.2 List Interactions
+GET {{crmUrl}}/interactions?contactId={{contactId}}&limit=50
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# SECTION 4: AI RECOMMENDATIONS (1 route)
+###############################################################################
+
+### 4.1 Get AI Recommendations for Contact
+GET {{crmUrl}}/contacts/{{contactId}}/recommendations
+Authorization: Bearer {{accessToken}}
+
+### 4.2 Get AI Recommendations for Deal
+GET {{crmUrl}}/deals/{{dealId}}/recommendations
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# SECTION 5: ANALYTICS (1 route)
+###############################################################################
+
+### 5.1 Pipeline Analytics
+GET {{crmUrl}}/analytics/pipeline
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# ADDITIONAL ROUTES (from existing modular files)
+###############################################################################
+
+### 5.2 List Pipelines
+GET {{crmUrl}}/pipelines
+Authorization: Bearer {{accessToken}}
+
+### 5.3 List CRM Companies
+GET {{crmUrl}}/companies
+Authorization: Bearer {{accessToken}}
+
+### 5.4 List Activities
+GET {{crmUrl}}/activities
+Authorization: Bearer {{accessToken}}
+
+### 5.5 Lead Scoring
+GET {{crmUrl}}/lead-scoring
+Authorization: Bearer {{accessToken}}
+
+### 5.6 Deal Health
+GET {{crmUrl}}/deals/health
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# COMPLETE WORKFLOW EXAMPLE
+###############################################################################
+
+### STEP 1: Create Contact
+# @name workflowContact
+POST {{crmUrl}}/contacts
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Alice Johnson",
+  "email": "alice@techstartup.io",
+  "phone": "+1-555-9999",
+  "companyName": "Tech Startup Inc",
+  "position": "Founder & CEO",
+  "tags": ["startup", "tech", "hot-lead"]
+}
+
+### STEP 2: Create Deal for Contact
+@workflowContactId = {{workflowContact.response.body.data.id}}
+
+# @name workflowDeal
+POST {{crmUrl}}/deals
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "title": "Tech Startup - Initial Deal",
+  "contactId": "{{workflowContactId}}",
+  "value": 25000,
+  "currency": "USD",
+  "stage": "open"
+}
+
+### STEP 3: Log Interaction
+@workflowDealId = {{workflowDeal.response.body.data.id}}
+
+POST {{crmUrl}}/interactions
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "type": "meeting",
+  "contactId": "{{workflowContactId}}",
+  "dealId": "{{workflowDealId}}",
+  "subject": "Discovery Call",
+  "content": "Great discovery call. Customer needs: X, Y, Z",
+  "direction": "outbound"
+}
+
+### STEP 4: Check Deal Probability
+GET {{crmUrl}}/deals/{{workflowDealId}}/probability
+Authorization: Bearer {{accessToken}}
+
+### STEP 5: Get AI Recommendations
+GET {{crmUrl}}/contacts/{{workflowContactId}}/recommendations
+Authorization: Bearer {{accessToken}}
+
+### STEP 6: Check Contact Engagement
+GET {{crmUrl}}/contacts/{{workflowContactId}}/engagement
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# ERROR SCENARIOS
+###############################################################################
+
+### Unauthorized Request
+GET {{crmUrl}}/contacts
+
+### Invalid Token
+GET {{crmUrl}}/contacts
+Authorization: Bearer invalid_token_123
+
+### Not Found
+GET {{crmUrl}}/contacts/non-existent-uuid-12345
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# PERFORMANCE TESTING
+###############################################################################
+
+### Bulk List - Large Page
+GET {{crmUrl}}/contacts?page=1&limit=100
+Authorization: Bearer {{accessToken}}
+
+### Filtered Search
+GET {{crmUrl}}/contacts?search=tech&tag=hot-lead&leadStatus=qualified
+Authorization: Bearer {{accessToken}}
+
+### Deal Pipeline Filter
+GET {{crmUrl}}/deals?stage=negotiation&pipelineId=pipeline-uuid
+Authorization: Bearer {{accessToken}}

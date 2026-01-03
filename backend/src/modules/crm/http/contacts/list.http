@@ -1,0 +1,112 @@
+###############################################################################
+# CRM - CONTACTS LIST
+# GET /api/v1/crm/contacts
+# List all contacts with filters and pagination
+###############################################################################
+
+@baseUrl = http://localhost:3000/api/v1
+@crmUrl = {{baseUrl}}/crm
+@accessToken = your_access_token_here
+
+###############################################################################
+# 1. LIST ALL CONTACTS - Basic (no filters)
+###############################################################################
+
+### List contacts - default pagination
+GET {{crmUrl}}/contacts
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# 2. LIST CONTACTS - With Pagination
+###############################################################################
+
+### List contacts - page 1, 10 items per page
+GET {{crmUrl}}/contacts?page=1&limit=10
+Authorization: Bearer {{accessToken}}
+
+### List contacts - page 2, 20 items per page
+GET {{crmUrl}}/contacts?page=2&limit=20
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# 3. LIST CONTACTS - With Search
+###############################################################################
+
+### Search contacts by name
+GET {{crmUrl}}/contacts?search=john
+Authorization: Bearer {{accessToken}}
+
+### Search contacts by email
+GET {{crmUrl}}/contacts?search=@example.com
+Authorization: Bearer {{accessToken}}
+
+### Search contacts by company
+GET {{crmUrl}}/contacts?search=acme
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# 4. LIST CONTACTS - Filter by Tag
+###############################################################################
+
+### Filter contacts by tag
+GET {{crmUrl}}/contacts?tag=vip
+Authorization: Bearer {{accessToken}}
+
+### Filter contacts by tag - hot leads
+GET {{crmUrl}}/contacts?tag=hot-lead
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# 5. LIST CONTACTS - Filter by Lead Status
+###############################################################################
+
+### Filter by lead status - new
+GET {{crmUrl}}/contacts?leadStatus=new
+Authorization: Bearer {{accessToken}}
+
+### Filter by lead status - qualified
+GET {{crmUrl}}/contacts?leadStatus=qualified
+Authorization: Bearer {{accessToken}}
+
+### Filter by lead status - contacted
+GET {{crmUrl}}/contacts?leadStatus=contacted
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# 6. LIST CONTACTS - Filter by Owner
+###############################################################################
+
+### Filter by owner ID
+GET {{crmUrl}}/contacts?ownerId=user-uuid-here
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# 7. LIST CONTACTS - Combined Filters
+###############################################################################
+
+### Search + filter by tag + pagination
+GET {{crmUrl}}/contacts?search=john&tag=vip&page=1&limit=5
+Authorization: Bearer {{accessToken}}
+
+### Search + filter by lead status + owner + pagination
+GET {{crmUrl}}/contacts?search=tech&leadStatus=qualified&ownerId=user-uuid&page=1&limit=10
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# ERROR SCENARIOS
+###############################################################################
+
+### Unauthorized - no token
+GET {{crmUrl}}/contacts
+
+### Unauthorized - invalid token
+GET {{crmUrl}}/contacts
+Authorization: Bearer invalid_token_12345
+
+### Invalid pagination - negative page
+GET {{crmUrl}}/contacts?page=-1&limit=10
+Authorization: Bearer {{accessToken}}
+
+### Invalid pagination - page 0
+GET {{crmUrl}}/contacts?page=0&limit=10
+Authorization: Bearer {{accessToken}}

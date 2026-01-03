@@ -1,0 +1,210 @@
+###############################################################################
+# CRM - CONTACTS CHURN PREDICTION (AI)
+# GET /api/v1/crm/contacts/:id/churn
+# Predict contact churn risk using AI analysis
+###############################################################################
+
+@baseUrl = http://localhost:3000/api/v1
+@crmUrl = {{baseUrl}}/crm
+@accessToken = your_access_token_here
+@contactId = contact-uuid-here
+
+###############################################################################
+# 1. GET CHURN PREDICTION - Basic
+###############################################################################
+
+### Get churn risk prediction for contact
+GET {{crmUrl}}/contacts/{{contactId}}/churn
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# 2. GET CHURN PREDICTION - Different Risk Levels
+###############################################################################
+
+### Critical churn risk (very likely to churn)
+GET {{crmUrl}}/contacts/critical-risk-contact-uuid/churn
+Authorization: Bearer {{accessToken}}
+
+### High churn risk (likely to churn)
+GET {{crmUrl}}/contacts/high-risk-contact-uuid/churn
+Authorization: Bearer {{accessToken}}
+
+### Medium churn risk (moderate risk)
+GET {{crmUrl}}/contacts/medium-risk-contact-uuid/churn
+Authorization: Bearer {{accessToken}}
+
+### Low churn risk (unlikely to churn)
+GET {{crmUrl}}/contacts/low-risk-contact-uuid/churn
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# RESPONSE STRUCTURE - Critical Risk
+###############################################################################
+# {
+#   "success": true,
+#   "data": {
+#     "contactId": "uuid",
+#     "companyId": "company-uuid",
+#     "churnRisk": "critical",
+#     "churnProbability": 85,
+#     "predictedChurnDate": "2025-02-02T00:00:00.000Z",
+#     "factors": {
+#       "noRecentActivity": true,
+#       "dealsStagnant": true,
+#       "emailEngagementDrop": true,
+#       "competitorMentions": false,
+#       "contractExpiringSoon": false
+#     },
+#     "preventionActions": [
+#       "1. Agende reunião urgente com decisor para entender objeções",
+#       "2. Ofereça consultoria gratuita para demonstrar valor",
+#       "3. Envie case de sucesso relevante para o setor",
+#       "4. Proponha teste piloto de novo produto/feature",
+#       "5. Ative programa de fidelidade com benefícios exclusivos"
+#     ]
+#   }
+# }
+
+###############################################################################
+# RESPONSE STRUCTURE - Low Risk
+###############################################################################
+# {
+#   "success": true,
+#   "data": {
+#     "contactId": "uuid",
+#     "companyId": "company-uuid",
+#     "churnRisk": "low",
+#     "churnProbability": 15,
+#     "predictedChurnDate": undefined,
+#     "factors": {
+#       "noRecentActivity": false,
+#       "dealsStagnant": false,
+#       "emailEngagementDrop": false,
+#       "competitorMentions": false,
+#       "contractExpiringSoon": false
+#     },
+#     "preventionActions": [
+#       "1. Continue nutriendo com conteúdo relevante",
+#       "2. Mantenha cadência de follow-ups quinzenais",
+#       "3. Compartilhe novidades e atualizações de produto"
+#     ]
+#   }
+# }
+
+###############################################################################
+# CHURN RISK LEVELS
+###############################################################################
+# - CRITICAL (75-100%): Immediate intervention required
+# - HIGH (50-74%): High priority, action needed soon
+# - MEDIUM (25-49%): Monitor closely, proactive engagement
+# - LOW (0-24%): Healthy relationship, maintain current strategy
+
+###############################################################################
+# RISK FACTORS ANALYZED
+###############################################################################
+# The system analyzes multiple churn indicators:
+#
+# 1. noRecentActivity: < 2 interactions in last 30 days
+# 2. dealsStagnant: Has deals but lead score < 30
+# 3. emailEngagementDrop: Zero total interactions
+# 4. longTimeSinceContact: > 60 days since last contact
+# 5. competitorMentions: Not implemented (placeholder)
+# 6. contractExpiringSoon: Not implemented (placeholder)
+#
+# Each risk factor increases churn probability by 25%
+
+###############################################################################
+# CHURN PROBABILITY CALCULATION
+###############################################################################
+# Formula: (risk_factors_count * 25) + (100 - lead_score)
+# Capped at 100%
+#
+# Example:
+# - 2 risk factors = 50%
+# - Lead score = 30
+# - Churn probability = 50 + (100 - 30) = 120 → capped to 100%
+
+###############################################################################
+# AI-POWERED PREVENTION ACTIONS
+###############################################################################
+# The AI generates 3-5 specific prevention actions in Portuguese based on:
+# - Current churn risk level
+# - Active risk factors
+# - Contact's history and context
+# - Lead score
+# - Days since last contact
+#
+# Actions are prioritized and actionable.
+
+###############################################################################
+# 3. CHURN SCENARIOS
+###############################################################################
+
+### No interactions ever (high risk)
+GET {{crmUrl}}/contacts/no-interactions-uuid/churn
+Authorization: Bearer {{accessToken}}
+
+### Long time since last contact (medium-high risk)
+GET {{crmUrl}}/contacts/long-dormant-uuid/churn
+Authorization: Bearer {{accessToken}}
+
+### Active with recent interactions (low risk)
+GET {{crmUrl}}/contacts/active-contact-uuid/churn
+Authorization: Bearer {{accessToken}}
+
+### Stagnant deals (medium risk)
+GET {{crmUrl}}/contacts/stagnant-deals-uuid/churn
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# ERROR SCENARIOS
+###############################################################################
+
+### Error - Contact not found (404)
+GET {{crmUrl}}/contacts/non-existent-uuid/churn
+Authorization: Bearer {{accessToken}}
+
+### Error - Invalid UUID format
+GET {{crmUrl}}/contacts/invalid-uuid/churn
+Authorization: Bearer {{accessToken}}
+
+### Error - Contact from another company (tenant isolation)
+GET {{crmUrl}}/contacts/other-company-contact-uuid/churn
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# ERROR SCENARIOS - Authentication
+###############################################################################
+
+### Error - No authentication token
+GET {{crmUrl}}/contacts/{{contactId}}/churn
+
+### Error - Invalid token
+GET {{crmUrl}}/contacts/{{contactId}}/churn
+Authorization: Bearer invalid_token_xyz
+
+### Error - Insufficient permissions
+GET {{crmUrl}}/contacts/{{contactId}}/churn
+Authorization: Bearer user_without_read_permission_token
+
+###############################################################################
+# USE CASES
+###############################################################################
+# 1. Proactive Retention: Identify at-risk contacts before they churn
+# 2. Sales Alerts: Notify reps of critical churn risks
+# 3. Automated Workflows: Trigger retention campaigns
+# 4. Executive Dashboards: Monitor overall churn risk
+# 5. Performance Metrics: Track churn prevention success
+# 6. Resource Allocation: Prioritize high-risk accounts
+# 7. Predictive Analytics: Forecast customer lifetime value
+# 8. Win-back Campaigns: Re-engage churned contacts
+
+###############################################################################
+# INTEGRATION WITH OTHER FEATURES
+###############################################################################
+# Churn prediction integrates with:
+# - Engagement scores (low engagement → high churn risk)
+# - Lead scoring (low score → higher churn probability)
+# - Deal pipeline (stagnant deals → churn indicator)
+# - Interaction tracking (no recent activity → risk factor)
+# - Automated workflows (trigger retention actions)

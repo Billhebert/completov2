@@ -1,0 +1,133 @@
+###############################################################################
+# CRM - CONTACTS DELETE
+# DELETE /api/v1/crm/contacts/:id
+# Delete a contact and all related data (cascade)
+###############################################################################
+
+@baseUrl = http://localhost:3000/api/v1
+@crmUrl = {{baseUrl}}/crm
+@accessToken = your_access_token_here
+@contactId = contact-uuid-here
+
+###############################################################################
+# 1. DELETE CONTACT - Basic
+###############################################################################
+
+### Delete contact - simple delete
+DELETE {{crmUrl}}/contacts/{{contactId}}
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# 2. DELETE CONTACT - Different Scenarios
+###############################################################################
+
+### Delete contact - with no relations
+DELETE {{crmUrl}}/contacts/simple-contact-uuid
+Authorization: Bearer {{accessToken}}
+
+### Delete contact - with deals (cascade delete)
+DELETE {{crmUrl}}/contacts/contact-with-deals-uuid
+Authorization: Bearer {{accessToken}}
+
+### Delete contact - with interactions (cascade delete)
+DELETE {{crmUrl}}/contacts/contact-with-interactions-uuid
+Authorization: Bearer {{accessToken}}
+
+### Delete contact - with both deals and interactions (full cascade)
+DELETE {{crmUrl}}/contacts/contact-with-everything-uuid
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# EXPECTED SUCCESS RESPONSE
+###############################################################################
+# {
+#   "success": true,
+#   "message": "Contact deleted",
+#   "deletedRelations": {
+#     "deals": 3,
+#     "interactions": 15
+#   }
+# }
+
+###############################################################################
+# CASCADE DELETION BEHAVIOR
+###############################################################################
+# When a contact is deleted, the following related data is also deleted:
+# 1. All DealProducts from all deals of this contact
+# 2. All Deals of this contact
+# 3. All Interactions of this contact
+# 4. The Contact itself
+#
+# This ensures data integrity and prevents orphaned records.
+
+###############################################################################
+# ERROR SCENARIOS
+###############################################################################
+
+### Error - Contact not found (404)
+DELETE {{crmUrl}}/contacts/non-existent-uuid-12345
+Authorization: Bearer {{accessToken}}
+
+### Error - Invalid UUID format
+DELETE {{crmUrl}}/contacts/invalid-uuid
+Authorization: Bearer {{accessToken}}
+
+### Error - Contact from another company (tenant isolation - 404)
+DELETE {{crmUrl}}/contacts/other-company-contact-uuid
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# ERROR SCENARIOS - Authentication
+###############################################################################
+
+### Error - No authentication token
+DELETE {{crmUrl}}/contacts/{{contactId}}
+
+### Error - Invalid token
+DELETE {{crmUrl}}/contacts/{{contactId}}
+Authorization: Bearer invalid_token_xyz
+
+### Error - Expired token
+DELETE {{crmUrl}}/contacts/{{contactId}}
+Authorization: Bearer expired_token_xyz
+
+###############################################################################
+# ERROR SCENARIOS - Permissions
+###############################################################################
+
+### Error - Insufficient permissions (403)
+# User without CONTACT_CREATE permission trying to delete
+DELETE {{crmUrl}}/contacts/{{contactId}}
+Authorization: Bearer user_without_permission_token
+
+###############################################################################
+# TESTING WORKFLOW
+###############################################################################
+# 1. Create a test contact first
+# 2. Note the returned contact ID
+# 3. Optionally create deals/interactions for that contact
+# 4. Delete the contact using the ID
+# 5. Verify deletion by trying to GET the contact (should return 404)
+# 6. Check that all related deals and interactions were also deleted
+
+### Step 1: Create test contact
+# @name createContact
+POST {{crmUrl}}/contacts
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Test Contact for Deletion",
+  "email": "delete.test@example.com"
+}
+
+### Step 2: Extract contact ID
+@testContactId = {{createContact.response.body.data.id}}
+
+### Step 3: Delete the test contact
+DELETE {{crmUrl}}/contacts/{{testContactId}}
+Authorization: Bearer {{accessToken}}
+
+### Step 4: Verify deletion (should return 404)
+GET {{crmUrl}}/contacts/{{testContactId}}
+Authorization: Bearer {{accessToken}}

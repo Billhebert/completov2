@@ -1,0 +1,178 @@
+###############################################################################
+# CRM - CONTACTS CREATE
+# POST /api/v1/crm/contacts
+# Create a new contact
+###############################################################################
+
+@baseUrl = http://localhost:3000/api/v1
+@crmUrl = {{baseUrl}}/crm
+@accessToken = your_access_token_here
+
+###############################################################################
+# 1. CREATE CONTACT - Minimum Required Data
+###############################################################################
+
+### Create contact - only name (minimum)
+POST {{crmUrl}}/contacts
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "John Doe"
+}
+
+###############################################################################
+# 2. CREATE CONTACT - Complete Data
+###############################################################################
+
+### Create contact - all fields
+POST {{crmUrl}}/contacts
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Jane Smith",
+  "email": "jane.smith@example.com",
+  "phone": "+1-555-0123",
+  "companyName": "ACME Corp",
+  "position": "CEO",
+  "website": "https://acme.com",
+  "tags": ["vip", "enterprise", "hot-lead"]
+}
+
+###############################################################################
+# 3. CREATE CONTACT - With CRM Company Reference
+###############################################################################
+
+### Create contact - linked to CRM company
+POST {{crmUrl}}/contacts
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Bob Johnson",
+  "email": "bob@techcorp.com",
+  "phone": "+1-555-0456",
+  "crmCompanyId": "uuid-of-crm-company-here",
+  "position": "CTO",
+  "tags": ["technology", "decision-maker"]
+}
+
+###############################################################################
+# 4. CREATE CONTACT - Different Lead Statuses
+###############################################################################
+
+### Create contact - new lead
+POST {{crmUrl}}/contacts
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Alice Williams",
+  "email": "alice@startup.io",
+  "phone": "+1-555-0789",
+  "leadStatus": "new"
+}
+
+### Create contact - qualified lead
+POST {{crmUrl}}/contacts
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Charlie Brown",
+  "email": "charlie@bigcorp.com",
+  "leadStatus": "qualified",
+  "tags": ["high-priority"]
+}
+
+###############################################################################
+# 5. CREATE CONTACT - With Custom Owner
+###############################################################################
+
+### Create contact - assign to specific owner
+POST {{crmUrl}}/contacts
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "David Miller",
+  "email": "david@company.com",
+  "ownerId": "user-uuid-here",
+  "tags": ["assigned"]
+}
+
+###############################################################################
+# ERROR SCENARIOS - Validation Errors
+###############################################################################
+
+### Error - Invalid email format
+POST {{crmUrl}}/contacts
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Invalid Email User",
+  "email": "not-an-email"
+}
+
+### Error - Invalid website URL
+POST {{crmUrl}}/contacts
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Invalid URL User",
+  "website": "not-a-url"
+}
+
+### Error - Duplicate email (409 Conflict)
+POST {{crmUrl}}/contacts
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Duplicate User",
+  "email": "jane.smith@example.com"
+}
+
+###############################################################################
+# ERROR SCENARIOS - Authentication
+###############################################################################
+
+### Error - No authentication token
+POST {{crmUrl}}/contacts
+Content-Type: application/json
+
+{
+  "name": "Unauthorized User"
+}
+
+### Error - Invalid token
+POST {{crmUrl}}/contacts
+Authorization: Bearer invalid_token_xyz
+Content-Type: application/json
+
+{
+  "name": "Invalid Token User"
+}
+
+###############################################################################
+# ERROR SCENARIOS - Missing Required Fields
+###############################################################################
+
+### Error - Empty body
+POST {{crmUrl}}/contacts
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{}
+
+### Error - Missing name
+POST {{crmUrl}}/contacts
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "email": "noname@example.com"
+}

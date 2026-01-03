@@ -1,0 +1,123 @@
+###############################################################################
+# CRM - CONTACTS GET
+# GET /api/v1/crm/contacts/:id
+# Get a specific contact by ID with all related data
+###############################################################################
+
+@baseUrl = http://localhost:3000/api/v1
+@crmUrl = {{baseUrl}}/crm
+@accessToken = your_access_token_here
+@contactId = contact-uuid-here
+
+###############################################################################
+# 1. GET CONTACT - By ID
+###############################################################################
+
+### Get contact - full details with relations
+GET {{crmUrl}}/contacts/{{contactId}}
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# 2. GET CONTACT - Different Scenarios
+###############################################################################
+
+### Get contact - recently created
+GET {{crmUrl}}/contacts/new-contact-uuid
+Authorization: Bearer {{accessToken}}
+
+### Get contact - with many deals
+GET {{crmUrl}}/contacts/contact-with-deals-uuid
+Authorization: Bearer {{accessToken}}
+
+### Get contact - with many interactions
+GET {{crmUrl}}/contacts/contact-with-interactions-uuid
+Authorization: Bearer {{accessToken}}
+
+### Get contact - linked to CRM company
+GET {{crmUrl}}/contacts/contact-with-company-uuid
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# RESPONSE STRUCTURE EXAMPLE
+###############################################################################
+# {
+#   "success": true,
+#   "data": {
+#     "id": "uuid",
+#     "name": "John Doe",
+#     "email": "john@example.com",
+#     "phone": "+1-555-0123",
+#     "companyName": "ACME Corp",
+#     "position": "CEO",
+#     "website": "https://acme.com",
+#     "tags": ["vip", "enterprise"],
+#     "leadStatus": "qualified",
+#     "leadScore": 85,
+#     "owner": {
+#       "id": "user-uuid",
+#       "name": "Sales Rep",
+#       "email": "rep@company.com"
+#     },
+#     "crmCompany": {
+#       "id": "company-uuid",
+#       "name": "ACME Corp",
+#       "status": "active",
+#       "industry": "Technology"
+#     },
+#     "deals": [
+#       {
+#         "id": "deal-uuid",
+#         "title": "Q1 Deal",
+#         "value": 50000,
+#         "stage": "negotiation",
+#         "owner": {
+#           "id": "user-uuid",
+#           "name": "Sales Rep"
+#         }
+#       }
+#     ],
+#     "interactions": [
+#       {
+#         "id": "interaction-uuid",
+#         "type": "email",
+#         "subject": "Follow-up",
+#         "timestamp": "2025-01-03T10:00:00Z",
+#         "user": {
+#           "id": "user-uuid",
+#           "name": "Sales Rep"
+#         }
+#       }
+#     ]
+#   }
+# }
+
+###############################################################################
+# ERROR SCENARIOS
+###############################################################################
+
+### Error - Contact not found (404)
+GET {{crmUrl}}/contacts/non-existent-uuid-12345
+Authorization: Bearer {{accessToken}}
+
+### Error - Invalid UUID format
+GET {{crmUrl}}/contacts/invalid-uuid
+Authorization: Bearer {{accessToken}}
+
+### Error - Contact from another company (tenant isolation)
+GET {{crmUrl}}/contacts/other-company-contact-uuid
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# ERROR SCENARIOS - Authentication
+###############################################################################
+
+### Error - No authentication token
+GET {{crmUrl}}/contacts/{{contactId}}
+
+### Error - Invalid token
+GET {{crmUrl}}/contacts/{{contactId}}
+Authorization: Bearer invalid_token_xyz
+
+### Error - Expired token
+GET {{crmUrl}}/contacts/{{contactId}}
+Authorization: Bearer expired_token_xyz

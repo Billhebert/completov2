@@ -10,14 +10,14 @@ import { Express } from 'express';
 import { PrismaClient } from '@prisma/client';
 
 // Import individual route setup functions
-import { setupLoginRoute } from './login.route';
-import { setupRegisterRoute } from './register.route';
-import { setupRefreshRoute } from './refresh.route';
-import { setupMeRoute } from './me.route';
-import { setup2FASetupRoute } from './2fa-setup.route';
-import { setup2FAVerifyRoute } from './2fa-verify.route';
-import { setup2FADisableRoute } from './2fa-disable.route';
-import { setupLogoutRoute } from './logout.route';
+import { setupLoginRoute } from './routes/login.route';
+import { setupRegisterRoute } from './routes/register.route';
+import { setupRefreshRoute } from './routes/refresh.route';
+import { setupMeRoute } from './routes/me.route';
+import { setup2FASetupRoute } from './routes/2fa-setup.route';
+import { setup2FAVerifyRoute } from './routes/2fa-verify.route';
+import { setup2FADisableRoute } from './routes/2fa-disable.route';
+import { setupLogoutRoute } from './routes/logout.route';
 
 /**
  * Setup all auth routes

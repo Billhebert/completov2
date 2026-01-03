@@ -1,0 +1,164 @@
+###############################################################################
+# CRM - CONTACTS ENGAGEMENT (AI)
+# GET /api/v1/crm/contacts/:id/engagement
+# Calculate contact engagement score using AI analysis
+###############################################################################
+
+@baseUrl = http://localhost:3000/api/v1
+@crmUrl = {{baseUrl}}/crm
+@accessToken = your_access_token_here
+@contactId = contact-uuid-here
+
+###############################################################################
+# 1. GET ENGAGEMENT SCORE - Basic
+###############################################################################
+
+### Get engagement score for contact
+GET {{crmUrl}}/contacts/{{contactId}}/engagement
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# 2. GET ENGAGEMENT SCORE - Different Engagement Levels
+###############################################################################
+
+### High engagement contact (many recent interactions)
+GET {{crmUrl}}/contacts/high-engagement-contact-uuid/engagement
+Authorization: Bearer {{accessToken}}
+
+### Medium engagement contact (some interactions)
+GET {{crmUrl}}/contacts/medium-engagement-contact-uuid/engagement
+Authorization: Bearer {{accessToken}}
+
+### Low engagement contact (few/no interactions)
+GET {{crmUrl}}/contacts/low-engagement-contact-uuid/engagement
+Authorization: Bearer {{accessToken}}
+
+### Cold contact (no recent activity)
+GET {{crmUrl}}/contacts/cold-contact-uuid/engagement
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# RESPONSE STRUCTURE - High Engagement
+###############################################################################
+# {
+#   "success": true,
+#   "data": {
+#     "engagementScore": 85,
+#     "level": "high",
+#     "metrics": {
+#       "totalInteractions": 25,
+#       "recentInteractions": 8,
+#       "daysSinceLastContact": 2,
+#       "openDeals": 3,
+#       "totalDeals": 5
+#     },
+#     "nextAction": "Contato altamente engajado. Continue nutriendo com conteúdo relevante e agende reunião de upsell para os produtos complementares."
+#   }
+# }
+
+###############################################################################
+# RESPONSE STRUCTURE - Low Engagement
+###############################################################################
+# {
+#   "success": true,
+#   "data": {
+#     "engagementScore": 25,
+#     "level": "low",
+#     "metrics": {
+#       "totalInteractions": 3,
+#       "recentInteractions": 0,
+#       "daysSinceLastContact": 45,
+#       "openDeals": 0,
+#       "totalDeals": 1
+#     },
+#     "nextAction": "Contato com baixo engajamento. Reative o relacionamento com campanha de re-engajamento personalizada e oferta especial."
+#   }
+# }
+
+###############################################################################
+# ENGAGEMENT LEVELS
+###############################################################################
+# - HIGH (70-100): Highly engaged, active communication
+# - MEDIUM (40-69): Moderate engagement, some activity
+# - LOW (0-39): Low engagement, inactive or cold lead
+
+###############################################################################
+# METRICS ANALYZED
+###############################################################################
+# The AI analyzes multiple factors:
+# 1. Total Interactions: All-time interaction count
+# 2. Recent Interactions: Last 30 days activity
+# 3. Days Since Last Contact: Recency of last touch
+# 4. Open Deals: Current active opportunities
+# 5. Total Deals: Historical deal count
+# 6. Lead Status: Current qualification level
+# 7. Tags: Special classifications
+
+###############################################################################
+# AI-POWERED NEXT ACTION
+###############################################################################
+# The AI suggests the best next action based on:
+# - Current engagement level
+# - Days since last contact
+# - Open deals count
+# - Historical interaction patterns
+#
+# Suggestions are in Portuguese and actionable.
+
+###############################################################################
+# 3. ENGAGEMENT TRACKING SCENARIOS
+###############################################################################
+
+### Never contacted (engagement will be very low)
+GET {{crmUrl}}/contacts/never-contacted-uuid/engagement
+Authorization: Bearer {{accessToken}}
+
+### Recently contacted (engagement should be higher)
+GET {{crmUrl}}/contacts/recently-contacted-uuid/engagement
+Authorization: Bearer {{accessToken}}
+
+### Multiple open deals (high engagement expected)
+GET {{crmUrl}}/contacts/multiple-deals-uuid/engagement
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# ERROR SCENARIOS
+###############################################################################
+
+### Error - Contact not found (404)
+GET {{crmUrl}}/contacts/non-existent-uuid/engagement
+Authorization: Bearer {{accessToken}}
+
+### Error - Invalid UUID format
+GET {{crmUrl}}/contacts/invalid-uuid/engagement
+Authorization: Bearer {{accessToken}}
+
+### Error - Contact from another company (tenant isolation)
+GET {{crmUrl}}/contacts/other-company-contact-uuid/engagement
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# ERROR SCENARIOS - Authentication
+###############################################################################
+
+### Error - No authentication token
+GET {{crmUrl}}/contacts/{{contactId}}/engagement
+
+### Error - Invalid token
+GET {{crmUrl}}/contacts/{{contactId}}/engagement
+Authorization: Bearer invalid_token_xyz
+
+### Error - Insufficient permissions
+GET {{crmUrl}}/contacts/{{contactId}}/engagement
+Authorization: Bearer user_without_read_permission_token
+
+###############################################################################
+# USE CASES
+###############################################################################
+# 1. Sales Prioritization: Focus on high-engagement contacts
+# 2. Re-engagement Campaigns: Target low-engagement contacts
+# 3. Account Health: Monitor engagement trends over time
+# 4. Sales Performance: Track team's engagement metrics
+# 5. Automated Workflows: Trigger actions based on engagement
+# 6. Lead Scoring: Factor engagement into lead scores
+# 7. Forecasting: Predict deal closure based on engagement
