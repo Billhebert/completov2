@@ -1,1 +1,0 @@
-export { ProfilePage, default } from './ProfilePage';
