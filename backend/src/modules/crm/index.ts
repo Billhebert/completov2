@@ -24,6 +24,7 @@ import {
   setupContactsGetRoute,
   setupContactsUpdateRoute,
   setupContactsDeleteRoute,
+  setupContactsRestoreRoute,
   setupContactsEnrichRoute,
   setupContactsEngagementRoute,
   setupContactsChurnRoute,
@@ -36,6 +37,7 @@ import {
   setupDealsGetRoute,
   setupDealsUpdateRoute,
   setupDealsDeleteRoute,
+  setupDealsRestoreRoute,
   setupDealsMoveStageRoute,
   setupDealsProbabilityRoute,
 } from './routes/deals';
@@ -78,6 +80,7 @@ function setupRoutes(app: Express, prisma: PrismaClient, eventBus: EventBus) {
   setupContactsGetRoute(app, prisma, base);
   setupContactsUpdateRoute(app, prisma, base);
   setupContactsDeleteRoute(app, prisma, base);
+  setupContactsRestoreRoute(app, prisma, base);
   setupContactsEnrichRoute(app, prisma, base);
   setupContactsEngagementRoute(app, prisma, base);
   setupContactsChurnRoute(app, prisma, base);
@@ -90,6 +93,7 @@ function setupRoutes(app: Express, prisma: PrismaClient, eventBus: EventBus) {
   setupDealsGetRoute(app, prisma, base);
   setupDealsUpdateRoute(app, prisma, base);
   setupDealsDeleteRoute(app, prisma, base);
+  setupDealsRestoreRoute(app, prisma, base);
   setupDealsMoveStageRoute(app, prisma, base);
   setupDealsProbabilityRoute(app, prisma, base);
 

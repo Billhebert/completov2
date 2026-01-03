@@ -3,6 +3,7 @@ import { Express, Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import { validateBody } from '../../../core/middleware';
+import { authLimiter } from '../../../core/middleware/rate-limit';
 import crypto from 'crypto';
 import { env } from '../../../core/config/env';
 
@@ -17,6 +18,7 @@ export function setupPasswordResetRequestRoute(
 ) {
   app.post(
     `${baseUrl}/password/reset`,
+    authLimiter,
     validateBody(requestSchema),
     async (req: Request, res: Response, next: NextFunction) => {
       try {

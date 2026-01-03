@@ -20,3 +20,48 @@ export {
   authenticateApiKey,
   requireScope,
 } from './api-key';
+
+// CSRF Protection
+export {
+  validateCSRFToken,
+  generateCSRFToken,
+  csrfProtection,
+  setupCSRFTokenRoute,
+} from './csrf';
+
+// Idempotency
+export {
+  idempotency,
+  requireIdempotency,
+  optionalIdempotency,
+  clearIdempotencyKey,
+} from './idempotency';
+
+// ETag & Caching
+export {
+  etag,
+  weakETag,
+  strongETag,
+  cacheControl,
+  noCache,
+  shortCache,
+  mediumCache,
+  longCache,
+  immutableCache,
+  lastModified,
+} from './etag';
+
+// API Versioning
+export {
+  apiVersion,
+  addVersionHeaders,
+  parseApiVersion,
+  requireVersion,
+  deprecateEndpoint,
+  checkVersionCompatibility,
+  migrationGuide,
+  API_VERSIONS,
+  CURRENT_API_VERSION,
+  DEPRECATED_VERSIONS,
+  type ApiVersion,
+} from './api-version';

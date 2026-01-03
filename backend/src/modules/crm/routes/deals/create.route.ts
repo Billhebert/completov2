@@ -8,30 +8,9 @@ import { Express, Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticate, tenantIsolation, requirePermission, Permission, validateBody } from '../../../../core/middleware';
 import { EventBus, Events } from '../../../../core/event-bus';
-import { z } from 'zod';
-
-// Deal validation schema
-const dealSchema = z.object({
-  title: z.string().min(1),
-  contactId: z.string().uuid(),
-  value: z.number().nonnegative(),
-  currency: z.string().default('BRL'),
-  stage: z.string().optional(),
-  expectedCloseDate: z.string().optional(),
-  ownerId: z.string().optional(),
-  pipelineId: z.string().uuid().optional(),
-  stageId: z.string().uuid().optional(),
-  products: z
-    .array(
-      z.object({
-        productId: z.string(),
-        productName: z.string(),
-        quantity: z.number().positive(),
-        unitPrice: z.number(),
-      })
-    )
-    .optional(),
-});
+import { createDealSchema } from '../../schemas/deal.schema';
+import { auditLogger } from '../../../../core/audit/audit-logger';
+import { successResponse } from '../../../../core/utils/api-response';
 
 export function setupDealsCreateRoute(
   app: Express,
@@ -44,10 +23,11 @@ export function setupDealsCreateRoute(
     authenticate,
     tenantIsolation,
     requirePermission(Permission.CONTACT_CREATE),
-    validateBody(dealSchema),
+    validateBody(createDealSchema),
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         const tenantCompanyId = req.companyId!;
+        const validatedData = req.body; // Already validated by schema
 
         // Verify tenant company exists
         const tenant = await prisma.company.findUnique({
@@ -68,20 +48,15 @@ export function setupDealsCreateRoute(
           });
         }
 
-        const { products, pipelineId, stageId, ...dealData } = req.body as any;
-
         // Resolve stage if stageId is provided
-        let resolvedPipelineId: string | undefined = pipelineId;
-        let resolvedStageId: string | undefined = stageId;
-        let resolvedStageString: string =
-          typeof dealData.stage === 'string' && dealData.stage.trim().length
-            ? dealData.stage
-            : 'open';
+        let resolvedPipelineId: string | undefined = validatedData.pipelineId;
+        let resolvedStageId: string | undefined = validatedData.stageId;
+        let resolvedStageString: string = validatedData.stage || 'lead';
         let closedDate: Date | null = null;
 
-        if (stageId) {
+        if (validatedData.stageId) {
           const stage = await prisma.crmStage.findFirst({
-            where: { id: stageId },
+            where: { id: validatedData.stageId },
             include: { pipeline: true },
           });
 
@@ -101,20 +76,30 @@ export function setupDealsCreateRoute(
           closedDate = stage.isWon || stage.isLost ? new Date() : null;
         }
 
-        // Create deal
+        // Create deal with only validated fields
         const created = await prisma.deal.create({
           data: {
-            ...dealData,
+            title: validatedData.title,
+            contactId: validatedData.contactId,
+            value: validatedData.value,
+            currency: validatedData.currency || 'BRL',
+            expectedCloseDate: validatedData.expectedCloseDate,
+            probability: validatedData.probability,
+            notes: validatedData.notes,
+            customFields: validatedData.customFields,
             companyId: tenantCompanyId,
-            ownerId: dealData.ownerId || req.user!.id,
+            ownerId: req.user!.id,
             pipelineId: resolvedPipelineId,
             stageId: resolvedStageId,
             stage: resolvedStageString,
             closedDate,
-            products: products
+            products: validatedData.products
               ? {
-                  create: products.map((p: any) => ({
-                    ...p,
+                  create: validatedData.products.map((p) => ({
+                    productId: p.productId,
+                    productName: p.productName,
+                    quantity: p.quantity,
+                    unitPrice: p.unitPrice,
                     total: p.quantity * p.unitPrice,
                   })),
                 }
@@ -124,6 +109,20 @@ export function setupDealsCreateRoute(
             products: true,
             pipeline: true,
             stageRef: true,
+          },
+        });
+
+        // Audit log the creation
+        await auditLogger.log({
+          action: 'deal.create',
+          userId: req.user!.id,
+          companyId: tenantCompanyId,
+          resourceType: 'deal',
+          resourceId: created.id,
+          details: {
+            dealTitle: created.title,
+            dealValue: created.value,
+            dealStage: created.stage,
           },
         });
 
@@ -141,7 +140,10 @@ export function setupDealsCreateRoute(
           },
         });
 
-        return res.status(201).json({ success: true, data: created });
+        return successResponse(res, created, {
+          statusCode: 201,
+          requestId: req.id,
+        });
       } catch (error) {
         next(error);
       }
