@@ -18,6 +18,10 @@ import { setup2FASetupRoute } from './2fa-setup.route';
 import { setup2FAVerifyRoute } from './2fa-verify.route';
 import { setup2FADisableRoute } from './2fa-disable.route';
 import { setupLogoutRoute } from './logout.route';
+import { setupPasswordResetRequestRoute } from './password-reset-request.route';
+import { setupPasswordResetConfirmRoute } from './password-reset-confirm.route';
+import { setupEmailVerifySendRoute } from './email-verify-send.route';
+import { setupEmailVerifyConfirmRoute } from './email-verify-confirm.route';
 
 /**
  * Setup all auth routes
@@ -31,6 +35,14 @@ export function setupAuthRoutes(app: Express, prisma: PrismaClient) {
   setupLoginRoute(app, prisma, baseUrl);
   setupRegisterRoute(app, prisma, baseUrl);
   setupRefreshRoute(app, prisma, baseUrl);
+
+  // Password reset (public)
+  setupPasswordResetRequestRoute(app, prisma, baseUrl);
+  setupPasswordResetConfirmRoute(app, prisma, baseUrl);
+
+  // Email verification
+  setupEmailVerifyConfirmRoute(app, prisma, baseUrl); // Public - token in URL
+  setupEmailVerifySendRoute(app, prisma, baseUrl);    // Protected - resend
 
   // Protected routes
   setupMeRoute(app, prisma, baseUrl);
@@ -46,16 +58,20 @@ export function setupAuthRoutes(app: Express, prisma: PrismaClient) {
  * Route Summary:
  *
  * PUBLIC ROUTES:
- * - POST   /api/v1/auth/login          - Login with email/password + optional 2FA
- * - POST   /api/v1/auth/register       - Register new company + admin user
- * - POST   /api/v1/auth/refresh        - Refresh access token
+ * - POST   /api/v1/auth/login                    - Login with email/password + optional 2FA
+ * - POST   /api/v1/auth/register                 - Register new company + admin user
+ * - POST   /api/v1/auth/refresh                  - Refresh access token
+ * - POST   /api/v1/auth/password/reset           - Request password reset (email)
+ * - PATCH  /api/v1/auth/password/reset/:token    - Confirm password reset
+ * - POST   /api/v1/auth/email/verify/:token      - Verify email (token in URL)
  *
  * PROTECTED ROUTES:
- * - GET    /api/v1/auth/me             - Get current user info
- * - POST   /api/v1/auth/logout         - Logout (client-side token removal)
+ * - GET    /api/v1/auth/me                       - Get current user info
+ * - POST   /api/v1/auth/logout                   - Logout (client-side token removal)
+ * - POST   /api/v1/auth/email/verify/send        - Resend verification email
  *
  * 2FA ROUTES (Protected):
- * - POST   /api/v1/auth/2fa/setup      - Setup 2FA (returns QR code)
- * - POST   /api/v1/auth/2fa/verify     - Verify 2FA token and enable
- * - POST   /api/v1/auth/2fa/disable    - Disable 2FA
+ * - POST   /api/v1/auth/2fa/setup                - Setup 2FA (returns QR code)
+ * - POST   /api/v1/auth/2fa/verify               - Verify 2FA token and enable
+ * - POST   /api/v1/auth/2fa/disable              - Disable 2FA
  */
