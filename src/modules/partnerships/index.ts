@@ -6,21 +6,69 @@ import { Express } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { EventBus } from '../../core/event-bus';
 import { ModuleDefinition } from '../../core/types';
-import {
-  setupPartnershipsListRoute,
-  setupPartnershipsGetRoute,
-  setupPartnershipsCreateRoute,
-  setupPartnershipsUpdateRoute,
-  setupPartnershipsDeleteRoute,
-} from './routes';
+import { createCrudRoutes } from '../../core/factories/crud-routes.factory';
 
 function setupRoutes(app: Express, prisma: PrismaClient, eventBus: EventBus) {
   const base = '/api/v1/partnerships';
-  setupPartnershipsListRoute(app, prisma, base);
-  setupPartnershipsGetRoute(app, prisma, base);
-  setupPartnershipsCreateRoute(app, prisma, base);
-  setupPartnershipsUpdateRoute(app, prisma, base);
-  setupPartnershipsDeleteRoute(app, prisma, base);
+
+  // Partnerships CRUD via factory
+  createCrudRoutes(app, prisma, {
+    entityName: 'partnership',
+    baseUrl: base,
+    singularName: 'partnership',
+    pluralName: 'partnerships',
+    tenantIsolation: true,
+    auditLog: false,
+    softDelete: false,
+    allowedSortFields: ['createdAt', 'status', 'startDate'],
+
+    list: {
+      include: {
+        companyA: { select: { id: true, name: true } },
+        companyB: { select: { id: true, name: true } },
+      },
+    },
+
+    get: {
+      include: {
+        companyA: { select: { id: true, name: true } },
+        companyB: { select: { id: true, name: true } },
+      },
+    },
+
+    create: {
+      include: {
+        companyA: { select: { id: true, name: true } },
+        companyB: { select: { id: true, name: true } },
+      },
+    },
+
+    update: {
+      include: {
+        companyA: { select: { id: true, name: true } },
+        companyB: { select: { id: true, name: true } },
+      },
+    },
+
+    customFilters: (query) => {
+      const where: any = {};
+
+      // Filter by status
+      if (query.status && typeof query.status === 'string') {
+        where.status = query.status;
+      }
+
+      // Filter by company (either A or B)
+      if (query.companyId && typeof query.companyId === 'string') {
+        where.OR = [
+          { companyAId: query.companyId },
+          { companyBId: query.companyId },
+        ];
+      }
+
+      return where;
+    },
+  });
 }
 
 export const partnershipsModule: ModuleDefinition = {
