@@ -1,3 +1,0 @@
-NOTE: Add 'node-cron' and '@types/node-cron' to package.json:
-  npm install node-cron
-  npm install -D @types/node-cron
