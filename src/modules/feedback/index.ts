@@ -2,11 +2,24 @@ import { Express } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { EventBus } from '../../core/event-bus';
 import { ModuleDefinition } from '../../core/types';
-import * as routes from './routes';
+import { createCrudRoutes } from '../../core/factories/crud-routes.factory';
 
 function setupRoutes(app: Express, prisma: PrismaClient, eventBus: EventBus) {
-  const base = '/api/v1/feedback';
-  Object.values(routes).forEach(fn => fn(app, prisma, base));
+  createCrudRoutes(app, prisma, {
+    entityName: 'feedback',
+    baseUrl: '/api/v1/feedback',
+    singularName: 'feedback',
+    pluralName: 'feedback',
+    tenantIsolation: true,
+    auditLog: false,
+    softDelete: false,
+    allowedSortFields: ['createdAt', 'rating', 'type'],
+
+    // Disable operations not yet implemented
+    get: { enabled: false },
+    update: { enabled: false },
+    delete: { enabled: false },
+  });
 }
 
 export const feedbackModule: ModuleDefinition = {
