@@ -1,0 +1,47 @@
+@host = http://localhost:3000
+@baseUrl = {{host}}/api/v1
+@token = Bearer YOUR_JWT_TOKEN_HERE
+
+### ============================================
+### FILES MODULE - File Management
+### ============================================
+
+### FILES - List Files
+GET {{baseUrl}}/files?page=1&limit=20&type=document
+Authorization: {{token}}
+
+### FILES - Upload File
+POST {{baseUrl}}/files
+Authorization: {{token}}
+Content-Type: multipart/form-data
+
+< ./path/to/file.pdf
+
+### FILES - Get File
+GET {{baseUrl}}/files/:fileId
+Authorization: {{token}}
+
+### FILES - Get Download URL
+GET {{baseUrl}}/files/:fileId/url
+Authorization: {{token}}
+
+### FILES - Download File
+GET {{baseUrl}}/files/:fileId/download
+Authorization: {{token}}
+
+### FILES - Delete File
+DELETE {{baseUrl}}/files/:fileId
+Authorization: {{token}}
+
+### AVATAR - Upload Avatar
+POST {{baseUrl}}/files/avatar
+Authorization: {{token}}
+Content-Type: multipart/form-data
+
+< ./path/to/avatar.jpg
+
+### Notes:
+### - All endpoints require authentication
+### - Supported formats: PDF, DOC, XLS, JPG, PNG, GIF
+### - Max file size: 10 MB
+### - Replace UUIDs with actual IDs from your database

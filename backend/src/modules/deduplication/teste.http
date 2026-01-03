@@ -1,0 +1,47 @@
+@host = http://localhost:3000
+@baseUrl = {{host}}/api/v1
+@token = Bearer YOUR_JWT_TOKEN_HERE
+
+### ============================================
+### DEDUPLICATION MODULE - Data Deduplication
+### ============================================
+
+### DUPLICATES - Find Duplicates
+GET {{baseUrl}}/deduplication/find?entity=contact&confidence=0.8&page=1
+Authorization: {{token}}
+
+### DUPLICATES - Get Duplicate Details
+GET {{baseUrl}}/deduplication/duplicates/:duplicateId
+Authorization: {{token}}
+
+### DUPLICATES - Merge Records
+POST {{baseUrl}}/deduplication/merge
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "record1Id": "uuid-1",
+  "record2Id": "uuid-2",
+  "entity": "contact",
+  "strategy": "auto"
+}
+
+### DUPLICATES - Mark As Not Duplicate
+POST {{baseUrl}}/deduplication/ignore
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "record1Id": "uuid-1",
+  "record2Id": "uuid-2"
+}
+
+### DUPLICATES - Get Merge History
+GET {{baseUrl}}/deduplication/history?page=1&limit=20
+Authorization: {{token}}
+
+### Notes:
+### - All endpoints require authentication
+### - Confidence scores: 0.0 to 1.0
+### - Merge strategies: auto, manual
+### - Replace UUIDs with actual IDs from your database

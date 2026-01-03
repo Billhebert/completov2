@@ -1,6 +1,5 @@
 import { ModuleDefinition } from '../../core/types';
-import { authenticate, tenantIsolation } from '../../core/middleware';
-import narrativeRoutes from './index';
+import { setupNarrativeRoutes } from './routes';
 
 export const narrativeModule: ModuleDefinition = {
   name: 'narrative',
@@ -8,7 +7,7 @@ export const narrativeModule: ModuleDefinition = {
   provides: ['narrative', 'storytelling', 'reports'],
 
   routes: async (ctx) => {
-    ctx.app.use('/api/v1/narrative', authenticate, tenantIsolation, narrativeRoutes);
+    setupNarrativeRoutes(ctx.app, ctx.prisma, '/api/v1/narrative');
     ctx.logger.info('Narrative routes registered');
   },
 };

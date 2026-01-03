@@ -1,0 +1,137 @@
+@host = http://localhost:3000
+@baseUrl = {{host}}/api/v1
+@token = Bearer YOUR_JWT_TOKEN_HERE
+
+### ============================================
+### CRM MODULE - Customer Relationship Management
+### ============================================
+
+### CONTACTS - List Contacts
+GET {{baseUrl}}/crm/contacts?page=1&limit=20&status=active
+Authorization: {{token}}
+
+### CONTACTS - Get Contact
+GET {{baseUrl}}/crm/contacts/:contactId
+Authorization: {{token}}
+
+### CONTACTS - Create Contact
+POST {{baseUrl}}/crm/contacts
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "email": "john.doe@company.com",
+  "phone": "+1-555-0123",
+  "company": "ABC Corp",
+  "jobTitle": "Manager",
+  "status": "active",
+  "source": "inbound",
+  "tags": ["prospect", "b2b"]
+}
+
+### CONTACTS - Update Contact
+PUT {{baseUrl}}/crm/contacts/:contactId
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "status": "qualified",
+  "notes": "Contacted regarding demo"
+}
+
+### DEALS - List Deals
+GET {{baseUrl}}/crm/deals?status=open&page=1&limit=20
+Authorization: {{token}}
+
+### DEALS - Create Deal
+POST {{baseUrl}}/crm/deals
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "title": "Enterprise Software License",
+  "description": "Annual enterprise software license renewal",
+  "contactId": "contact-uuid",
+  "value": 50000,
+  "currency": "USD",
+  "stage": "proposal",
+  "expectedCloseDate": "2025-03-01"
+}
+
+### DEALS - Update Stage
+PUT {{baseUrl}}/crm/deals/:dealId/stage
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "stage": "negotiation"
+}
+
+### ACTIVITIES - List Activities
+GET {{baseUrl}}/crm/activities?contactId=contact-uuid&page=1&limit=20
+Authorization: {{token}}
+
+### ACTIVITIES - Create Activity
+POST {{baseUrl}}/crm/activities
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "type": "call",
+  "contactId": "contact-uuid",
+  "title": "Quarterly Business Review",
+  "description": "Discussed Q1 performance and Q2 goals",
+  "date": "2025-01-03T10:00:00Z",
+  "duration": 30,
+  "notes": "Very positive response, interested in expansion"
+}
+
+### COMPANIES - List Companies
+GET {{baseUrl}}/crm/companies?page=1&limit=20
+Authorization: {{token}}
+
+### COMPANIES - Create Company
+POST {{baseUrl}}/crm/companies
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "name": "ABC Corporation",
+  "industry": "Technology",
+  "website": "https://abc.com",
+  "employees": 500,
+  "annualRevenue": 10000000,
+  "country": "USA",
+  "status": "active"
+}
+
+### PIPELINES - List Pipeline
+GET {{baseUrl}}/crm/pipelines/:pipelineId/deals
+Authorization: {{token}}
+
+### NOTES - Add Note
+POST {{baseUrl}}/crm/contacts/:contactId/notes
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "content": "Customer expressed strong interest in upgrading to premium plan"
+}
+
+### TAGS - Create Tag
+POST {{baseUrl}}/crm/tags
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "name": "vip-customer",
+  "color": "gold",
+  "description": "VIP customers with high revenue"
+}
+
+### Notes:
+### - All endpoints require authentication
+### - Deal stages: lead, qualified, proposal, negotiation, won, lost
+### - Activity types: call, email, meeting, task, note
+### - Replace UUIDs with actual IDs from your database

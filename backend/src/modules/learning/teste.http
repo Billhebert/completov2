@@ -1,0 +1,92 @@
+@host = http://localhost:3000
+@baseUrl = {{host}}/api/v1
+@token = Bearer YOUR_JWT_TOKEN_HERE
+
+### ============================================
+### LEARNING MODULE - Learning Management
+### ============================================
+
+### PATHS - List Learning Paths
+GET {{baseUrl}}/learning/paths?page=1&limit=20&difficulty=intermediate
+Authorization: {{token}}
+
+### PATHS - Get Path Details
+GET {{baseUrl}}/learning/paths/:pathId
+Authorization: {{token}}
+
+### PATHS - Create Path
+POST {{baseUrl}}/learning/paths
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "title": "Advanced TypeScript Mastery",
+  "description": "Master advanced TypeScript concepts and patterns",
+  "difficulty": "advanced",
+  "estimatedDuration": 40,
+  "skills": ["typescript", "oop", "design-patterns"],
+  "targetRole": "senior-developer"
+}
+
+### ENROLLMENTS - Enroll User
+POST {{baseUrl}}/learning/enroll
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "userId": "user-uuid",
+  "pathId": "path-uuid",
+  "startDate": "2025-01-03"
+}
+
+### ENROLLMENTS - List Enrollments
+GET {{baseUrl}}/learning/enrollments?userId=user-uuid
+Authorization: {{token}}
+
+### PROGRESS - Complete Item
+POST {{baseUrl}}/learning/items/:itemId/complete
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "score": 85,
+  "timeSpent": 120,
+  "notes": "Good understanding of concepts"
+}
+
+### SKILLS - List Available Skills
+GET {{baseUrl}}/learning/skills?page=1&limit=20
+Authorization: {{token}}
+
+### SKILLS - Get My Skills
+GET {{baseUrl}}/learning/my-skills
+Authorization: {{token}}
+
+### SKILLS - Assess Skill
+POST {{baseUrl}}/learning/skills/:skillId/assess
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "proficiencyLevel": "intermediate",
+  "yearsOfExperience": 5,
+  "assessmentScore": 75
+}
+
+### PLANS - Create Development Plan
+POST {{baseUrl}}/learning/development-plans
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "userId": "user-uuid",
+  "title": "Frontend Development Roadmap",
+  "targetSkills": ["react", "typescript", "testing"],
+  "timeline": 6,
+  "notes": "Personal development plan for Q1 2025"
+}
+
+### Notes:
+### - All endpoints require authentication
+### - Difficulties: beginner, intermediate, advanced, expert
+### - Replace UUIDs with actual IDs from your database

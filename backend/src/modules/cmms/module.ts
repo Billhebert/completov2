@@ -1,6 +1,6 @@
 // src/modules/cmms/module.ts
 import { ModuleDefinition } from '../../core/types';
-import registerCMMSRoutes from './index';
+import { setupCmmsRoutes } from './routes';
 
 export const cmmsModule: ModuleDefinition = {
   name: 'cmms',
@@ -8,6 +8,7 @@ export const cmmsModule: ModuleDefinition = {
   provides: ['cmms', 'assets', 'maintenance', 'spare-parts'],
   description: 'Computerized Maintenance Management System',
   routes: (ctx) => {
-    registerCMMSRoutes(ctx.app);
+    setupCmmsRoutes(ctx.app, ctx.prisma, '/api/v1/cmms');
+    ctx.logger.info('CMMS routes registered');
   },
 };

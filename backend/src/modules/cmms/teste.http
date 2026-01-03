@@ -1,0 +1,170 @@
+@host = http://localhost:3000
+@baseUrl = {{host}}/api/v1
+@token = Bearer YOUR_JWT_TOKEN_HERE
+
+### ============================================
+### CMMS MODULE - Asset Management
+### ============================================
+
+### ASSETS - List All Assets
+GET {{baseUrl}}/cmms/assets?page=1&limit=20
+Authorization: {{token}}
+
+### ASSETS - Get Single Asset
+GET {{baseUrl}}/cmms/assets/:assetId
+Authorization: {{token}}
+
+### ASSETS - Create Asset
+POST {{baseUrl}}/cmms/assets
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "name": "Production Machine #1",
+  "type": "equipment",
+  "serialNumber": "SN-2025-0001",
+  "manufacturer": "Siemens",
+  "model": "S7-1200",
+  "location": "Factory Floor - Section A",
+  "parentAssetId": null,
+  "status": "active",
+  "purchaseDate": "2023-01-15",
+  "warrantyExpiry": "2026-01-15",
+  "criticalityLevel": "high"
+}
+
+### ASSETS - Update Asset
+PUT {{baseUrl}}/cmms/assets/:assetId
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "name": "Production Machine #1 - Updated",
+  "status": "maintenance",
+  "criticalityLevel": "critical"
+}
+
+### ============================================
+### MAINTENANCE PLANS
+### ============================================
+
+### MAINTENANCE - List Plans
+GET {{baseUrl}}/cmms/maintenance-plans?assetId=uuid
+Authorization: {{token}}
+
+### MAINTENANCE - Create Plan
+POST {{baseUrl}}/cmms/maintenance-plans
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "assetId": "uuid",
+  "type": "preventive",
+  "frequency": "monthly",
+  "nextScheduledDate": "2025-02-03",
+  "estimatedDuration": 4,
+  "requiredSkills": ["electrical", "mechanical"],
+  "estimatedCost": 500,
+  "description": "Monthly preventive maintenance"
+}
+
+### MAINTENANCE - List Records
+GET {{baseUrl}}/cmms/maintenance-records?assetId=uuid&page=1
+Authorization: {{token}}
+
+### MAINTENANCE - Create Record
+POST {{baseUrl}}/cmms/maintenance-records
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "assetId": "uuid",
+  "type": "preventive",
+  "performedDate": "2025-01-03",
+  "duration": 4,
+  "technicians": ["tech-uuid-1", "tech-uuid-2"],
+  "cost": 450,
+  "description": "Oil change and filter replacement",
+  "status": "completed"
+}
+
+### ============================================
+### DOWNTIME TRACKING
+### ============================================
+
+### DOWNTIME - Create Incident
+POST {{baseUrl}}/cmms/downtime
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "assetId": "uuid",
+  "reason": "Motor failure",
+  "description": "Motor making unusual noise, requires immediate repair",
+  "severity": "critical",
+  "reportedBy": "user-uuid"
+}
+
+### DOWNTIME - Resolve Incident
+POST {{baseUrl}}/cmms/downtime/:incidentId/resolve
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "resolution": "Motor replaced with new unit",
+  "resolvedBy": "tech-uuid",
+  "costIncurred": 2500,
+  "totalDowntimeMinutes": 240
+}
+
+### ============================================
+### SPARE PARTS
+### ============================================
+
+### SPARE PARTS - List Inventory
+GET {{baseUrl}}/cmms/spare-parts?page=1&limit=20
+Authorization: {{token}}
+
+### SPARE PARTS - List Low Stock Items
+GET {{baseUrl}}/cmms/spare-parts/low-stock
+Authorization: {{token}}
+
+### SPARE PARTS - Create Part Entry
+POST {{baseUrl}}/cmms/spare-parts
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "name": "Industrial Motor Brush",
+  "partNumber": "PN-SM-001",
+  "manufacturer": "Siemens",
+  "quantity": 50,
+  "minThreshold": 10,
+  "maxThreshold": 100,
+  "unitCost": 25.50,
+  "location": "Warehouse B - Shelf 3",
+  "compatibleAssets": ["asset-uuid-1", "asset-uuid-2"]
+}
+
+### SPARE PARTS - Record Movement (Consumption)
+POST {{baseUrl}}/cmms/spare-parts/:partId/movement
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "type": "consumption",
+  "quantity": 2,
+  "reason": "Used in motor repair - Asset #1",
+  "relatedAssetId": "asset-uuid",
+  "performedBy": "tech-uuid",
+  "cost": 51.00
+}
+
+### ============================================
+### Notes for Testing:
+### - All endpoints require authentication
+### - Replace UUIDs with actual IDs from your database
+### - Severity levels: low, medium, high, critical
+### - Asset types: equipment, facility, vehicle, tool
+### - Maintenance types: preventive, corrective, emergency
+### - Downtime reasons: equipment_failure, operator_error, material_shortage, other

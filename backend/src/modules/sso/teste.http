@@ -1,0 +1,27 @@
+@host = http://localhost:3000
+@baseUrl = {{host}}/api/v1
+@token = Bearer YOUR_JWT_TOKEN_HERE
+
+### ============================================
+### SSO MODULE - Single Sign-On
+### ============================================
+
+### PROVIDERS - List SSO Providers
+GET {{baseUrl}}/sso/providers
+Authorization: {{token}}
+
+### OAUTH - Google OAuth
+GET {{baseUrl}}/sso/google/callback?code=AUTH_CODE&state=STATE
+
+### OAUTH - Microsoft OAuth
+GET {{baseUrl}}/sso/microsoft/callback?code=AUTH_CODE&state=STATE
+
+### SAML - SAML Assertion
+POST {{baseUrl}}/sso/saml/callback
+Content-Type: application/x-www-form-urlencoded
+
+SAMLResponse=ASSERTION_HERE&RelayState=STATE_HERE
+
+### Notes:
+### - OAuth endpoints return JWT token on success
+### - SAML configuration required for SAML login

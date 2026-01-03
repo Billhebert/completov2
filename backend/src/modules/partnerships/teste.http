@@ -1,0 +1,49 @@
+@host = http://localhost:3000
+@baseUrl = {{host}}/api/v1
+@token = Bearer YOUR_JWT_TOKEN_HERE
+
+### ============================================
+### PARTNERSHIPS MODULE - Partner Management
+### ============================================
+
+### PARTNERS - List Partners
+GET {{baseUrl}}/partnerships/partners?page=1&limit=20&status=active
+Authorization: {{token}}
+
+### PARTNERS - Create Partner
+POST {{baseUrl}}/partnerships/partners
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "name": "Technology Partners Inc",
+  "description": "Integration partner for tech solutions",
+  "category": "integration",
+  "status": "active",
+  "commission": 15
+}
+
+### PARTNERS - Get Partner Details
+GET {{baseUrl}}/partnerships/partners/:partnerId
+Authorization: {{token}}
+
+### PROGRAMS - List Programs
+GET {{baseUrl}}/partnerships/programs?page=1&limit=20
+Authorization: {{token}}
+
+### PROGRAMS - Create Program
+POST {{baseUrl}}/partnerships/programs
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "name": "Affiliate Program",
+  "description": "Earn commission by referring customers",
+  "commission": 20,
+  "status": "active"
+}
+
+### Notes:
+### - All endpoints require authentication
+### - Partner categories: integration, reseller, affiliate, technology
+### - Replace UUIDs with actual IDs from your database

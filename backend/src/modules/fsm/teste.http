@@ -1,0 +1,128 @@
+@host = http://localhost:3000
+@baseUrl = {{host}}/api/v1
+@token = Bearer YOUR_JWT_TOKEN_HERE
+
+### ============================================
+### FSM MODULE - Field Service Management
+### ============================================
+
+### TECHNICIANS - List All
+GET {{baseUrl}}/fsm/technicians?page=1&limit=20
+Authorization: {{token}}
+
+### TECHNICIANS - Get Single
+GET {{baseUrl}}/fsm/technicians/:technicianId
+Authorization: {{token}}
+
+### TECHNICIANS - Create
+POST {{baseUrl}}/fsm/technicians
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "name": "John Smith",
+  "email": "john.smith@company.com",
+  "phone": "+1-555-0123",
+  "specializations": ["electrical", "hvac", "plumbing"],
+  "certifications": ["EPA", "HVAC_CERT"],
+  "availability": "available",
+  "serviceArea": "North Region"
+}
+
+### WORK ORDERS - List All
+GET {{baseUrl}}/fsm/work-orders?status=open&page=1&limit=20
+Authorization: {{token}}
+
+### WORK ORDERS - Get Details
+GET {{baseUrl}}/fsm/work-orders/:workOrderId
+Authorization: {{token}}
+
+### WORK ORDERS - Create
+POST {{baseUrl}}/fsm/work-orders
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "customerId": "customer-uuid",
+  "title": "HVAC System Inspection",
+  "description": "Annual HVAC system inspection and maintenance",
+  "priority": "high",
+  "scheduledDate": "2025-01-10T09:00:00Z",
+  "estimatedDuration": 2,
+  "serviceType": "preventive",
+  "address": "123 Main St, City, State 12345",
+  "requiredSkills": ["hvac", "electrical"]
+}
+
+### WORK ORDERS - Start
+POST {{baseUrl}}/fsm/work-orders/:workOrderId/start
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "technicianId": "technician-uuid",
+  "notes": "Arrived on site, beginning inspection"
+}
+
+### WORK ORDERS - Complete
+POST {{baseUrl}}/fsm/work-orders/:workOrderId/complete
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "notes": "System operating normally, replaced filters",
+  "partsUsed": [{"partId": "part-uuid", "quantity": 2}],
+  "hoursSpent": 1.5,
+  "completionStatus": "completed"
+}
+
+### TASKS - Add Task
+POST {{baseUrl}}/fsm/work-orders/:workOrderId/tasks
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "title": "Replace air filter",
+  "description": "Replace dirty air filter with new one",
+  "estimatedDuration": 0.5,
+  "required": true
+}
+
+### TASKS - Mark Complete
+POST {{baseUrl}}/fsm/work-orders/:workOrderId/tasks/:taskId/complete
+Authorization: {{token}}
+
+### TIME TRACKING - Start Work
+POST {{baseUrl}}/fsm/work-orders/:workOrderId/time-tracking/start
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "technicianId": "technician-uuid"
+}
+
+### TIME TRACKING - Stop Work
+POST {{baseUrl}}/fsm/work-orders/:workOrderId/time-tracking/stop
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "notes": "Task completed successfully"
+}
+
+### CHECKLISTS - Add Item
+POST {{baseUrl}}/fsm/work-orders/:workOrderId/checklist
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "item": "Verify circuit breakers",
+  "required": true,
+  "category": "safety"
+}
+
+### Notes:
+### - Specializations: electrical, hvac, plumbing, mechanical, gas
+### - Certifications: EPA, HVAC_CERT, GAS_CERT, ELECTRICAL_CERT
+### - Priorities: low, medium, high, urgent
+### - Service types: preventive, corrective, emergency

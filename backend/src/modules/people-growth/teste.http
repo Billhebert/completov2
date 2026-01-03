@@ -1,0 +1,44 @@
+@host = http://localhost:3000
+@baseUrl = {{host}}/api/v1
+@token = Bearer YOUR_JWT_TOKEN_HERE
+
+### ============================================
+### PEOPLE-GROWTH MODULE - Employee Development
+### ============================================
+
+### GAPS - List Learning Gaps
+GET {{baseUrl}}/people-growth/gaps?page=1&limit=20
+Authorization: {{token}}
+
+### GAPS - Get Gap Details
+GET {{baseUrl}}/people-growth/gaps/:gapId
+Authorization: {{token}}
+
+### GAPS - Close Gap
+POST {{baseUrl}}/people-growth/gaps/:gapId/close
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "completionDate": "2025-01-10"
+}
+
+### GAPS - Get Learning Paths for Gap
+GET {{baseUrl}}/people-growth/gaps/:gapId/learning-paths
+Authorization: {{token}}
+
+### TEAM - Get Team Report
+GET {{baseUrl}}/people-growth/team/report
+Authorization: {{token}}
+
+### TEAM - Get Team Heatmap
+GET {{baseUrl}}/people-growth/team/heatmap
+Authorization: {{token}}
+
+### PROFILE - Get My Profile
+GET {{baseUrl}}/people-growth/my-profile
+Authorization: {{token}}
+
+### Notes:
+### - All endpoints require authentication
+### - Replace UUIDs with actual IDs from your database

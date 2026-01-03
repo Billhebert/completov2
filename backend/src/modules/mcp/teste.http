@@ -1,0 +1,90 @@
+@host = http://localhost:3000
+@baseUrl = {{host}}/api/v1
+@token = Bearer YOUR_JWT_TOKEN_HERE
+
+### ============================================
+### MCP MODULE - Multi-Channel Processing
+### ============================================
+
+### SERVERS - List MCP Servers
+GET {{baseUrl}}/mcp/servers?page=1&limit=20
+Authorization: {{token}}
+
+### SERVERS - Get Server Details
+GET {{baseUrl}}/mcp/servers/:serverId
+Authorization: {{token}}
+
+### SERVERS - Create MCP Server
+POST {{baseUrl}}/mcp/servers
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "name": "Data Processing Server",
+  "description": "Server for processing large datasets",
+  "endpoint": "http://mcp-server:3001",
+  "type": "processing",
+  "enabled": true
+}
+
+### SERVERS - Update Server
+PUT {{baseUrl}}/mcp/servers/:serverId
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "enabled": false,
+  "endpoint": "http://new-endpoint:3001"
+}
+
+### SERVERS - Delete Server
+DELETE {{baseUrl}}/mcp/servers/:serverId
+Authorization: {{token}}
+
+### TOOLS - List Tools
+GET {{baseUrl}}/mcp/tools?page=1&limit=20
+Authorization: {{token}}
+
+### TOOLS - Create Tool
+POST {{baseUrl}}/mcp/tools
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "name": "Data Validator",
+  "description": "Validates data format and integrity",
+  "serverId": "server-uuid",
+  "endpoint": "/validate",
+  "inputSchema": {
+    "type": "object",
+    "properties": {}
+  }
+}
+
+### RESOURCES - List Resources
+GET {{baseUrl}}/mcp/resources
+Authorization: {{token}}
+
+### RESOURCES - Get Resource
+GET {{baseUrl}}/mcp/resources/:resourceId
+Authorization: {{token}}
+
+### LOGS - Get Server Logs
+GET {{baseUrl}}/mcp/servers/:serverId/logs?limit=100
+Authorization: {{token}}
+
+### LOGS - Create Log Entry
+POST {{baseUrl}}/mcp/logs
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "serverId": "server-uuid",
+  "level": "info",
+  "message": "Server started successfully"
+}
+
+### Notes:
+### - All endpoints require authentication
+### - Server types: processing, validation, integration
+### - Replace UUIDs with actual IDs from your database

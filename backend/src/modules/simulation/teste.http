@@ -1,0 +1,53 @@
+@host = http://localhost:3000
+@baseUrl = {{host}}/api/v1
+@token = Bearer YOUR_JWT_TOKEN_HERE
+
+### ============================================
+### SIMULATION MODULE - Test Routes
+### ============================================
+
+### 1. List Scenarios
+GET {{baseUrl}}/simulation/scenarios
+Authorization: {{token}}
+
+### 2. Create Scenario
+POST {{baseUrl}}/simulation/scenarios
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "title": "Customer Service Training",
+  "description": "Training scenario for handling difficult customers",
+  "difficulty": "intermediate",
+  "duration": 15,
+  "learningObjectives": [
+    "Empathy",
+    "Problem solving",
+    "Communication"
+  ]
+}
+
+### 3. Start Session
+POST {{baseUrl}}/simulation/start
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "scenarioId": "scenario-uuid-here",
+  "userId": "user-uuid-here"
+}
+
+### 4. End Session
+POST {{baseUrl}}/simulation/:id/end
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "performance": "excellent",
+  "feedbackNotes": "Great job handling the scenario"
+}
+
+### Notes:
+### - All endpoints require authentication
+### - Performance levels: poor, fair, good, excellent
+### - Replace UUIDs with actual IDs from your database

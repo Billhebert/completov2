@@ -1,14 +1,13 @@
 import { ModuleDefinition } from '../../core/types';
-import { authenticate, tenantIsolation } from '../../core/middleware';
-import simulationRoutes from './index';
+import { setupSimulationRoutes } from './routes';
 
 export const simulationModule: ModuleDefinition = {
   name: 'simulation',
   version: '1.0.0',
-  provides: ['simulation', 'scenarios', 'training'],
+  provides: ['simulation', 'scenarios', 'training', 'evaluation'],
 
   routes: async (ctx) => {
-    ctx.app.use('/api/v1/simulation', authenticate, tenantIsolation, simulationRoutes);
+    setupSimulationRoutes(ctx.app, ctx.prisma, '/api/v1/simulation');
     ctx.logger.info('Simulation routes registered');
   },
 };

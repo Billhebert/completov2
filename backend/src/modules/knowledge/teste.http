@@ -1,0 +1,54 @@
+@host = http://localhost:3000
+@baseUrl = {{host}}/api/v1
+@token = Bearer YOUR_JWT_TOKEN_HERE
+
+### ============================================
+### KNOWLEDGE MODULE - Knowledge Management (Zettels)
+### ============================================
+
+### ZETTELS - List Zettels
+GET {{baseUrl}}/knowledge/zettels?page=1&limit=20&search=typescript
+Authorization: {{token}}
+
+### ZETTELS - Get Zettel
+GET {{baseUrl}}/knowledge/zettels/:zettelId
+Authorization: {{token}}
+
+### ZETTELS - Create Zettel
+POST {{baseUrl}}/knowledge/zettels
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "title": "TypeScript Advanced Patterns",
+  "content": "Understanding advanced patterns in TypeScript including generics...",
+  "tags": ["typescript", "patterns", "programming"],
+  "relatedZettels": ["zettel-uuid-1"]
+}
+
+### ZETTELS - Update Zettel
+PUT {{baseUrl}}/knowledge/zettels/:zettelId
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "title": "TypeScript Advanced Patterns - Updated",
+  "content": "Enhanced content with more examples..."
+}
+
+### ZETTELS - Delete Zettel
+DELETE {{baseUrl}}/knowledge/zettels/:zettelId
+Authorization: {{token}}
+
+### TAGS - List Tags
+GET {{baseUrl}}/knowledge/tags
+Authorization: {{token}}
+
+### SEARCH - Search Knowledge
+GET {{baseUrl}}/knowledge/search?q=typescript&page=1&limit=20
+Authorization: {{token}}
+
+### Notes:
+### - All endpoints require authentication
+### - Zettels are interconnected knowledge nodes
+### - Replace UUIDs with actual IDs from your database

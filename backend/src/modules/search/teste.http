@@ -1,0 +1,20 @@
+@host = http://localhost:3000
+@baseUrl = {{host}}/api/v1
+@token = Bearer YOUR_JWT_TOKEN_HERE
+
+### ============================================
+### SEARCH MODULE - Full-Text Search
+### ============================================
+
+### SEARCH - Global Search
+GET {{baseUrl}}/search?q=keyword&page=1&limit=20&entities=contact,deal,document
+Authorization: {{token}}
+
+### SEARCH - Search by Entity
+GET {{baseUrl}}/search/:entity?q=keyword&page=1&limit=20
+Authorization: {{token}}
+
+### Notes:
+### - All endpoints require authentication
+### - Searchable entities: contact, deal, activity, document, zettel
+### - Replace UUIDs with actual IDs from your database

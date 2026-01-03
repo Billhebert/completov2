@@ -1,0 +1,108 @@
+@host = http://localhost:3000
+@baseUrl = {{host}}/api/v1
+@token = Bearer YOUR_JWT_TOKEN_HERE
+
+### ============================================
+### JOBS MODULE - Job Management System
+### ============================================
+
+### JOBS - List All Jobs
+GET {{baseUrl}}/jobs?status=open&types=public&page=1&limit=10
+Authorization: {{token}}
+
+### JOBS - Get Job Details
+GET {{baseUrl}}/jobs/:jobId
+Authorization: {{token}}
+
+### JOBS - Create Job
+POST {{baseUrl}}/jobs
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "title": "Senior Full Stack Developer",
+  "description": "We are looking for an experienced full stack developer...",
+  "types": ["public", "partners"],
+  "isSpecialized": true,
+  "requiredSkills": ["JavaScript", "React", "Node.js"],
+  "requiredDocuments": ["diploma", "portfolio"],
+  "vacancies": 2,
+  "location": "Remote",
+  "salary": "USD 80,000 - 120,000",
+  "benefits": "Health insurance, flexible hours",
+  "status": "open"
+}
+
+### JOBS - Update Job
+PUT {{baseUrl}}/jobs/:jobId
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "status": "closed",
+  "vacancies": 0
+}
+
+### JOBS - Delete Job
+DELETE {{baseUrl}}/jobs/:jobId
+Authorization: {{token}}
+
+### JOBS - Get Applicants
+GET {{baseUrl}}/jobs/:jobId/applicants?status=submitted&page=1
+Authorization: {{token}}
+
+### JOBS - Submit Application
+POST {{baseUrl}}/jobs/:jobId/apply
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "userId": "user-uuid",
+  "resumeUrl": "https://...",
+  "coverLetter": "I am very interested in this position..."
+}
+
+### JOBS - Evaluate Applicant
+POST {{baseUrl}}/jobs/:jobId/applicants/:applicantId/evaluate
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "score": 8.5,
+  "status": "qualified",
+  "notes": "Strong technical background and great cultural fit"
+}
+
+### JOBS - Schedule Interview
+POST {{baseUrl}}/jobs/:jobId/applicants/:applicantId/interview
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "scheduledDate": "2025-01-15T14:00:00Z",
+  "interviewer": "hr-manager-uuid",
+  "type": "technical",
+  "duration": 60
+}
+
+### JOBS - Make Offer
+POST {{baseUrl}}/jobs/:jobId/applicants/:applicantId/offer
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "salary": 95000,
+  "benefits": ["health_insurance", "home_office", "flexible_hours"],
+  "startDate": "2025-02-01",
+  "offerValidUntil": "2025-01-20"
+}
+
+### JOBS - Track Pipeline
+GET {{baseUrl}}/jobs/:jobId/pipeline
+Authorization: {{token}}
+
+### Notes:
+### - All endpoints require authentication
+### - Job types: public, internal, partners
+### - Applicant status: submitted, screening, qualified, rejected, interviewed, offered, hired
+### - Replace UUIDs with actual IDs from your database

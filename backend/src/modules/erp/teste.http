@@ -1,0 +1,35 @@
+@host = http://localhost:3000
+@baseUrl = {{host}}/api/v1
+@token = Bearer YOUR_JWT_TOKEN_HERE
+
+### ============================================
+### ERP MODULE - Enterprise Resource Planning
+### ============================================
+
+### PRODUCTS - List All
+GET {{baseUrl}}/erp/products?page=1&limit=20&category=electronics
+Authorization: {{token}}
+
+### PRODUCTS - Create Product
+POST {{baseUrl}}/erp/products
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "name": "Industrial Motor",
+  "description": "High-performance industrial motor",
+  "category": "electronics",
+  "sku": "MOT-IND-001",
+  "quantity": 100,
+  "reorderLevel": 20,
+  "unitCost": 450.00,
+  "retailPrice": 750.00,
+  "supplier": "supplier-uuid",
+  "weight": 15.5,
+  "dimensions": "30x20x25cm"
+}
+
+### Notes:
+### - All endpoints require authentication
+### - Replace UUIDs with actual IDs from your database
+### - Categories: electronics, mechanical, supplies, tools, other

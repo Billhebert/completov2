@@ -1,0 +1,62 @@
+@host = http://localhost:3000
+@baseUrl = {{host}}/api/v1
+@token = Bearer YOUR_JWT_TOKEN_HERE
+
+### ============================================
+### CHAT MODULE - Messaging System
+### ============================================
+
+### CONVERSATIONS - List Conversations
+GET {{baseUrl}}/chat/conversations?page=1&limit=20
+Authorization: {{token}}
+
+### CONVERSATIONS - Get Conversation
+GET {{baseUrl}}/chat/conversations/:conversationId
+Authorization: {{token}}
+
+### CONVERSATIONS - Create Conversation
+POST {{baseUrl}}/chat/conversations
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "participantIds": ["user-uuid-1", "user-uuid-2"],
+  "topic": "Project Discussion",
+  "type": "group"
+}
+
+### MESSAGES - Send Message
+POST {{baseUrl}}/chat/conversations/:conversationId/messages
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "content": "This is a test message",
+  "type": "text"
+}
+
+### MESSAGES - Get Messages
+GET {{baseUrl}}/chat/conversations/:conversationId/messages?page=1&limit=50
+Authorization: {{token}}
+
+### SENTIMENT - Analyze Sentiment
+GET {{baseUrl}}/chat/messages/:messageId/sentiment
+Authorization: {{token}}
+
+### SMART REPLIES - Get Smart Replies
+GET {{baseUrl}}/chat/conversations/:conversationId/smart-replies
+Authorization: {{token}}
+
+### REACTIONS - Add Reaction
+POST {{baseUrl}}/chat/messages/:messageId/reactions
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "emoji": "👍"
+}
+
+### Notes:
+### - All endpoints require authentication
+### - Message types: text, image, file, system
+### - Replace UUIDs with actual IDs from your database

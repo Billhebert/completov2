@@ -1,0 +1,74 @@
+@host = http://localhost:3000
+@baseUrl = {{host}}/api/v1
+@token = Bearer YOUR_JWT_TOKEN_HERE
+
+### ============================================
+### SYNC MODULE - Test Routes
+### ============================================
+
+### 1. List Connections
+GET {{baseUrl}}/sync/connections
+Authorization: {{token}}
+
+### 2. Create Connection (RDStation)
+POST {{baseUrl}}/sync/connections
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "name": "RDStation Connection",
+  "platform": "rdstation",
+  "credentials": {
+    "apiKey": "your-rdstation-api-key",
+    "workspaceId": "workspace-id"
+  },
+  "enabled": true
+}
+
+### 3. Create Connection (Chatwoot)
+POST {{baseUrl}}/sync/connections
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "name": "Chatwoot Connection",
+  "platform": "chatwoot",
+  "credentials": {
+    "accountId": "account-id",
+    "accessToken": "access-token-here"
+  },
+  "enabled": true
+}
+
+### 4. List Sync Runs
+GET {{baseUrl}}/sync/runs?page=1&limit=10
+Authorization: {{token}}
+
+### 5. Get Sync Run Details
+GET {{baseUrl}}/sync/runs/:runId
+Authorization: {{token}}
+
+### 6. Start Sync Job
+POST {{baseUrl}}/sync/run
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "connectionId": "connection-uuid",
+  "fullSync": false
+}
+
+### 7. Sync Specific Connection
+POST {{baseUrl}}/sync/connections/:connectionId/sync
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "fullSync": true
+}
+
+### Notes:
+### - All endpoints require authentication
+### - Supported platforms: rdstation, hubspot, zendesk, chatwoot
+### - fullSync: true performs complete sync, false does incremental sync
+### - Replace UUIDs with actual IDs from your database

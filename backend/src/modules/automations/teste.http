@@ -1,0 +1,69 @@
+@host = http://localhost:3000
+@baseUrl = {{host}}/api/v1
+@token = Bearer YOUR_JWT_TOKEN_HERE
+
+### ============================================
+### AUTOMATIONS MODULE - Workflow Automations
+### ============================================
+
+### WORKFLOWS - List Workflows
+GET {{baseUrl}}/automations/workflows?page=1&limit=20&status=active
+Authorization: {{token}}
+
+### WORKFLOWS - Get Workflow
+GET {{baseUrl}}/automations/workflows/:workflowId
+Authorization: {{token}}
+
+### WORKFLOWS - Create Workflow
+POST {{baseUrl}}/automations/workflows
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "name": "Lead Scoring Automation",
+  "description": "Automatically score leads based on engagement",
+  "triggers": [
+    {
+      "type": "contact_created",
+      "conditions": []
+    }
+  ],
+  "actions": [
+    {
+      "type": "update_field",
+      "field": "score",
+      "value": 50
+    }
+  ],
+  "enabled": true
+}
+
+### WORKFLOWS - Enable/Disable Workflow
+PUT {{baseUrl}}/automations/workflows/:workflowId/toggle
+Authorization: {{token}}
+
+### EXECUTIONS - List Executions
+GET {{baseUrl}}/automations/executions?workflowId=workflow-uuid&page=1
+Authorization: {{token}}
+
+### EXECUTIONS - Get Execution Details
+GET {{baseUrl}}/automations/executions/:executionId
+Authorization: {{token}}
+
+### TRIGGERS - List Available Triggers
+GET {{baseUrl}}/automations/triggers
+Authorization: {{token}}
+
+### ACTIONS - List Available Actions
+GET {{baseUrl}}/automations/actions
+Authorization: {{token}}
+
+### AI SUGGESTIONS - Get Suggestions
+GET {{baseUrl}}/automations/suggestions?context=contact_engagement
+Authorization: {{token}}
+
+### Notes:
+### - All endpoints require authentication
+### - Trigger types: contact_created, deal_updated, activity_logged, etc
+### - Action types: send_email, update_field, create_task, etc
+### - Replace UUIDs with actual IDs from your database

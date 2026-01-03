@@ -1,0 +1,50 @@
+@host = http://localhost:3000
+@baseUrl = {{host}}/api/v1
+@token = Bearer YOUR_JWT_TOKEN_HERE
+
+### ============================================
+### AI MODULE - Artificial Intelligence Features
+### ============================================
+
+### RAG - Query Knowledge Base
+POST {{baseUrl}}/ai/rag-query
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "query": "How to optimize database queries?",
+  "context": "database"
+}
+
+### RAG - Ingest Document
+POST {{baseUrl}}/ai/rag-ingest
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "documentId": "doc-uuid",
+  "content": "Database optimization guide content..."
+}
+
+### RAG - Search
+GET {{baseUrl}}/ai/rag-search?q=optimization&limit=10
+Authorization: {{token}}
+
+### CHAT - AI Chat
+POST {{baseUrl}}/ai/chat
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "message": "How can I improve my sales process?",
+  "context": "sales"
+}
+
+### AI MODE - Get/Set AI Mode
+GET {{baseUrl}}/ai/mode
+Authorization: {{token}}
+
+### Notes:
+### - All endpoints require authentication
+### - RAG: Retrieval Augmented Generation
+### - Replace UUIDs with actual IDs from your database

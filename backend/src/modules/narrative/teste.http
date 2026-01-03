@@ -1,0 +1,28 @@
+@host = http://localhost:3000
+@baseUrl = {{host}}/api/v1
+@token = Bearer YOUR_JWT_TOKEN_HERE
+
+### ============================================
+### NARRATIVE MODULE - AI Narrative Generation
+### ============================================
+
+### NARRATIVE - Generate Narrative
+POST {{baseUrl}}/narrative/generate
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "zettels": [
+    "zettel-uuid-1",
+    "zettel-uuid-2",
+    "zettel-uuid-3"
+  ],
+  "format": "summary",
+  "style": "professional"
+}
+
+### Notes:
+### - Formats: summary, timeline, lessons, risks, comprehensive
+### - Styles: professional, casual, technical, academic
+### - Zettels: Knowledge node IDs to include in narrative
+### - Minimum 1, maximum 20 zettels per request

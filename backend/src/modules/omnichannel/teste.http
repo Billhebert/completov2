@@ -1,0 +1,82 @@
+@host = http://localhost:3000
+@baseUrl = {{host}}/api/v1
+@token = Bearer YOUR_JWT_TOKEN_HERE
+
+### ============================================
+### OMNICHANNEL MODULE - Multi-Channel Communication
+### ============================================
+
+### CONVERSATIONS - List Conversations
+GET {{baseUrl}}/omnichannel/conversations?page=1&limit=20&status=open
+Authorization: {{token}}
+
+### CONVERSATIONS - Get Conversation
+GET {{baseUrl}}/omnichannel/conversations/:conversationId
+Authorization: {{token}}
+
+### CONVERSATIONS - Send Message
+POST {{baseUrl}}/omnichannel/conversations/:conversationId/messages
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "content": "Thank you for contacting us!",
+  "channel": "whatsapp",
+  "type": "text"
+}
+
+### CHANNELS - List Channels
+GET {{baseUrl}}/omnichannel/channels
+Authorization: {{token}}
+
+### CHANNELS - Create Channel
+POST {{baseUrl}}/omnichannel/channels
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "type": "whatsapp",
+  "name": "Support Channel",
+  "credentials": {
+    "phoneNumber": "+1-555-0123",
+    "accessToken": "token-here"
+  },
+  "enabled": true
+}
+
+### CONTACTS - Create Omnichannel Contact
+POST {{baseUrl}}/omnichannel/contacts
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "phone": "+1-555-0123",
+  "email": "john@example.com",
+  "platform": "whatsapp"
+}
+
+### TEMPLATES - List Message Templates
+GET {{baseUrl}}/omnichannel/templates?page=1&limit=20
+Authorization: {{token}}
+
+### TEMPLATES - Create Template
+POST {{baseUrl}}/omnichannel/templates
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "name": "Welcome Message",
+  "content": "Welcome! How can we help you today?",
+  "category": "greeting",
+  "variables": []
+}
+
+### INTEGRATIONS - List Integrations
+GET {{baseUrl}}/omnichannel/integrations
+Authorization: {{token}}
+
+### Notes:
+### - All endpoints require authentication
+### - Channels: whatsapp, facebook, instagram, email, telegram
+### - Replace UUIDs with actual IDs from your database

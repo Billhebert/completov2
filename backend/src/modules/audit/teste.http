@@ -1,0 +1,33 @@
+@host = http://localhost:3000
+@baseUrl = {{host}}/api/v1
+@token = Bearer YOUR_JWT_TOKEN_HERE
+
+### ============================================
+### AUDIT MODULE - Activity Logging & Auditing
+### ============================================
+
+### LOGS - List Audit Logs
+GET {{baseUrl}}/audit/logs?page=1&limit=50&action=create&entity=contact
+Authorization: {{token}}
+
+### LOGS - Get Log Details
+GET {{baseUrl}}/audit/logs/:logId
+Authorization: {{token}}
+
+### LOGS - Export Logs
+GET {{baseUrl}}/audit/logs/export?format=csv&period=month
+Authorization: {{token}}
+
+### USER ACTIVITY - Get User Activity
+GET {{baseUrl}}/audit/users/:userId/activity?page=1&limit=20
+Authorization: {{token}}
+
+### CHANGES - Track Changes
+GET {{baseUrl}}/audit/changes?entity=contact&entityId=uuid
+Authorization: {{token}}
+
+### Notes:
+### - All endpoints require authentication
+### - Actions: create, read, update, delete
+### - Entities: contact, deal, account, user, etc
+### - Replace UUIDs with actual IDs from your database

@@ -1,0 +1,19 @@
+@host = http://localhost:3000
+@baseUrl = {{host}}/api/v1
+@token = Bearer YOUR_JWT_TOKEN_HERE
+
+### ============================================
+### GATEKEEPER MODULE - Access Control
+### ============================================
+
+### ROLES - Check Permission
+GET {{baseUrl}}/gatekeeper/check-permission?action=read&resource=contact&resourceId=uuid
+Authorization: {{token}}
+
+### ROLES - Get User Permissions
+GET {{baseUrl}}/gatekeeper/permissions
+Authorization: {{token}}
+
+### Notes:
+### - All endpoints require authentication
+### - Returns 403 if user lacks permission

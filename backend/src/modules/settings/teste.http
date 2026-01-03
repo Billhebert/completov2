@@ -1,0 +1,25 @@
+@host = http://localhost:3000
+@baseUrl = {{host}}/api/v1
+@token = Bearer YOUR_JWT_TOKEN_HERE
+
+### ============================================
+### SETTINGS MODULE - System Settings
+### ============================================
+
+### SETTINGS - Get All Settings
+GET {{baseUrl}}/settings
+Authorization: {{token}}
+
+### SETTINGS - Update Setting
+PUT {{baseUrl}}/settings/:settingKey
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "value": "new-value"
+}
+
+### Notes:
+### - All endpoints require authentication
+### - Settings keys are specific to your configuration
+### - Replace UUIDs with actual IDs from your database

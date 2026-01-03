@@ -1,0 +1,59 @@
+@host = http://localhost:3000
+@baseUrl = {{host}}/api/v1
+@token = Bearer YOUR_JWT_TOKEN_HERE
+
+### ============================================
+### EMAIL-TEMPLATES MODULE - Email Marketing
+### ============================================
+
+### TEMPLATES - List Templates
+GET {{baseUrl}}/email-templates?page=1&limit=20
+Authorization: {{token}}
+
+### TEMPLATES - Get Template
+GET {{baseUrl}}/email-templates/:templateId
+Authorization: {{token}}
+
+### TEMPLATES - Create Template
+POST {{baseUrl}}/email-templates
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "name": "Welcome Email",
+  "subject": "Welcome to {{company_name}}!",
+  "content": "<h1>Welcome {{user_name}}</h1><p>Thanks for joining!</p>",
+  "variables": ["company_name", "user_name"]
+}
+
+### TEMPLATES - Preview Template
+POST {{baseUrl}}/email-templates/preview
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "templateId": "template-uuid",
+  "variables": {
+    "company_name": "Acme Corp",
+    "user_name": "John Doe"
+  }
+}
+
+### TEMPLATES - Send Email
+POST {{baseUrl}}/email-templates/send
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "templateId": "template-uuid",
+  "to": "recipient@example.com",
+  "variables": {
+    "company_name": "Acme Corp",
+    "user_name": "John Doe"
+  }
+}
+
+### Notes:
+### - All endpoints require authentication
+### - Templates support Handlebars variable syntax
+### - Replace UUIDs with actual IDs from your database

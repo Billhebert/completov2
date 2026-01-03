@@ -1,0 +1,38 @@
+@host = http://localhost:3000
+@baseUrl = {{host}}/api/v1
+@token = Bearer YOUR_JWT_TOKEN_HERE
+
+### ============================================
+### DASHBOARD MODULE - Customizable Dashboard
+### ============================================
+
+### DASHBOARD - Get Dashboard
+GET {{baseUrl}}/dashboard
+Authorization: {{token}}
+
+### DASHBOARD - Update Dashboard
+PUT {{baseUrl}}/dashboard
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "widgets": [
+    {
+      "id": "widget-1",
+      "type": "pipeline",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "size": {
+        "width": 4,
+        "height": 3
+      }
+    }
+  ]
+}
+
+### Notes:
+### - All endpoints require authentication
+### - Dashboard is customizable per user
+### - Replace UUIDs with actual IDs from your database

@@ -1,0 +1,27 @@
+@host = http://localhost:3000
+@baseUrl = {{host}}/api/v1
+@token = Bearer YOUR_JWT_TOKEN_HERE
+
+### ============================================
+### FEEDBACK MODULE - User Feedback
+### ============================================
+
+### FEEDBACK - Submit Feedback
+POST {{baseUrl}}/feedback
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "title": "Improve contact search",
+  "description": "Add advanced filtering options to contact search",
+  "type": "feature_request",
+  "category": "usability"
+}
+
+### FEEDBACK - List Feedback
+GET {{baseUrl}}/feedback?page=1&limit=20&type=feature_request
+Authorization: {{token}}
+
+### Notes:
+### - All endpoints require authentication
+### - Feedback types: bug, feature_request, improvement, other

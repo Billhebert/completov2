@@ -1,0 +1,35 @@
+@host = http://localhost:3000
+@baseUrl = {{host}}/api/v1
+@token = Bearer YOUR_JWT_TOKEN_HERE
+
+### ============================================
+### API KEYS MODULE - API Key Management
+### ============================================
+
+### KEYS - List API Keys
+GET {{baseUrl}}/apikeys?page=1&limit=20&status=active
+Authorization: {{token}}
+
+### KEYS - Create API Key
+POST {{baseUrl}}/apikeys
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "name": "Mobile App Integration",
+  "scopes": ["read:contacts", "write:contacts"],
+  "expiresAt": "2026-01-03T00:00:00Z"
+}
+
+### KEYS - Revoke API Key
+DELETE {{baseUrl}}/apikeys/:keyId
+Authorization: {{token}}
+
+### KEYS - Rotate API Key
+POST {{baseUrl}}/apikeys/:keyId/rotate
+Authorization: {{token}}
+
+### Notes:
+### - All endpoints require authentication
+### - API keys used for third-party integrations
+### - Replace UUIDs with actual IDs from your database

@@ -1,0 +1,74 @@
+@host = http://localhost:3000
+@baseUrl = {{host}}/api/v1
+@token = Bearer YOUR_JWT_TOKEN_HERE
+
+### ============================================
+### AUTH MODULE - Authentication & Authorization
+### ============================================
+
+### REGISTER - Create Account
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "email": "john@company.com",
+  "password": "SecurePass123!",
+  "companyName": "Acme Corp",
+  "companyDomain": "acme"
+}
+
+### LOGIN - Authenticate User
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "john@company.com",
+  "password": "SecurePass123!"
+}
+
+### ME - Get Current User
+GET {{baseUrl}}/auth/me
+Authorization: {{token}}
+
+### REFRESH - Refresh Token
+POST {{baseUrl}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "refresh-token-here"
+}
+
+### LOGOUT - Logout User
+POST {{baseUrl}}/auth/logout
+Authorization: {{token}}
+
+### RESET PASSWORD - Request Password Reset
+POST {{baseUrl}}/auth/password/reset
+Content-Type: application/json
+
+{
+  "email": "john@company.com"
+}
+
+### RESET PASSWORD - Confirm Reset
+POST {{baseUrl}}/auth/password/reset/:token
+Content-Type: application/json
+
+{
+  "password": "NewPassword123!"
+}
+
+### VERIFY EMAIL - Send Verification
+POST {{baseUrl}}/auth/email/verify/send
+Authorization: {{token}}
+
+### VERIFY EMAIL - Confirm Email
+POST {{baseUrl}}/auth/email/verify/:token
+Authorization: {{token}}
+
+### Notes:
+### - Register does not require authentication
+### - Login and Register return JWT token
+### - Token expires in 24 hours
+### - Refresh token expires in 7 days

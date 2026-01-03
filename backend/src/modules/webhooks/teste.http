@@ -1,0 +1,54 @@
+@host = http://localhost:3000
+@baseUrl = {{host}}/api/v1
+@token = Bearer YOUR_JWT_TOKEN_HERE
+
+### ============================================
+### WEBHOOKS MODULE - Event Webhooks
+### ============================================
+
+### WEBHOOKS - List Webhooks
+GET {{baseUrl}}/webhooks?page=1&limit=20&status=active
+Authorization: {{token}}
+
+### WEBHOOKS - Get Webhook
+GET {{baseUrl}}/webhooks/:webhookId
+Authorization: {{token}}
+
+### WEBHOOKS - Create Webhook
+POST {{baseUrl}}/webhooks
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "name": "Contact Created Event",
+  "url": "https://example.com/webhook/contact-created",
+  "events": ["contact.created", "contact.updated"],
+  "active": true
+}
+
+### WEBHOOKS - Update Webhook
+PUT {{baseUrl}}/webhooks/:webhookId
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "url": "https://example.com/webhook/updated",
+  "events": ["contact.created", "contact.updated", "contact.deleted"]
+}
+
+### WEBHOOKS - Delete Webhook
+DELETE {{baseUrl}}/webhooks/:webhookId
+Authorization: {{token}}
+
+### WEBHOOKS - Test Webhook
+POST {{baseUrl}}/webhooks/:webhookId/test
+Authorization: {{token}}
+
+### DELIVERIES - Get Webhook Deliveries
+GET {{baseUrl}}/webhooks/:webhookId/deliveries?page=1&limit=20
+Authorization: {{token}}
+
+### Notes:
+### - All endpoints require authentication
+### - Event types: *.created, *.updated, *.deleted
+### - Replace UUIDs with actual IDs from your database

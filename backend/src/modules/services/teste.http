@@ -1,0 +1,110 @@
+@host = http://localhost:3000
+@baseUrl = {{host}}/api/v1
+@token = Bearer YOUR_JWT_TOKEN_HERE
+
+### ============================================
+### SERVICES MODULE - Service Catalog & Marketplace
+### ============================================
+
+### CATALOG - List Services
+GET {{baseUrl}}/services/catalog?page=1&limit=20&status=active
+Authorization: {{token}}
+
+### CATALOG - Get Service
+GET {{baseUrl}}/services/catalog/:serviceId
+Authorization: {{token}}
+
+### CATALOG - Create Service
+POST {{baseUrl}}/services/catalog
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "name": "Professional Consulting",
+  "description": "Expert consultation for business strategy",
+  "category": "consulting",
+  "price": 500,
+  "currency": "USD",
+  "duration": 120,
+  "availability": "available"
+}
+
+### CATALOG - Update Service
+PUT {{baseUrl}}/services/catalog/:serviceId
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "price": 550,
+  "availability": "limited"
+}
+
+### CATALOG - Delete Service
+DELETE {{baseUrl}}/services/catalog/:serviceId
+Authorization: {{token}}
+
+### MARKETPLACE - List Available Services
+GET {{baseUrl}}/services/marketplace?page=1&limit=20
+Authorization: {{token}}
+
+### MARKETPLACE - Get Marketplace Service
+GET {{baseUrl}}/services/marketplace/:serviceId
+Authorization: {{token}}
+
+### PROPOSALS - Create Proposal
+POST {{baseUrl}}/services/proposals
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "clientId": "client-uuid",
+  "serviceIds": ["service-uuid-1", "service-uuid-2"],
+  "totalPrice": 1500,
+  "validUntil": "2025-01-20"
+}
+
+### PROPOSALS - Accept Proposal
+POST {{baseUrl}}/services/proposals/:proposalId/accept
+Authorization: {{token}}
+
+### PROPOSALS - Reject Proposal
+POST {{baseUrl}}/services/proposals/:proposalId/reject
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "reason": "Budget constraints"
+}
+
+### TRANSACTIONS - List Transactions
+GET {{baseUrl}}/services/transactions?page=1&limit=20&status=completed
+Authorization: {{token}}
+
+### TRANSACTIONS - Record Payment
+POST {{baseUrl}}/services/transactions/payment
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "proposalId": "proposal-uuid",
+  "amount": 1500,
+  "method": "credit_card",
+  "transactionId": "txn-123456"
+}
+
+### RATINGS - Rate Service
+POST {{baseUrl}}/services/ratings
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "serviceId": "service-uuid",
+  "transactionId": "transaction-uuid",
+  "score": 5,
+  "feedback": "Excellent service and professional delivery"
+}
+
+### Notes:
+### - All endpoints require authentication
+### - Service categories: consulting, development, design, support, training
+### - Replace UUIDs with actual IDs from your database

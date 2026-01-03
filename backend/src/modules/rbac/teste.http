@@ -1,0 +1,57 @@
+@host = http://localhost:3000
+@baseUrl = {{host}}/api/v1
+@token = Bearer YOUR_JWT_TOKEN_HERE
+
+### ============================================
+### RBAC MODULE - Role-Based Access Control
+### ============================================
+
+### ROLES - List Roles
+GET {{baseUrl}}/rbac/roles?page=1&limit=20
+Authorization: {{token}}
+
+### ROLES - Get Role
+GET {{baseUrl}}/rbac/roles/:roleId
+Authorization: {{token}}
+
+### ROLES - Create Role
+POST {{baseUrl}}/rbac/roles
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "name": "Manager",
+  "description": "Manager role with limited admin access",
+  "permissions": ["read:contacts", "write:contacts", "read:deals"]
+}
+
+### ROLES - Update Role
+PUT {{baseUrl}}/rbac/roles/:roleId
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "permissions": ["read:contacts", "write:contacts", "read:deals", "write:deals"]
+}
+
+### PERMISSIONS - List Permissions
+GET {{baseUrl}}/rbac/permissions
+Authorization: {{token}}
+
+### USERS - Assign Role
+POST {{baseUrl}}/rbac/users/:userId/roles
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "roleId": "role-uuid"
+}
+
+### USERS - Remove Role
+DELETE {{baseUrl}}/rbac/users/:userId/roles/:roleId
+Authorization: {{token}}
+
+### Notes:
+### - All endpoints require authentication
+### - Standard roles: admin, manager, user, guest
+### - Replace UUIDs with actual IDs from your database

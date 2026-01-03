@@ -1,0 +1,37 @@
+@host = http://localhost:3000
+@baseUrl = {{host}}/api/v1
+@token = Bearer YOUR_JWT_TOKEN_HERE
+
+### ============================================
+### ANALYTICS MODULE - Business Analytics & Reports
+### ============================================
+
+### DASHBOARD - Get Dashboard
+GET {{baseUrl}}/analytics/dashboard
+Authorization: {{token}}
+
+### TIMESERIES - Get Time Series Data
+GET {{baseUrl}}/analytics/timeseries?metric=revenue&period=month&limit=12
+Authorization: {{token}}
+
+### TOP CONTACTS - Get Top Contacts
+GET {{baseUrl}}/analytics/top-contacts?limit=10
+Authorization: {{token}}
+
+### PIPELINE - Get Pipeline Analysis
+GET {{baseUrl}}/analytics/pipeline?period=quarter
+Authorization: {{token}}
+
+### ACTIVITY - Get Activity Report
+GET {{baseUrl}}/analytics/activity?page=1&limit=20
+Authorization: {{token}}
+
+### EXPORT - Export Report
+GET {{baseUrl}}/analytics/export/:type?format=csv
+Authorization: {{token}}
+
+### Notes:
+### - All endpoints require authentication
+### - Metrics: revenue, contacts, deals, activities
+### - Periods: day, week, month, quarter, year
+### - Export types: dashboard, pipeline, contacts, deals
