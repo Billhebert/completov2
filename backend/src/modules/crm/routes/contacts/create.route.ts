@@ -7,20 +7,9 @@
 import { Express, Request, Response, NextFunction } from 'express';
 import { PrismaClient, Prisma } from '@prisma/client';
 import { authenticate, tenantIsolation, requirePermission, Permission, validateBody } from '../../../../core/middleware';
-import { z } from 'zod';
-
-// Contact validation schema
-const contactSchema = z.object({
-  name: z.string(),
-  email: z.string().email().optional(),
-  phone: z.string().optional(),
-  companyName: z.string().optional(),
-  crmCompanyId: z.string().uuid().optional(),
-  position: z.string().optional(),
-  website: z.string().url().optional(),
-  tags: z.array(z.string()).optional(),
-  ownerId: z.string().optional(),
-});
+import { createContactSchema } from '../../schemas/contact.schema';
+import { auditLogger } from '../../../../core/audit/audit-logger';
+import { successResponse } from '../../../../core/utils/api-response';
 
 export function setupContactsCreateRoute(app: Express, prisma: PrismaClient, baseUrl: string) {
   app.post(
@@ -28,26 +17,52 @@ export function setupContactsCreateRoute(app: Express, prisma: PrismaClient, bas
     authenticate,
     tenantIsolation,
     requirePermission(Permission.CONTACT_CREATE),
-    validateBody(contactSchema),
+    validateBody(createContactSchema),
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         const { companyId, userId } = req as any;
+        const validatedData = req.body; // Already validated by schema
 
         // Normalize email
-        const email = String(req.body.email || '')
-          .trim()
-          .toLowerCase();
+        const email = validatedData.email
+          ? String(validatedData.email).trim().toLowerCase()
+          : undefined;
 
+        // Only include validated fields from schema
         const contact = await prisma.contact.create({
           data: {
-            ...req.body,
+            name: validatedData.name,
             email,
+            phone: validatedData.phone,
+            companyName: validatedData.companyName,
+            position: validatedData.position,
+            tags: validatedData.tags,
+            status: validatedData.status || 'lead',
+            source: validatedData.source,
+            notes: validatedData.notes,
+            customFields: validatedData.customFields,
             companyId,
             ownerId: userId,
           },
         });
 
-        return res.status(201).json({ data: contact });
+        // Audit log the creation
+        await auditLogger.log({
+          action: 'contact.create',
+          userId,
+          companyId,
+          resourceType: 'contact',
+          resourceId: contact.id,
+          details: {
+            contactName: contact.name,
+            contactEmail: contact.email,
+          },
+        });
+
+        return successResponse(res, contact, {
+          statusCode: 201,
+          requestId: req.id
+        });
       } catch (err: any) {
         // Handle unique constraint violation (duplicate email)
         if (

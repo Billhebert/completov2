@@ -20,3 +20,19 @@ export {
   authenticateApiKey,
   requireScope,
 } from './api-key';
+
+// CSRF Protection
+export {
+  validateCSRFToken,
+  generateCSRFToken,
+  csrfProtection,
+  setupCSRFTokenRoute,
+} from './csrf';
+
+// Idempotency
+export {
+  idempotency,
+  requireIdempotency,
+  optionalIdempotency,
+  clearIdempotencyKey,
+} from './idempotency';

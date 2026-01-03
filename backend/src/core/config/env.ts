@@ -75,6 +75,9 @@ const envSchema = z.object({
   RATE_LIMIT_MAX: z.string().transform(Number).default('100'),
   RATE_LIMIT_WINDOW_MS: z.string().transform(Number).default('900000'), // 15min
   MAX_FILE_SIZE_MB: z.string().transform(Number).default('10'),
+
+  // Security
+  CSRF_ENABLED: z.string().transform(val => val === 'true').default('true'),
 });
 
 export type Env = z.infer<typeof envSchema>;
