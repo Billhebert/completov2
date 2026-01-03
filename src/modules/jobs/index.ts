@@ -1,20 +1,16 @@
 /**
  * Jobs Module - Main Index
- * Ultra-modular architecture - each route in its own file
+ * Ultra-modular architecture with CRUD factory
  */
 
 import { Express } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { EventBus } from '../../core/event-bus';
 import { ModuleDefinition } from '../../core/types';
+import { createCrudRoutes } from '../../core/factories/crud-routes.factory';
 
-// Import all modular routes
+// Import custom (non-CRUD) routes
 import {
-  setupJobsListRoute,
-  setupJobsGetRoute,
-  setupJobsCreateRoute,
-  setupJobsUpdateRoute,
-  setupJobsDeleteRoute,
   setupJobsApplyRoute,
   setupJobsInterestRoute,
   setupJobsSuggestionsRoute,
@@ -25,12 +21,75 @@ import {
 function setupRoutes(app: Express, prisma: PrismaClient, eventBus: EventBus) {
   const base = '/api/v1/jobs';
 
-  // Setup all modular routes
-  setupJobsListRoute(app, prisma, base);
-  setupJobsGetRoute(app, prisma, base);
-  setupJobsCreateRoute(app, prisma, base);
-  setupJobsUpdateRoute(app, prisma, base);
-  setupJobsDeleteRoute(app, prisma, base);
+  // Jobs CRUD via factory
+  createCrudRoutes(app, prisma, {
+    entityName: 'job',
+    baseUrl: base,
+    singularName: 'job',
+    pluralName: 'jobs',
+    tenantIsolation: true,
+    auditLog: false,
+    softDelete: false,
+    allowedSortFields: ['title', 'location', 'salary', 'createdAt', 'closingDate'],
+
+    list: {
+      include: {
+        company: { select: { id: true, name: true } },
+        _count: { select: { applications: true, interests: true } },
+      },
+    },
+
+    get: {
+      include: {
+        company: { select: { id: true, name: true } },
+        _count: { select: { applications: true, interests: true } },
+      },
+    },
+
+    create: {
+      include: {
+        company: { select: { id: true, name: true } },
+      },
+    },
+
+    update: {
+      include: {
+        company: { select: { id: true, name: true } },
+      },
+    },
+
+    customFilters: (query) => {
+      const where: any = {};
+
+      // Status filter
+      if (query.status && typeof query.status === 'string') {
+        where.status = query.status;
+      }
+
+      // Type filter
+      if (query.type && typeof query.type === 'string') {
+        where.type = query.type;
+      }
+
+      // Specialized filter
+      if (query.isSpecialized !== undefined) {
+        where.isSpecialized = query.isSpecialized === 'true';
+      }
+
+      // Search filter
+      if (query.search && typeof query.search === 'string') {
+        where.OR = [
+          { title: { contains: query.search, mode: 'insensitive' } },
+          { description: { contains: query.search, mode: 'insensitive' } },
+          { location: { contains: query.search, mode: 'insensitive' } },
+        ];
+      }
+
+      return where;
+    },
+  });
+
+  // Custom job routes (non-CRUD)
   setupJobsApplyRoute(app, prisma, base);
   setupJobsInterestRoute(app, prisma, base);
   setupJobsSuggestionsRoute(app, prisma, base);
