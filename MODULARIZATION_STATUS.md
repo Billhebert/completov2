@@ -1,54 +1,73 @@
 # Status da Modularização Extrema
 
-## 📊 Progresso Geral
+## 📊 Progresso Geral: **52% Concluído** (105/200 rotas)
 
 ### Módulos 100% Modularizados (Padrão 1 Arquivo = 1 Rota HTTP)
 
-#### ✅ Concluídos Neste Commit (14 rotas)
+#### ✅ Batch 4 - Último Commit (17 rotas)
 
-1. **EMAIL-TEMPLATES** - 3 rotas modularizadas
-   - `list.route.ts` - GET /api/v1/email-templates
-   - `preview.route.ts` - POST /api/v1/email-templates/preview
-   - `send.route.ts` - POST /api/v1/email-templates/send
+1. **PEOPLE GROWTH** - 7 rotas modularizadas
+   - `gaps-list.route.ts` - GET /gaps
+   - `gaps-get.route.ts` - GET /gaps/:id
+   - `gaps-close.route.ts` - POST /gaps/:id/close
+   - `gaps-learning-paths.route.ts` - GET /gaps/:id/learning-paths
+   - `team-report.route.ts` - GET /team/report
+   - `team-heatmap.route.ts` - GET /team/heatmap
+   - `my-profile.route.ts` - GET /my-profile
 
-2. **FILES** - 6 rotas modularizadas
-   - `list.route.ts` - GET /api/v1/files
-   - `upload.route.ts` - POST /api/v1/files/upload
-   - `get-url.route.ts` - GET /api/v1/files/:id/url
-   - `download.route.ts` - GET /api/v1/files/:id/download
-   - `delete.route.ts` - DELETE /api/v1/files/:id
-   - `avatar.route.ts` - POST /api/v1/files/avatar
+2. **ANALYTICS** - 6 rotas modularizadas
+   - `dashboard.route.ts` - GET /dashboard
+   - `timeseries.route.ts` - GET /timeseries
+   - `top-contacts.route.ts` - GET /top-contacts
+   - `pipeline.route.ts` - GET /pipeline
+   - `activity.route.ts` - GET /activity
+   - `export.route.ts` - GET /export/:type
 
-3. **AI** - 5 rotas modularizadas
-   - `rag-query.route.ts` - POST /api/v1/ai/rag/query
-   - `rag-ingest.route.ts` - POST /api/v1/ai/rag/ingest
-   - `rag-search.route.ts` - GET /api/v1/ai/rag/search
-   - `chat.route.ts` - POST /api/v1/ai/chat
-   - `mode.route.ts` - GET/POST /api/v1/ai/mode
+3. **NOTIFICATIONS** - 4 rotas modularizadas (AI-powered)
+   - `list.route.ts` - GET /
+   - `summary.route.ts` - GET /summary
+   - `read.route.ts` - POST /:id/read
+   - `read-all.route.ts` - POST /read-all
 
-#### ✅ Já Modularizados (Commits anteriores - 74 rotas)
+#### ✅ Batch 3 (14 rotas)
 
-**Batch 1:**
-- CRM (19 rotas)
-- JOBS (10 rotas)
-- SETTINGS (2 rotas)
-- PARTNERSHIPS (5 rotas)
-- WEBHOOKS (5 rotas)
-- FEEDBACK (2 rotas)
-- APIKEYS (3 rotas)
-- RBAC (4 rotas)
-- GATEKEEPER (2 rotas)
+1. **EMAIL-TEMPLATES** - 3 rotas
+   - `list.route.ts` - GET /email-templates
+   - `preview.route.ts` - POST /email-templates/preview
+   - `send.route.ts` - POST /email-templates/send
 
-**Batch 2:**
-- SSO (4 rotas)
-- SEARCH (4 rotas)
-- AUDIT (5 rotas)
-- DEDUPLICATION (7 rotas)
+2. **FILES** - 6 rotas
+   - `list.route.ts`, `upload.route.ts`, `get-url.route.ts`
+   - `download.route.ts`, `delete.route.ts`, `avatar.route.ts`
 
-**Batch 3:**
-- DASHBOARD (2 rotas)
+3. **AI** - 5 rotas
+   - `rag-query.route.ts`, `rag-ingest.route.ts`, `rag-search.route.ts`
+   - `chat.route.ts`, `mode.route.ts`
 
-### 📈 Total Modularizado: 88 rotas (de ~200 rotas estimadas)
+#### ✅ Batch 1 & 2 (74 rotas)
+
+- CRM (19 rotas) | JOBS (10 rotas) | SETTINGS (2 rotas)
+- PARTNERSHIPS (5 rotas) | WEBHOOKS (5 rotas) | FEEDBACK (2 rotas)
+- APIKEYS (3 rotas) | RBAC (4 rotas) | GATEKEEPER (2 rotas)
+- SSO (4 rotas) | SEARCH (4 rotas) | AUDIT (5 rotas)
+- DEDUPLICATION (7 rotas) | DASHBOARD (2 rotas)
+
+### 🚧 Módulos Pendentes de Modularização (~95 rotas restantes)
+
+#### Médios (4 módulos - 40 rotas)
+- **CHAT** (7 rotas) - Messages, channels, AI sentiment, smart replies
+- **MCP** (9 rotas) - MCP servers, tools, resources, logs
+- **OMNICHANNEL** (11 rotas) - WhatsApp, conversations, integrations
+- **SERVICES** (13 rotas) - Service catalog, marketplace
+
+#### Complexos (7 módulos - 57 rotas)
+- **AUTOMATIONS** (13 rotas) - Workflows, executions, triggers, AI suggestions
+- **CMMS** (14 rotas) - Assets, maintenance, spare parts
+- **ERP** (2 rotas) - Products, inventory
+- **FSM** (11 rotas) - Field service, work orders, technicians
+- **LEARNING** (10 rotas) - Learning paths, skills, enrollments
+- **NARRATIVE** (1 rota) - AI narrative generation
+- **SYNC** (6 rotas) - Integrations, sync jobs
 
 ## 🎯 Padrão Ultra-Modular Implementado
 
@@ -119,34 +138,6 @@ export const moduleNameModule: ModuleDefinition = {
 };
 ```
 
-## 🚧 Módulos Pendentes de Modularização
-
-### Simples (2 módulos restantes)
-- People Growth (7 rotas)
-- Services (13 rotas)
-
-### Médios (5 módulos restantes)
-- Analytics (6 rotas)
-- Chat (7 rotas)
-- MCP (9 rotas)
-- Notifications (4 rotas)
-- Omnichannel (11 rotas)
-
-### Complexos (7 módulos)
-- Automations (13 rotas)
-- CMMS (14 rotas)
-- ERP (2 rotas)
-- FSM (11 rotas)
-- Learning (10 rotas)
-- Narrative (1 rota)
-- Sync (6 rotas)
-
-### rest-routes.ts (16 rotas para modularizar)
-- Zettels (6 rotas)
-- Workflows (4 rotas)
-- Gaps & Learning Paths (4 rotas)
-- Outras (2 rotas)
-
 ## 💡 Benefícios da Modularização Extrema
 
 ### 1. Isolamento Total
@@ -176,11 +167,9 @@ export const moduleNameModule: ModuleDefinition = {
 
 ## 📝 Próximos Passos
 
-1. Continuar modularização dos 14 módulos restantes (~112 rotas)
-2. Modularizar rotas do rest-routes.ts (~16 rotas)
-3. Adicionar testes unitários por rota
-4. Documentar cada endpoint com JSDoc
-5. Gerar documentação OpenAPI automática
+1. ✅ 52% completo - **105 rotas modularizadas**
+2. 🔄 Próximo batch: CHAT (7) + MCP (9) + OMNICHANNEL (11) = 27 rotas
+3. 🚀 Meta: 100% modularizado (200 rotas totais)
 
 ## 🎉 Conclusão
 
