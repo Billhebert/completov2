@@ -1,0 +1,1855 @@
+### ===========================================
+### BACKEND API - ALL ROUTES
+### Base URL: http://localhost:3000
+### ===========================================
+
+@baseUrl = http://localhost:3000
+@token = your-jwt-token-here
+
+### ===========================================
+### AI MODULE (6 routes)
+### ===========================================
+
+### 1. chat
+POST {{baseUrl}}/api/v1/ai/chat
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "message": "What are the top leads this month?",
+  "context": {}
+}
+
+### 2. mode
+GET {{baseUrl}}/api/v1/ai/mode
+Authorization: Bearer {{token}}
+
+### 3. mode
+POST {{baseUrl}}/api/v1/ai/mode
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "mode": "full"
+}
+
+### 4. rag-ingest
+POST {{baseUrl}}/api/v1/ai/rag/ingest
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "content": "Document content to ingest",
+  "metadata": {"source": "manual"}
+}
+
+### 5. rag-query
+POST {{baseUrl}}/api/v1/ai/rag/query
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "query": "How do I configure webhooks?",
+  "limit": 5
+}
+
+### 6. rag-search
+GET {{baseUrl}}/api/v1/ai/rag/search
+Authorization: Bearer {{token}}
+
+
+### ===========================================
+### ANALYTICS MODULE (6 routes)
+### ===========================================
+
+### 1. activity
+GET {{baseUrl}}/api/v1/analytics/activity
+Authorization: Bearer {{token}}
+
+### 2. dashboard
+GET {{baseUrl}}/api/v1/analytics/dashboard
+Authorization: Bearer {{token}}
+
+### 3. export
+GET {{baseUrl}}/api/v1/analytics/export/:type
+Authorization: Bearer {{token}}
+
+### 4. pipeline
+GET {{baseUrl}}/api/v1/analytics/pipeline
+Authorization: Bearer {{token}}
+
+### 5. timeseries
+GET {{baseUrl}}/api/v1/analytics/timeseries
+Authorization: Bearer {{token}}
+
+### 6. top-contacts
+GET {{baseUrl}}/api/v1/analytics/top-contacts
+Authorization: Bearer {{token}}
+
+
+### ===========================================
+### APIKEYS MODULE (3 routes)
+### ===========================================
+
+### 1. create
+POST {{baseUrl}}/api/v1/apikeys
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "My API Key",
+  "permissions": ["read", "write"],
+  "expiresAt": "2027-01-01"
+}
+
+### 2. delete
+DELETE {{baseUrl}}/api/v1/apikeys/:id
+Authorization: Bearer {{token}}
+
+### 3. list
+GET {{baseUrl}}/api/v1/apikeys
+Authorization: Bearer {{token}}
+
+
+### ===========================================
+### AUDIT MODULE (5 routes)
+### ===========================================
+
+### 1. activity
+GET {{baseUrl}}/api/v1/audit/activity/:userId
+Authorization: Bearer {{token}}
+
+### 2. export
+GET {{baseUrl}}/api/v1/audit/export
+Authorization: Bearer {{token}}
+
+### 3. history
+GET {{baseUrl}}/api/v1/audit/history/:entityType/:entityId
+Authorization: Bearer {{token}}
+
+### 4. logs
+GET {{baseUrl}}/api/v1/audit/logs
+Authorization: Bearer {{token}}
+
+### 5. stats
+GET {{baseUrl}}/api/v1/audit/stats
+Authorization: Bearer {{token}}
+
+
+### ===========================================
+### AUTH MODULE (8 routes)
+### ===========================================
+
+### 1. 2fa-disable
+POST {{baseUrl}}/api/v1/auth/2fa/disable
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "password": "password123"
+}
+
+### 2. 2fa-setup
+POST {{baseUrl}}/api/v1/auth/2fa/setup
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{}
+
+### 3. 2fa-verify
+POST {{baseUrl}}/api/v1/auth/2fa/verify
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "code": "123456"
+}
+
+### 4. login
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+
+### 5. logout
+POST {{baseUrl}}/api/v1/auth/logout
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "data": "value"
+}
+
+### 6. me
+GET {{baseUrl}}/api/v1/auth/me
+Authorization: Bearer {{token}}
+
+### 7. refresh
+POST {{baseUrl}}/api/v1/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "your-refresh-token"
+}
+
+### 8. register
+POST {{baseUrl}}/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "password": "password123",
+  "companyName": "My Company"
+}
+
+
+### ===========================================
+### AUTOMATIONS MODULE (12 routes)
+### ===========================================
+
+### 1. execution-logs
+GET {{baseUrl}}/api/v1/automations/executions/:id/logs
+Authorization: Bearer {{token}}
+
+### 2. executions-list
+GET {{baseUrl}}/api/v1/automations/executions
+Authorization: Bearer {{token}}
+
+### 3. suggestions
+GET {{baseUrl}}/api/v1/automations/suggestions
+Authorization: Bearer {{token}}
+
+### 4. workflow-analyze
+GET {{baseUrl}}/api/v1/automations/workflows/:id/analyze
+Authorization: Bearer {{token}}
+
+### 5. workflows-activate
+POST {{baseUrl}}/api/v1/automations/workflows/:id/activate
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Auto-assign leads",
+  "description": "Automatically assign new leads to sales team",
+  "trigger": {"type": "contact.created"},
+  "actions": [{"type": "assign", "userId": "user-uuid"}]
+}
+
+### 6. workflows-create
+POST {{baseUrl}}/api/v1/automations/workflows
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Auto-assign leads",
+  "description": "Automatically assign new leads to sales team",
+  "trigger": {"type": "contact.created"},
+  "actions": [{"type": "assign", "userId": "user-uuid"}]
+}
+
+### 7. workflows-delete
+DELETE {{baseUrl}}/api/v1/automations/workflows/:id
+Authorization: Bearer {{token}}
+
+### 8. workflows-get
+GET {{baseUrl}}/api/v1/automations/workflows/:id
+Authorization: Bearer {{token}}
+
+### 9. workflows-list
+GET {{baseUrl}}/api/v1/automations/workflows
+Authorization: Bearer {{token}}
+
+### 10. workflows-pause
+POST {{baseUrl}}/api/v1/automations/workflows/:id/pause
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Auto-assign leads",
+  "description": "Automatically assign new leads to sales team",
+  "trigger": {"type": "contact.created"},
+  "actions": [{"type": "assign", "userId": "user-uuid"}]
+}
+
+### 11. workflows-test
+POST {{baseUrl}}/api/v1/automations/workflows/:id/test
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Auto-assign leads",
+  "description": "Automatically assign new leads to sales team",
+  "trigger": {"type": "contact.created"},
+  "actions": [{"type": "assign", "userId": "user-uuid"}]
+}
+
+### 12. workflows-update
+PATCH {{baseUrl}}/api/v1/automations/workflows/:id
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Updated workflow",
+  "active": true
+}
+
+
+### ===========================================
+### CHAT MODULE (8 routes)
+### ===========================================
+
+### 1. channel-sentiment
+GET {{baseUrl}}/api/v1/chat/channels/:channelId/sentiment
+Authorization: Bearer {{token}}
+
+### 2. channels-create
+POST {{baseUrl}}/api/v1/chat/channels
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "General",
+  "type": "PUBLIC",
+  "description": "General discussion"
+}
+
+### 3. channels-list
+GET {{baseUrl}}/api/v1/chat/channels
+Authorization: Bearer {{token}}
+
+### 4. messages-list
+GET {{baseUrl}}/api/v1/chat/channels/:channelId/messages
+Authorization: Bearer {{token}}
+
+### 5. messages-send
+POST {{baseUrl}}/api/v1/chat/messages
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "channelId": "channel-uuid",
+  "content": "Hello, team!"
+}
+
+### 6. sentiment
+GET {{baseUrl}}/api/v1/chat/messages/:id/sentiment
+Authorization: Bearer {{token}}
+
+### 7. suggest-reply
+POST {{baseUrl}}/api/v1/chat/messages/:id/suggest-reply
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "channelId": "channel-uuid",
+  "content": "Hello, team!"
+}
+
+### 8. summary
+GET {{baseUrl}}/api/v1/chat/channels/:channelId/summary
+Authorization: Bearer {{token}}
+
+
+### ===========================================
+### CMMS MODULE (14 routes)
+### ===========================================
+
+### 1. assets-create
+POST {{baseUrl}}/api/v1/cmms/assets
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Machine #1",
+  "type": "EQUIPMENT",
+  "serialNumber": "SN-12345",
+  "location": "Factory Floor A",
+  "purchaseDate": "2025-01-01"
+}
+
+### 2. assets-get
+GET {{baseUrl}}/api/v1/cmms/assets/:id
+Authorization: Bearer {{token}}
+
+### 3. assets-list
+GET {{baseUrl}}/api/v1/cmms/assets
+Authorization: Bearer {{token}}
+
+### 4. assets-update
+PATCH {{baseUrl}}/api/v1/cmms/assets/:id
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Machine #1 Updated",
+  "location": "Factory Floor B"
+}
+
+### 5. downtime-create
+POST {{baseUrl}}/api/v1/cmms/downtime
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "assetId": "asset-uuid",
+  "reason": "Mechanical failure",
+  "startTime": "2026-01-03T10:00:00Z"
+}
+
+### 6. downtime-resolve
+PATCH {{baseUrl}}/api/v1/cmms/downtime/:id/resolve
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "field": "value"
+}
+
+### 7. maintenance-plans-create
+POST {{baseUrl}}/api/v1/cmms/maintenance-plans
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "assetId": "asset-uuid",
+  "type": "PREVENTIVE",
+  "frequency": "MONTHLY",
+  "nextScheduledDate": "2026-02-01"
+}
+
+### 8. maintenance-plans-list
+GET {{baseUrl}}/api/v1/cmms/maintenance-plans
+Authorization: Bearer {{token}}
+
+### 9. maintenance-records-create
+POST {{baseUrl}}/api/v1/cmms/maintenance-records
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "assetId": "asset-uuid",
+  "type": "PREVENTIVE",
+  "performedDate": "2026-01-03",
+  "notes": "Routine maintenance completed"
+}
+
+### 10. maintenance-records-list
+GET {{baseUrl}}/api/v1/cmms/maintenance-records
+Authorization: Bearer {{token}}
+
+### 11. spare-parts-create
+POST {{baseUrl}}/api/v1/cmms/spare-parts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Bearing",
+  "partNumber": "BRG-001",
+  "quantity": 50,
+  "minStockLevel": 10
+}
+
+### 12. spare-parts-list
+GET {{baseUrl}}/api/v1/cmms/spare-parts
+Authorization: Bearer {{token}}
+
+### 13. spare-parts-low-stock
+GET {{baseUrl}}/api/v1/cmms/spare-parts/low-stock
+Authorization: Bearer {{token}}
+
+### 14. spare-parts-movement
+POST {{baseUrl}}/api/v1/cmms/spare-parts/:id/movement
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Bearing",
+  "partNumber": "BRG-001",
+  "quantity": 50,
+  "minStockLevel": 10
+}
+
+
+### ===========================================
+### CRM MODULE (19 routes)
+### ===========================================
+
+### 1. recommendations
+GET {{baseUrl}}/api/v1/crm/:entityType/:id/recommendations
+Authorization: Bearer {{token}}
+
+### 2. pipeline
+GET {{baseUrl}}/api/v1/crm/analytics/pipeline
+Authorization: Bearer {{token}}
+
+### 3. churn
+GET {{baseUrl}}/api/v1/crm/contacts/:id/churn
+Authorization: Bearer {{token}}
+
+### 4. create
+POST {{baseUrl}}/api/v1/crm/contacts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Jane Smith",
+  "email": "jane@example.com",
+  "phone": "+1234567890",
+  "companyName": "ACME Corp",
+  "position": "CEO"
+}
+
+### 5. delete
+DELETE {{baseUrl}}/api/v1/crm/contacts/:id
+Authorization: Bearer {{token}}
+
+### 6. engagement
+GET {{baseUrl}}/api/v1/crm/contacts/:id/engagement
+Authorization: Bearer {{token}}
+
+### 7. enrich
+GET {{baseUrl}}/api/v1/crm/contacts/:id/enrich
+Authorization: Bearer {{token}}
+
+### 8. get
+GET {{baseUrl}}/api/v1/crm/contacts/:id
+Authorization: Bearer {{token}}
+
+### 9. list
+GET {{baseUrl}}/api/v1/crm/contacts
+Authorization: Bearer {{token}}
+
+### 10. update
+PATCH {{baseUrl}}/api/v1/crm/contacts/:id
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Jane Smith Updated",
+  "phone": "+1234567891"
+}
+
+### 11. create
+POST {{baseUrl}}/api/v1/crm/deals
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "New Deal",
+  "value": 50000,
+  "contactId": "contact-uuid",
+  "stage": "QUALIFICATION"
+}
+
+### 12. delete
+DELETE {{baseUrl}}/api/v1/crm/deals/:id
+Authorization: Bearer {{token}}
+
+### 13. get
+GET {{baseUrl}}/api/v1/crm/deals/:id
+Authorization: Bearer {{token}}
+
+### 14. list
+GET {{baseUrl}}/api/v1/crm/deals
+Authorization: Bearer {{token}}
+
+### 15. move-stage
+PATCH {{baseUrl}}/api/v1/crm/deals/:id/stage
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Updated Deal",
+  "value": 60000
+}
+
+### 16. probability
+GET {{baseUrl}}/api/v1/crm/deals/:id/probability
+Authorization: Bearer {{token}}
+
+### 17. update
+PUT {{baseUrl}}/api/v1/crm/deals/:id
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Updated Deal",
+  "value": 60000
+}
+
+### 18. create
+POST {{baseUrl}}/api/v1/crm/interactions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "contactId": "contact-uuid",
+  "type": "EMAIL",
+  "subject": "Follow-up",
+  "notes": "Discussed project requirements"
+}
+
+### 19. list
+GET {{baseUrl}}/api/v1/crm/interactions
+Authorization: Bearer {{token}}
+
+
+### ===========================================
+### DASHBOARD MODULE (2 routes)
+### ===========================================
+
+### 1. main
+GET {{baseUrl}}/api/v1/dashboard
+Authorization: Bearer {{token}}
+
+### 2. stats
+GET {{baseUrl}}/api/v1/dashboard/stats
+Authorization: Bearer {{token}}
+
+
+### ===========================================
+### DEDUPLICATION MODULE (7 routes)
+### ===========================================
+
+### 1. auto-merge
+POST {{baseUrl}}/api/v1/deduplication/auto-merge
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "data": "value"
+}
+
+### 2. detect
+POST {{baseUrl}}/api/v1/deduplication/detect
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "data": "value"
+}
+
+### 3. feedback
+POST {{baseUrl}}/api/v1/deduplication/feedback
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "contactId1": "contact-uuid-1",
+  "contactId2": "contact-uuid-2",
+  "isDuplicate": true
+}
+
+### 4. history
+GET {{baseUrl}}/api/v1/deduplication/history
+Authorization: Bearer {{token}}
+
+### 5. merge
+POST {{baseUrl}}/api/v1/deduplication/merge
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "masterId": "contact-uuid-1",
+  "duplicateIds": ["contact-uuid-2", "contact-uuid-3"]
+}
+
+### 6. pending
+GET {{baseUrl}}/api/v1/deduplication/pending
+Authorization: Bearer {{token}}
+
+### 7. rollback
+POST {{baseUrl}}/api/v1/deduplication/rollback/:mergeId
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "mergeId": "merge-uuid"
+}
+
+
+### ===========================================
+### EMAIL-TEMPLATES MODULE (3 routes)
+### ===========================================
+
+### 1. list
+GET {{baseUrl}}/api/v1/email-templates
+Authorization: Bearer {{token}}
+
+### 2. preview
+POST {{baseUrl}}/api/v1/email-templates/preview
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "templateId": "template-uuid",
+  "variables": {"name": "John", "company": "ACME"}
+}
+
+### 3. send
+POST {{baseUrl}}/api/v1/email-templates/send
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "templateId": "template-uuid",
+  "to": "recipient@example.com",
+  "variables": {"name": "John", "company": "ACME"}
+}
+
+
+### ===========================================
+### ERP MODULE (2 routes)
+### ===========================================
+
+### 1. products-create
+POST {{baseUrl}}/api/v1/erp/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Product Name",
+  "sku": "SKU-001",
+  "price": 99.99,
+  "stock": 100,
+  "category": "Electronics"
+}
+
+### 2. products-list
+GET {{baseUrl}}/api/v1/erp/products
+Authorization: Bearer {{token}}
+
+
+### ===========================================
+### FEEDBACK MODULE (2 routes)
+### ===========================================
+
+### 1. create
+POST {{baseUrl}}/api/v1/feedback
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "type": "BUG",
+  "title": "Issue with feature X",
+  "description": "Detailed description of the issue",
+  "priority": "MEDIUM"
+}
+
+### 2. list
+GET {{baseUrl}}/api/v1/feedback
+Authorization: Bearer {{token}}
+
+
+### ===========================================
+### FILES MODULE (6 routes)
+### ===========================================
+
+### 1. avatar
+POST {{baseUrl}}/api/v1/files/avatar
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "avatar": "base64-encoded-image-data"
+}
+
+### 2. delete
+DELETE {{baseUrl}}/api/v1/files/:id
+Authorization: Bearer {{token}}
+
+### 3. download
+GET {{baseUrl}}/api/v1/files/:id/download
+Authorization: Bearer {{token}}
+
+### 4. get-url
+GET {{baseUrl}}/api/v1/files/:id/url
+Authorization: Bearer {{token}}
+
+### 5. list
+GET {{baseUrl}}/api/v1/files
+Authorization: Bearer {{token}}
+
+### 6. upload
+POST {{baseUrl}}/api/v1/files/upload
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "file": "base64-encoded-file-data",
+  "fileName": "document.pdf",
+  "mimeType": "application/pdf"
+}
+
+
+### ===========================================
+### FSM MODULE (13 routes)
+### ===========================================
+
+### 1. checklist
+POST {{baseUrl}}/api/v1/fsm/workorders/:id/checklist
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Repair Service",
+  "customerId": "customer-uuid",
+  "priority": "HIGH",
+  "scheduledDate": "2026-01-15T09:00:00Z",
+  "description": "AC unit not working"
+}
+
+### 2. tasks-complete
+PATCH {{baseUrl}}/api/v1/fsm/tasks/:id/complete
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "field": "value"
+}
+
+### 3. technicians-create
+POST {{baseUrl}}/api/v1/fsm/technicians
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "John Technician",
+  "email": "tech@example.com",
+  "phone": "+1234567890",
+  "skills": ["plumbing", "electrical"]
+}
+
+### 4. technicians-list
+GET {{baseUrl}}/api/v1/fsm/technicians
+Authorization: Bearer {{token}}
+
+### 5. technicians-location
+PATCH {{baseUrl}}/api/v1/fsm/technicians/:id/location
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "field": "value"
+}
+
+### 6. time-tracking-start
+POST {{baseUrl}}/api/v1/fsm/workorders/:id/time
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Repair Service",
+  "customerId": "customer-uuid",
+  "priority": "HIGH",
+  "scheduledDate": "2026-01-15T09:00:00Z",
+  "description": "AC unit not working"
+}
+
+### 7. time-tracking-stop
+PATCH {{baseUrl}}/api/v1/fsm/time/:id/stop
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "field": "value"
+}
+
+### 8. workorders-complete
+POST {{baseUrl}}/api/v1/fsm/workorders/:id/complete
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Repair Service",
+  "customerId": "customer-uuid",
+  "priority": "HIGH",
+  "scheduledDate": "2026-01-15T09:00:00Z",
+  "description": "AC unit not working"
+}
+
+### 9. workorders-create
+POST {{baseUrl}}/api/v1/fsm/workorders
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Repair Service",
+  "customerId": "customer-uuid",
+  "priority": "HIGH",
+  "scheduledDate": "2026-01-15T09:00:00Z",
+  "description": "AC unit not working"
+}
+
+### 10. workorders-list
+GET {{baseUrl}}/api/v1/fsm/workorders
+Authorization: Bearer {{token}}
+
+### 11. workorders-start
+POST {{baseUrl}}/api/v1/fsm/workorders/:id/start
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Repair Service",
+  "customerId": "customer-uuid",
+  "priority": "HIGH",
+  "scheduledDate": "2026-01-15T09:00:00Z",
+  "description": "AC unit not working"
+}
+
+### 12. workorders-tasks
+POST {{baseUrl}}/api/v1/fsm/workorders/:id/tasks
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Repair Service",
+  "customerId": "customer-uuid",
+  "priority": "HIGH",
+  "scheduledDate": "2026-01-15T09:00:00Z",
+  "description": "AC unit not working"
+}
+
+### 13. workorders-update
+PATCH {{baseUrl}}/api/v1/fsm/workorders/:id
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "IN_PROGRESS",
+  "notes": "Technician on site"
+}
+
+
+### ===========================================
+### GATEKEEPER MODULE (2 routes)
+### ===========================================
+
+### 1. check
+POST {{baseUrl}}/api/v1/gatekeeper/check
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "action": "contact.create",
+  "resource": {}
+}
+
+### 2. rules
+GET {{baseUrl}}/api/v1/gatekeeper/rules
+Authorization: Bearer {{token}}
+
+
+### ===========================================
+### JOBS MODULE (10 routes)
+### ===========================================
+
+### 1. applications
+GET {{baseUrl}}/api/v1/jobs/:id/applications
+Authorization: Bearer {{token}}
+
+### 2. apply
+POST {{baseUrl}}/api/v1/jobs/:id/apply
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "coverLetter": "I am very interested in this position...",
+  "resumeUrl": "https://example.com/resume.pdf"
+}
+
+### 3. create
+POST {{baseUrl}}/api/v1/jobs
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Software Engineer",
+  "description": "Looking for a talented developer",
+  "location": "Remote",
+  "type": "FULL_TIME",
+  "department": "Engineering",
+  "requirements": ["3+ years experience", "JavaScript"]
+}
+
+### 4. delete
+DELETE {{baseUrl}}/api/v1/jobs/:id
+Authorization: Bearer {{token}}
+
+### 5. get
+GET {{baseUrl}}/api/v1/jobs/:id
+Authorization: Bearer {{token}}
+
+### 6. interest
+POST {{baseUrl}}/api/v1/jobs/:id/interest
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "notes": "Would like to learn more about this role"
+}
+
+### 7. list
+GET {{baseUrl}}/api/v1/jobs
+Authorization: Bearer {{token}}
+
+### 8. suggestions
+GET {{baseUrl}}/api/v1/jobs/:id/suggestions
+Authorization: Bearer {{token}}
+
+### 9. update-application
+PATCH {{baseUrl}}/api/v1/jobs/applications/:id
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Senior Software Engineer",
+  "status": "ACTIVE"
+}
+
+### 10. update
+PUT {{baseUrl}}/api/v1/jobs/:id
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Senior Software Engineer",
+  "status": "ACTIVE"
+}
+
+
+### ===========================================
+### KNOWLEDGE MODULE (17 routes)
+### ===========================================
+
+### 1. ask
+POST {{baseUrl}}/api/v1/knowledge/ask
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "New Article",
+  "content": "# Heading\n\nContent here...",
+  "tags": ["documentation", "guide"],
+  "nodeType": "note"
+}
+
+### 2. convert-batch
+POST {{baseUrl}}/api/v1/knowledge/convert/batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nodeId": "node-uuid",
+  "targetType": "document"
+}
+
+### 3. convert
+POST {{baseUrl}}/api/v1/knowledge/convert
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nodeId": "node-uuid",
+  "targetType": "document"
+}
+
+### 4. create-link
+POST {{baseUrl}}/api/v1/knowledge/nodes/:id/links
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "sourceId": "node-uuid-1",
+  "targetId": "node-uuid-2",
+  "type": "RELATES_TO"
+}
+
+### 5. create
+POST {{baseUrl}}/api/v1/knowledge/nodes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "New Article",
+  "content": "# Heading\n\nContent here...",
+  "tags": ["documentation", "guide"],
+  "nodeType": "note"
+}
+
+### 6. delete-link
+DELETE {{baseUrl}}/api/v1/knowledge/links/:id
+Authorization: Bearer {{token}}
+
+### 7. delete
+DELETE {{baseUrl}}/api/v1/knowledge/nodes/:id
+Authorization: Bearer {{token}}
+
+### 8. get
+GET {{baseUrl}}/api/v1/knowledge/nodes/:id
+Authorization: Bearer {{token}}
+
+### 9. graph-obsidian
+GET {{baseUrl}}/api/v1/knowledge/graph/obsidian
+Authorization: Bearer {{token}}
+
+### 10. graph
+GET {{baseUrl}}/api/v1/knowledge/graph
+Authorization: Bearer {{token}}
+
+### 11. list
+GET {{baseUrl}}/api/v1/knowledge/nodes
+Authorization: Bearer {{token}}
+
+### 12. semantic-search
+POST {{baseUrl}}/api/v1/knowledge/search/semantic
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "New Article",
+  "content": "# Heading\n\nContent here...",
+  "tags": ["documentation", "guide"],
+  "nodeType": "note"
+}
+
+### 13. suggest-links
+GET {{baseUrl}}/api/v1/knowledge/nodes/:id/suggest-links
+Authorization: Bearer {{token}}
+
+### 14. suggest-tags
+POST {{baseUrl}}/api/v1/knowledge/nodes/suggest-tags
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "New Article",
+  "content": "# Heading\n\nContent here...",
+  "tags": ["documentation", "guide"],
+  "nodeType": "note"
+}
+
+### 15. suggestions
+GET {{baseUrl}}/api/v1/knowledge/nodes/:id/suggestions
+Authorization: Bearer {{token}}
+
+### 16. tags
+GET {{baseUrl}}/api/v1/knowledge/tags
+Authorization: Bearer {{token}}
+
+### 17. update
+PATCH {{baseUrl}}/api/v1/knowledge/nodes/:id
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Updated Article",
+  "content": "# Updated Content"
+}
+
+
+### ===========================================
+### LEARNING MODULE (10 routes)
+### ===========================================
+
+### 1. development-plans
+GET {{baseUrl}}/api/v1/learning/development-plans
+Authorization: Bearer {{token}}
+
+### 2. enroll
+POST {{baseUrl}}/api/v1/learning/paths/:id/enroll
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "JavaScript Fundamentals",
+  "description": "Learn JavaScript from scratch",
+  "items": [{"type": "course", "title": "Intro to JS", "duration": 120}]
+}
+
+### 3. enrollments-list
+GET {{baseUrl}}/api/v1/learning/enrollments
+Authorization: Bearer {{token}}
+
+### 4. item-complete
+POST {{baseUrl}}/api/v1/learning/items/:itemId/complete
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "data": "value"
+}
+
+### 5. my-skills
+GET {{baseUrl}}/api/v1/learning/skills/my
+Authorization: Bearer {{token}}
+
+### 6. paths-create
+POST {{baseUrl}}/api/v1/learning/paths
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "JavaScript Fundamentals",
+  "description": "Learn JavaScript from scratch",
+  "items": [{"type": "course", "title": "Intro to JS", "duration": 120}]
+}
+
+### 7. paths-get
+GET {{baseUrl}}/api/v1/learning/paths/:id
+Authorization: Bearer {{token}}
+
+### 8. paths-list
+GET {{baseUrl}}/api/v1/learning/paths
+Authorization: Bearer {{token}}
+
+### 9. skill-assess
+POST {{baseUrl}}/api/v1/learning/skills/:skillId/assess
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "data": "value"
+}
+
+### 10. skills-list
+GET {{baseUrl}}/api/v1/learning/skills
+Authorization: Bearer {{token}}
+
+
+### ===========================================
+### MCP MODULE (11 routes)
+### ===========================================
+
+### 1. logs-create
+POST {{baseUrl}}/api/v1/mcp/servers/:id/logs
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "My Server",
+  "url": "https://server.example.com",
+  "apiKey": "server-api-key"
+}
+
+### 2. logs-list
+GET {{baseUrl}}/api/v1/mcp/servers/:id/logs
+Authorization: Bearer {{token}}
+
+### 3. resources-create
+POST {{baseUrl}}/api/v1/mcp/servers/:id/resources
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "My Server",
+  "url": "https://server.example.com",
+  "apiKey": "server-api-key"
+}
+
+### 4. resources-list
+GET {{baseUrl}}/api/v1/mcp/servers/:id/resources
+Authorization: Bearer {{token}}
+
+### 5. servers-create
+POST {{baseUrl}}/api/v1/mcp/servers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "My Server",
+  "url": "https://server.example.com",
+  "apiKey": "server-api-key"
+}
+
+### 6. servers-delete
+DELETE {{baseUrl}}/api/v1/mcp/servers/:id
+Authorization: Bearer {{token}}
+
+### 7. servers-get
+GET {{baseUrl}}/api/v1/mcp/servers/:id
+Authorization: Bearer {{token}}
+
+### 8. servers-list
+GET {{baseUrl}}/api/v1/mcp/servers
+Authorization: Bearer {{token}}
+
+### 9. servers-update
+PATCH {{baseUrl}}/api/v1/mcp/servers/:id
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Updated Server",
+  "status": "ACTIVE"
+}
+
+### 10. tools-create
+POST {{baseUrl}}/api/v1/mcp/servers/:id/tools
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "My Server",
+  "url": "https://server.example.com",
+  "apiKey": "server-api-key"
+}
+
+### 11. tools-list
+GET {{baseUrl}}/api/v1/mcp/servers/:id/tools
+Authorization: Bearer {{token}}
+
+
+### ===========================================
+### NARRATIVE MODULE (1 routes)
+### ===========================================
+
+### 1. generate
+POST {{baseUrl}}/api/v1/narrative/generate
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "entityType": "contact",
+  "entityId": "contact-uuid",
+  "format": "SUMMARY"
+}
+
+
+### ===========================================
+### NOTIFICATIONS MODULE (3 routes)
+### ===========================================
+
+### 1. read-all
+POST {{baseUrl}}/api/v1/notifications/read-all
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "data": "value"
+}
+
+### 2. read
+POST {{baseUrl}}/api/v1/notifications/:id/read
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "data": "value"
+}
+
+### 3. summary
+GET {{baseUrl}}/api/v1/notifications/summary
+Authorization: Bearer {{token}}
+
+
+### ===========================================
+### OMNICHANNEL MODULE (12 routes)
+### ===========================================
+
+### 1. account-delete
+DELETE {{baseUrl}}/api/v1/omnichannel/whatsapp/accounts/:accountId
+Authorization: Bearer {{token}}
+
+### 2. account-disconnect
+POST {{baseUrl}}/api/v1/omnichannel/whatsapp/accounts/:accountId/disconnect
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "data": "value"
+}
+
+### 3. account-status
+GET {{baseUrl}}/api/v1/omnichannel/whatsapp/accounts/:accountId/status
+Authorization: Bearer {{token}}
+
+### 4. accounts-create
+POST {{baseUrl}}/api/v1/omnichannel/whatsapp/accounts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "data": "value"
+}
+
+### 5. accounts-list
+GET {{baseUrl}}/api/v1/omnichannel/whatsapp/accounts
+Authorization: Bearer {{token}}
+
+### 6. conversations-create
+POST {{baseUrl}}/api/v1/omnichannel/conversations
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "accountId": "account-uuid",
+  "contactPhone": "+0987654321"
+}
+
+### 7. conversations-get
+GET {{baseUrl}}/api/v1/omnichannel/conversations/:id
+Authorization: Bearer {{token}}
+
+### 8. conversations-list
+GET {{baseUrl}}/api/v1/omnichannel/conversations
+Authorization: Bearer {{token}}
+
+### 9. conversations-update
+PATCH {{baseUrl}}/api/v1/omnichannel/conversations/:id
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "RESOLVED",
+  "assignedTo": "user-uuid"
+}
+
+### 10. qrcode
+GET {{baseUrl}}/api/v1/omnichannel/whatsapp/accounts/:accountId/qrcode
+Authorization: Bearer {{token}}
+
+### 11. send-message
+POST {{baseUrl}}/api/v1/omnichannel/whatsapp/accounts/:accountId/send
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "data": "value"
+}
+
+### 12. webhook
+POST {{baseUrl}}/api/v1/omnichannel/webhooks/whatsapp
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "url": "https://example.com/webhook",
+  "events": ["contact.created", "deal.updated"],
+  "secret": "webhook-secret-key"
+}
+
+
+### ===========================================
+### PARTNERSHIPS MODULE (5 routes)
+### ===========================================
+
+### 1. create
+POST {{baseUrl}}/api/v1/partnerships
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Partner Company",
+  "type": "RESELLER",
+  "contactEmail": "partner@example.com",
+  "status": "ACTIVE"
+}
+
+### 2. delete
+DELETE {{baseUrl}}/api/v1/partnerships/:id
+Authorization: Bearer {{token}}
+
+### 3. get
+GET {{baseUrl}}/api/v1/partnerships/:id
+Authorization: Bearer {{token}}
+
+### 4. list
+GET {{baseUrl}}/api/v1/partnerships
+Authorization: Bearer {{token}}
+
+### 5. update
+PUT {{baseUrl}}/api/v1/partnerships/:id
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Updated Partner",
+  "status": "INACTIVE"
+}
+
+
+### ===========================================
+### PEOPLE-GROWTH MODULE (7 routes)
+### ===========================================
+
+### 1. gaps-close
+POST {{baseUrl}}/api/v1/people-growth/gaps/:id/close
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "data": "value"
+}
+
+### 2. gaps-get
+GET {{baseUrl}}/api/v1/people-growth/gaps/:id
+Authorization: Bearer {{token}}
+
+### 3. gaps-learning-paths
+GET {{baseUrl}}/api/v1/people-growth/gaps/:id/learning-paths
+Authorization: Bearer {{token}}
+
+### 4. gaps-list
+GET {{baseUrl}}/api/v1/people-growth/gaps
+Authorization: Bearer {{token}}
+
+### 5. my-profile
+GET {{baseUrl}}/api/v1/people-growth/my-profile
+Authorization: Bearer {{token}}
+
+### 6. team-heatmap
+GET {{baseUrl}}/api/v1/people-growth/team/heatmap
+Authorization: Bearer {{token}}
+
+### 7. team-report
+GET {{baseUrl}}/api/v1/people-growth/team/report
+Authorization: Bearer {{token}}
+
+
+### ===========================================
+### RBAC MODULE (4 routes)
+### ===========================================
+
+### 1. assign-role
+POST {{baseUrl}}/api/v1/rbac/users/:userId/roles
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "data": "value"
+}
+
+### 2. permissions-list
+GET {{baseUrl}}/api/v1/rbac/permissions
+Authorization: Bearer {{token}}
+
+### 3. roles-create
+POST {{baseUrl}}/api/v1/rbac/roles
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Manager",
+  "permissions": ["CONTACT_READ", "CONTACT_CREATE", "DEAL_READ"]
+}
+
+### 4. roles-list
+GET {{baseUrl}}/api/v1/rbac/roles
+Authorization: Bearer {{token}}
+
+
+### ===========================================
+### SEARCH MODULE (4 routes)
+### ===========================================
+
+### 1. global
+GET {{baseUrl}}/api/v1/search
+Authorization: Bearer {{token}}
+
+### 2. recent
+GET {{baseUrl}}/api/v1/search/recent
+Authorization: Bearer {{token}}
+
+### 3. save
+POST {{baseUrl}}/api/v1/search/save
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "query": "important clients",
+  "filters": {"type": "contact", "tags": ["vip"]}
+}
+
+### 4. suggest
+GET {{baseUrl}}/api/v1/search/suggest
+Authorization: Bearer {{token}}
+
+
+### ===========================================
+### SERVICES MODULE (13 routes)
+### ===========================================
+
+### 1. complete
+PATCH {{baseUrl}}/api/v1/services/:id/complete
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Updated Service",
+  "price": 175
+}
+
+### 2. create
+POST {{baseUrl}}/api/v1/services
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Consulting Service",
+  "description": "Business consulting",
+  "price": 150,
+  "duration": 60,
+  "category": "CONSULTING"
+}
+
+### 3. delete
+DELETE {{baseUrl}}/api/v1/services/:id
+Authorization: Bearer {{token}}
+
+### 4. get
+GET {{baseUrl}}/api/v1/services/:id
+Authorization: Bearer {{token}}
+
+### 5. list
+GET {{baseUrl}}/api/v1/services
+Authorization: Bearer {{token}}
+
+### 6. proposal-accept
+PATCH {{baseUrl}}/api/v1/services/proposals/:id/accept
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Updated Service",
+  "price": 175
+}
+
+### 7. proposal-reject
+PATCH {{baseUrl}}/api/v1/services/proposals/:id/reject
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Updated Service",
+  "price": 175
+}
+
+### 8. proposals-list
+GET {{baseUrl}}/api/v1/services/:id/proposals
+Authorization: Bearer {{token}}
+
+### 9. propose
+POST {{baseUrl}}/api/v1/services/:id/propose
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "serviceId": "service-uuid",
+  "customerId": "customer-uuid",
+  "proposedDate": "2026-01-20T14:00:00Z",
+  "notes": "Initial proposal"
+}
+
+### 10. rate
+PATCH {{baseUrl}}/api/v1/services/:id/rate
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Updated Service",
+  "price": 175
+}
+
+### 11. transaction-payment
+PATCH {{baseUrl}}/api/v1/services/transactions/:id/payment
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Updated Service",
+  "price": 175
+}
+
+### 12. transactions-list
+GET {{baseUrl}}/api/v1/services/transactions
+Authorization: Bearer {{token}}
+
+### 13. update
+PUT {{baseUrl}}/api/v1/services/:id
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Updated Service",
+  "price": 175
+}
+
+
+### ===========================================
+### SETTINGS MODULE (2 routes)
+### ===========================================
+
+### 1. get
+GET {{baseUrl}}/api/v1/settings
+Authorization: Bearer {{token}}
+
+### 2. update
+PUT {{baseUrl}}/api/v1/settings
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "companyName": "Updated Company Name",
+  "timezone": "America/New_York",
+  "language": "en"
+}
+
+
+### ===========================================
+### SIMULATION MODULE (4 routes)
+### ===========================================
+
+### 1. scenarios-create
+POST {{baseUrl}}/api/v1/simulation/scenarios
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Sales Pitch Scenario",
+  "type": "SALES",
+  "difficulty": "MEDIUM",
+  "description": "Practice your sales pitch"
+}
+
+### 2. scenarios-list
+GET {{baseUrl}}/api/v1/simulation/scenarios
+Authorization: Bearer {{token}}
+
+### 3. session-end
+POST {{baseUrl}}/api/v1/simulation/:id/end
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "data": "value"
+}
+
+### 4. session-start
+POST {{baseUrl}}/api/v1/simulation/start
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "data": "value"
+}
+
+
+### ===========================================
+### SSO MODULE (4 routes)
+### ===========================================
+
+### 1. accounts-disconnect
+DELETE {{baseUrl}}/api/v1/sso/accounts/:provider
+Authorization: Bearer {{token}}
+
+### 2. accounts-list
+GET {{baseUrl}}/api/v1/sso/accounts
+Authorization: Bearer {{token}}
+
+### 3. authorize
+GET {{baseUrl}}/api/v1/sso/:provider/authorize
+Authorization: Bearer {{token}}
+
+### 4. callback
+GET {{baseUrl}}/api/v1/sso/:provider/callback
+
+
+### ===========================================
+### SYNC MODULE (6 routes)
+### ===========================================
+
+### 1. connections-create
+POST {{baseUrl}}/api/v1/sync/connections
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "platform": "HUBSPOT",
+  "apiKey": "hubspot-api-key",
+  "settings": {"syncContacts": true, "syncDeals": true}
+}
+
+### 2. connections-list
+GET {{baseUrl}}/api/v1/sync/connections
+Authorization: Bearer {{token}}
+
+### 3. connections-sync
+POST {{baseUrl}}/api/v1/sync/connections/:connectionId/sync
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "platform": "HUBSPOT",
+  "apiKey": "hubspot-api-key",
+  "settings": {"syncContacts": true, "syncDeals": true}
+}
+
+### 4. sync-run
+POST {{baseUrl}}/api/v1/sync/run
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "data": "value"
+}
+
+### 5. sync-runs-get
+GET {{baseUrl}}/api/v1/sync/runs/:runId
+Authorization: Bearer {{token}}
+
+### 6. sync-runs-list
+GET {{baseUrl}}/api/v1/sync/runs
+Authorization: Bearer {{token}}
+
+
+### ===========================================
+### WEBHOOKS MODULE (5 routes)
+### ===========================================
+
+### 1. create
+POST {{baseUrl}}/api/v1/webhooks
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "url": "https://example.com/webhook",
+  "events": ["contact.created", "deal.updated"],
+  "secret": "webhook-secret-key"
+}
+
+### 2. delete
+DELETE {{baseUrl}}/api/v1/webhooks/:id
+Authorization: Bearer {{token}}
+
+### 3. list
+GET {{baseUrl}}/api/v1/webhooks
+Authorization: Bearer {{token}}
+
+### 4. test
+POST {{baseUrl}}/api/v1/webhooks/:id/test
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "url": "https://example.com/webhook",
+  "events": ["contact.created", "deal.updated"],
+  "secret": "webhook-secret-key"
+}
+
+### 5. update
+PUT {{baseUrl}}/api/v1/webhooks/:id
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "url": "https://example.com/new-webhook",
+  "active": true
+}
+
+
