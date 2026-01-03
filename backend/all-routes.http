@@ -137,35 +137,12 @@ Authorization: Bearer {{token}}
 
 
 ### ===========================================
-### AUTH MODULE (8 routes)
+### AUTH MODULE (12 routes) ✅ UPDATED
+### Public: login, register, refresh, password-reset, email-verify
+### Protected: me, logout, 2fa-*, email-verify-resend
 ### ===========================================
 
-### 1. 2fa-disable
-POST {{baseUrl}}/api/v1/auth/2fa/disable
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "password": "password123"
-}
-
-### 2. 2fa-setup
-POST {{baseUrl}}/api/v1/auth/2fa/setup
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{}
-
-### 3. 2fa-verify
-POST {{baseUrl}}/api/v1/auth/2fa/verify
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "code": "123456"
-}
-
-### 4. login
+### 1. Login (Public)
 POST {{baseUrl}}/api/v1/auth/login
 Content-Type: application/json
 
@@ -174,28 +151,7 @@ Content-Type: application/json
   "password": "password123"
 }
 
-### 5. logout
-POST {{baseUrl}}/api/v1/auth/logout
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "data": "value"
-}
-
-### 6. me
-GET {{baseUrl}}/api/v1/auth/me
-Authorization: Bearer {{token}}
-
-### 7. refresh
-POST {{baseUrl}}/api/v1/auth/refresh
-Content-Type: application/json
-
-{
-  "refreshToken": "your-refresh-token"
-}
-
-### 8. register
+### 2. Register (Public)
 POST {{baseUrl}}/api/v1/auth/register
 Content-Type: application/json
 
@@ -204,6 +160,80 @@ Content-Type: application/json
   "email": "john@example.com",
   "password": "password123",
   "companyName": "My Company"
+}
+
+### 3. Refresh Token (Public)
+POST {{baseUrl}}/api/v1/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "your-refresh-token"
+}
+
+### 4. Password Reset - Request (Public) 🆕
+POST {{baseUrl}}/api/v1/auth/password/reset
+Content-Type: application/json
+
+{
+  "email": "user@example.com"
+}
+
+### 5. Password Reset - Confirm (Public) 🆕
+PATCH {{baseUrl}}/api/v1/auth/password/reset/:token
+Content-Type: application/json
+
+{
+  "password": "NewPassword123!",
+  "passwordConfirmation": "NewPassword123!"
+}
+
+### 6. Email Verification - Confirm (Public) 🆕
+POST {{baseUrl}}/api/v1/auth/email/verify/:token
+Content-Type: application/json
+
+{}
+
+### 7. Email Verification - Resend (Protected) 🆕
+POST {{baseUrl}}/api/v1/auth/email/verify/send
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{}
+
+### 8. Get Current User (Protected)
+GET {{baseUrl}}/api/v1/auth/me
+Authorization: Bearer {{token}}
+
+### 9. Logout (Protected)
+POST {{baseUrl}}/api/v1/auth/logout
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{}
+
+### 10. 2FA Setup (Protected)
+POST {{baseUrl}}/api/v1/auth/2fa/setup
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{}
+
+### 11. 2FA Verify (Protected)
+POST {{baseUrl}}/api/v1/auth/2fa/verify
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "code": "123456"
+}
+
+### 12. 2FA Disable (Protected)
+POST {{baseUrl}}/api/v1/auth/2fa/disable
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "password": "password123"
 }
 
 
