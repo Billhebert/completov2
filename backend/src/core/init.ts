@@ -17,13 +17,21 @@ export async function initializeSystem() {
     registerCuratorEventHandlers();
 
     // 2. Registrar Event Listeners dos Workflows
-    await registerWorkflowEventListeners();
+    try {
+      await registerWorkflowEventListeners();
+    } catch (error) {
+      logger.warn({ error }, '[INIT] Workflow event listeners registration failed, continuing...');
+    }
 
     // 3. Iniciar Cron Jobs
     // TODO: Enable reminders CRON after adding Reminder/Notification models to Prisma schema
     // startRemindersCron();
     // startRemindersCleanupCron();
-    startTruthLayerCron();
+    try {
+      startTruthLayerCron();
+    } catch (error) {
+      logger.warn({ error }, '[INIT] Truth Layer CRON failed, continuing...');
+    }
 
     logger.info('[INIT] System initialization completed successfully');
 
